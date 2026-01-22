@@ -1,0 +1,127 @@
+<sm-page>
+  <div>
+    <h1 class="page-title">{{createMode ? 'Create a new Volume' : 'Volume details'}}</h1>
+    <p class="page-subtitle">Volumes allow apps to retain data across restarts or increase their temporary storage capacity</p>
+  </div>
+
+  <sm-page-loader [loading]="loading">
+    <ng-template>
+      <p-card styleClass="mt-5">
+        <form ngForm class="p-fluid" [formGroup]="volumeForm">
+          <!-- Name -->
+          <div class="field">
+            <label for="name">Name:</label>
+            <input type="text" pInputText id="name" formControlName="name" [class.ng-dirty]="volumeForm.dirty"
+                   placeholder="Enter volume name"/>
+            <small [class.text-red-500]="volumeForm.dirty && volumeForm.get('name')?.errors?.required">
+              The name is required</small>
+            <small [class.text-red-500]="volumeForm.dirty &&
+               (volumeForm.get('name')?.errors?.minlength || volumeForm.get('name')?.errors?.maxlength)">
+              and must be at least 3 and at most 50 characters.</small>
+          </div>
+
+          <!-- Project -->
+          <div class="field">
+            <label for="project">Project:</label>
+            <p-dropdown [options]="projects" id="project" inputId="project" optionLabel="name" optionDisabled="disabled"
+                        [readonly]="mounts?.length > 0"
+                        formControlName="project" appendTo="body">
+              <ng-template let-item pTemplate="item">
+                <div class="flex flex-row column-gap-2 align-items-center">
+                  <span>{{ item.name }}</span>
+                </div>
+              </ng-template>
+              <ng-template pTemplate="selectedItem">
+                <div class="flex flex-row column-gap-2 align-items-center">
+                  <span>{{ volumeForm.get('project').value?.name }}</span>
+                </div>
+              </ng-template>
+            </p-dropdown>
+            <small [class.text-red-500]="volumeForm.dirty && (volumeForm.get('project')?.errors?.['required'] || !volumeForm.get('project').getRawValue().id)">Choose an existing project</small>
+          </div>
+
+          <!-- Type -->
+          <div class="field">
+            <label for="name" smTranslate="volumePage.dataLocation"></label>
+            <div class="flex flex-wrap gap-3">
+              <div class="flex align-items-center">
+                <p-radioButton id="typeStatemesh" value="statemesh" inputId="typeStatemesh" formControlName="type" />
+                <label for="typeStatemesh" class="ml-2 font-normal" smTranslate="volumePage.providedByStateMesh"></label>
+              </div>
+              <div class="flex align-items-center">
+                <p-radioButton id="typeEphemeral" value="ephemeral" inputId="typeEphemeral" formControlName="type" />
+                <label for="typeEphemeral" class="ml-2 font-normal">Temporary</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="field" *ngIf="volumeForm.get('type').value === 'statemesh'">
+            <label>Size (GB)</label>
+            <p-inputNumber mode="decimal" inputId="size" formControlName="size"
+                           [showButtons]="true" [min]="1" [max]="100"></p-inputNumber>
+          </div>
+
+          <div class="field" *ngIf="volumeForm.get('type').value === 'ephemeral'">
+            <p-messages class="w-full" severity="warn" [enableService]="false" [closable]="true" >
+              <ng-template pTemplate>
+                <div class="block">
+                  <p>The volume is created when the Application is assigned to a node and survives container restarts on the same node. <br/> When the Application is removed from a node for any reason, the data is deleted permanently</p>
+                  <div>
+                    Typical use cases:
+                    <ul>
+                      <li>Temporary storage for processing data</li>
+                      <li>Temporary storage for caching</li>
+                      <li>Temporary storage for logs</li>
+                    </ul>
+                  </div>
+                </div>
+              </ng-template>
+            </p-messages>
+
+            <label>Size (GB)</label>
+            <p-inputNumber mode="decimal" inputId="size" formControlName="size"
+                           [showButtons]="true" [min]="1" [max]="100"></p-inputNumber>
+          </div>
+
+          <div class="flex flex-row column-gap-3 mt-5">
+            <button pButton type="button" size="small" class="w-8rem" label="Save" [disabled]="!volumeForm.valid" (click)="saveVolume()"></button>
+            <button *ngIf="!createMode" pButton size="small" severity="danger" type="button" class="w-8rem" label="Delete" (click)="deleteVolume($event)" [disabled]="mounts.length > 0"></button>
+            <p-confirmPopup key="confirmDelete"></p-confirmPopup>
+          </div>
+        </form>
+      </p-card>
+
+      <div *ngIf="!createMode" class="mt-5 mb-3">
+        <h2 class="text-lg m-0">Existing Mounts</h2>
+        <p class="text-sm text-500">Cloud resources that use this volume</p>
+      </div>
+
+      <p-card *ngIf="!createMode">
+        <p-table [value]="mounts"
+                 [rows]="10"
+                 [paginator]="true"
+                 [rowHover]="true"
+                 styleClass="p-datatable-sm"
+                 [tableStyle]="{'min-width': '50rem'}"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Resource ID</th>
+              <th>Resource Type</th>
+              <th>Resource Name</th>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="body" let-res>
+            <tr>
+              <td class="w-22rem"><a class="text-green-700 font-semibold text-decoration-none" (click)="gotoResource(res)">{{res.id}}</a></td>
+              <td class="w-15rem">{{mountResourceType(res)}}</td>
+              <td>{{mountResourceName(res)}}</td>
+            </tr>
+          </ng-template>
+
+        </p-table>
+      </p-card>
+    </ng-template>
+  </sm-page-loader>
+</sm-page>

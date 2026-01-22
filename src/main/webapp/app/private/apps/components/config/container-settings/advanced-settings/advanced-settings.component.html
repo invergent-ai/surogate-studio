@@ -1,0 +1,59 @@
+<p-accordion>
+  <p-accordionTab>
+    <ng-template pTemplate="header">
+      <div>
+        <p>Advanced</p>
+        <small class="font-normal p-disabled">Configure advanced settings for the container</small>
+      </div>
+    </ng-template>
+    <form [formGroup]="containerForm">
+      @if (applicationForm.value.mode !== ApplicationMode.MODEL) {
+        <!--Container Type-->
+        <div class="card">
+          <p class="font-bold mb-1">Container type</p>
+          <div class="col-12 md:col-10" id="containerType">
+            <div class="flex flex-column gap-3">
+              <div>
+                <p-radioButton class="w-auto"
+                               formControlName="type"
+                               [value]="ContainerType.WORKER"
+                               inputId="worker" id="worker">
+                </p-radioButton>
+                <label for="worker" class="ml-2 font-medium">Worker container</label>
+                <small class="block text-color mt-2 pl-5">A normal container that handles workload</small>
+              </div>
+              <div>
+                <p-radioButton class="w-auto"
+                               formControlName="type"
+                               [value]="ContainerType.INIT"
+                               inputId="init" id="init">
+                </p-radioButton>
+                <label for="init" class="ml-2 font-medium">Init container</label>
+                <small class="block text-color mt-2 pl-5">Performs initialization tasks and always runs to completion</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (applicationForm.value.mode !== ApplicationMode.MODEL) {
+        <sm-start-command [containerForm]="containerForm"
+                          *ngIf="containerForm.get('imageTag').value"></sm-start-command>
+      }
+
+      <sm-environment-variables *ngIf="containerForm.get('imageTag').value"
+                                [containerForm]="containerForm"
+                                (envVarsUpdated)="onEnvVarsUpdated($event)">
+      </sm-environment-variables>
+
+      <sm-firewall-entries *ngIf="containerForm.get('imageTag').value"
+                           [containerForm]="containerForm"
+                           (entriesUpdated)="onFirewallEntriesUpdated($event)">
+      </sm-firewall-entries>
+
+      <sm-resource-settings [containerForm]="containerForm"
+                            *ngIf="containerForm.get('imageTag').value">
+      </sm-resource-settings>
+    </form>
+  </p-accordionTab>
+</p-accordion>

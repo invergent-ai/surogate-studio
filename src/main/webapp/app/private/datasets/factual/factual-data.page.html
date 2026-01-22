@@ -1,0 +1,375 @@
+<sm-page>
+  <sm-page-loader>
+    <ng-template>
+      <div class="mb-5">
+        <h1 class="page-title">Generate Factual Data</h1>
+        <p class="page-subtitle">Upload documents, generate & refine questions, produce answers.</p>
+      </div>
+
+      <p-stepper>
+        <p-stepperPanel header="Upload & Chunk">
+          <ng-template pTemplate="content" let-nextCallback="nextCallback" let-index="index">
+            <div class="grid gap-3">
+              <div class="col-8 flex flex-column gap-4">
+                <sm-card header="Upload & Process Documents" [icon]="FileText" class="block flex flex-column gap-2">
+                  <div class="surface-50 border-1 border-dashed p-2 border-round-lg border-500 flex flex-column gap-3 align-items-center justify-content-center py-3">
+                    <div class="text-center">
+                      <p class="font-semibold">Upload documents</p>
+                      <p>Supported formats: PDF, DOCX, PPTX, TXT, MD, HTML</p>
+                    </div>
+                    <sm-file-uploader [parallel]="true" [multiple]="true" [maxFileSize]="10 * 1024 * 1024 * 1024"></sm-file-uploader>
+                  </div>
+
+                  <div class="mt-3">
+                    <p class="font-bold mb-3">Uploaded Files</p>
+                    <p-table [value]="uploadedFiles" [tableStyle]="{'table-layout': 'auto', 'width': '100%'}" styleClass="text-sm">
+                      <ng-template pTemplate="header">
+                        <tr>
+                          <th class="text-500">File</th>
+                          <th class="text-500">Type</th>
+                          <th class="text-500">Pages</th>
+                          <th class="text-500">Size</th>
+                          <th class="text-500">Status</th>
+                          <th class="text-500">Actions</th>
+                        </tr>
+                      </ng-template>
+                      <ng-template pTemplate="body" let-file>
+                        <tr>
+                          <td>{{file.file}}</td>
+                          <td>{{file.type}}</td>
+                          <td>{{file.pages}}</td>
+                          <td>{{file.size}}</td>
+                          <td>{{file.status}}</td>
+                          <td>Delete</td>
+                        </tr>
+                      </ng-template>
+                    </p-table>
+                  </div>
+                </sm-card>
+
+                <sm-card header="Extracted Chunks" [icon]="Columns3">
+                  <div class="flex gap-2 align-items-center mb-3">
+                    <div><input pInputText placeholder="Filter by source filename"/></div>
+                    <div><input pInputText placeholder="Min tokens"/></div>
+                    <div><input pInputText placeholder="Sort by..."/></div>
+                    <div><button pButton size="small" label="Search" outlined></button></div>
+                  </div>
+                  <p-table [value]="chunks" [tableStyle]="{'table-layout': 'auto', 'width': '100%'}" styleClass="text-sm">
+                    <ng-template pTemplate="header">
+                      <tr>
+                        <th class="text-500">Chunk ID</th>
+                        <th class="text-500">Source</th>
+                        <th class="text-500">Tokens</th>
+                        <th class="text-500">Preview</th>
+                        <th class="text-500">Actions</th>
+                      </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-chunk>
+                      <tr>
+                        <td>{{chunk.id}}</td>
+                        <td>{{chunk.source}}</td>
+                        <td>{{chunk.tokens}}</td>
+                        <td>{{chunk.text}}</td>
+                        <td>Delete</td>
+                      </tr>
+                    </ng-template>
+                  </p-table>
+                </sm-card>
+              </div>
+
+              <div class="col">
+                <div class="flex flex-column gap-4">
+                  <sm-card header="Chunking Strategy" [icon]="Settings">
+                    <div class="flex flex-column gap-1 text-sm">
+
+                      <div class="field-checkbox align-items-start border-1 border-round-lg p-3 border-300">
+                        <p-radioButton name="chunking" value="structure" [(ngModel)]="chunkingStrategy" inputId="structure"></p-radioButton>
+                        <label for="structure" class="flex flex-column gap-1">
+                          <p>Document Structure</p>
+                          <small>Splits text automatically based on document headings, preserving meaning and flow. Ideal for well-structured Markdown files.</small>
+
+                          <div *ngIf="chunkingStrategy === 'structure'" class="formgrid grid text-sm p-fluid mt-2">
+                            <div class="field col-12">
+                              <label>Min. Length: 200</label>
+                              <p-slider [ngModel]="512" [max]="5000" [step]="100"/>
+                            </div>
+                            <div class="field col-12">
+                              <label>Max. Length: 8000</label>
+                              <p-slider [ngModel]="1024" [max]="10000" [step]="100"/>
+                            </div>
+                          </div>
+                        </label>
+                      </div>
+
+                      <div class="field-checkbox align-items-start border-1 border-round-lg p-3 border-300">
+                        <p-radioButton name="chunking" value="custom" [(ngModel)]="chunkingStrategy" inputId="custom"></p-radioButton>
+                        <label for="custom" class="flex flex-column gap-1">
+                          <p>Custom Delimiter</p>
+                          <small>Recursively apply multiple levels of configurable delimiters. Start with the highest-priority delimiters, then proceed to secondary options. Ideal for processing complex documents with varied structures.</small>
+
+                          <div *ngIf="chunkingStrategy === 'custom'" class="formgrid grid text-sm p-fluid mt-2">
+                            <div class="field col-12">
+                              <label>Chunk Size: 5000</label>
+                              <p-slider [ngModel]="5000" [max]="8000" [step]="100"/>
+                            </div>
+                            <div class="field col-12">
+                              <label>Chunk Overlap: 1000</label>
+                              <p-slider [ngModel]="1024" [max]="1000" [step]="100"/>
+                            </div>
+                            <div class="field col-12">
+                              <label>Delimiters:</label>
+                              <p-chips class="block" />
+                              <small>Hit Enter after each value</small>
+                            </div>
+                          </div>
+                        </label>
+                      </div>
+
+                      <div class="field-checkbox align-items-start border-1 border-round-lg p-3 border-300">
+                        <p-radioButton name="chunking" value="fixed" [(ngModel)]="chunkingStrategy" inputId="fixed"></p-radioButton>
+                        <label for="fixed" class="flex flex-column gap-1">
+                          <p>Fixed Length</p>
+                          <small>Split the text using a configurable delimiter, then merge segments to achieve the desired length. This method is ideal for processing standard text files efficiently.</small>
+
+                          <div *ngIf="chunkingStrategy === 'fixed'" class="formgrid grid text-sm p-fluid mt-2">
+                            <div class="field col-12">
+                              <label>Chunk Size: 5000</label>
+                              <p-slider [ngModel]="5000" [max]="8000" [step]="100"/>
+                            </div>
+                            <div class="field col-12">
+                              <label>Chunk Overlap: 1000</label>
+                              <p-slider [ngModel]="1024" [max]="1000" [step]="100"/>
+                            </div>
+                            <div class="field col-12">
+                              <label>Delimiter:</label>
+                              <p-chips class="block" />
+                              <small>Hit Enter after each value</small>
+                            </div>
+                          </div>
+                        </label>
+                      </div>
+
+                      <div class="flex gap-2">
+                        <button pButton size="small" label="Run Chunking"></button>
+                        <button pButton size="small" outlined  label="Reset"></button>
+                      </div>
+                    </div>
+                  </sm-card>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-3">
+              <p class="font-bold mb-3">Chunking Jobs</p>
+              <sm-job-list [executor]="ExecutorType.TEKTON" [type]="[IJobType.CHUNKING]" [showFilterPanel]="false"></sm-job-list>
+            </div>
+          </ng-template>
+        </p-stepperPanel>
+        <p-stepperPanel header="Generate Questions">
+          <ng-template pTemplate="content"  let-prevCallback="prevCallback" let-nextCallback="nextCallback" let-index="index">
+            <div class="grid gap-3">
+              <div class="col-8 flex flex-column gap-4">
+                <sm-card header="Generated Questions" [icon]="Columns3">
+                  <div class="flex gap-2 align-items-center mb-3">
+                    <div><input pInputText placeholder="Search..."/></div>
+                    <div><input pInputText placeholder="Source"/></div>
+                    <div><input pInputText placeholder="Min score"/></div>
+                    <div><input pInputText placeholder="Sort by..."/></div>
+                    <div><button pButton size="small" label="Search" outlined></button></div>
+                  </div>
+                  <p-table [value]="questions" [tableStyle]="{'table-layout': 'auto', 'width': '100%'}" styleClass="text-sm">
+                    <ng-template pTemplate="header">
+                      <tr>
+                        <th class="text-500">Question ID</th>
+                        <th class="text-500">Question</th>
+                        <th class="text-500">Source</th>
+                        <th class="text-500">Score</th>
+                        <th class="text-500">Actions</th>
+                      </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-question>
+                      <tr>
+                        <td>{{question.id}}</td>
+                        <td>{{question.text}}</td>
+                        <td>{{question.source}}</td>
+                        <td>{{question.score}}</td>
+                        <td>Delete</td>
+                      </tr>
+                    </ng-template>
+                  </p-table>
+                </sm-card>
+              </div>
+
+              <div class="col">
+                <div class="flex flex-column gap-3">
+                  <sm-card header="Generation Settings" [icon]="Settings">
+                    <div class="formgrid grid text-sm p-fluid">
+                      <div class="field col-12 md:col-6">
+                        <label>Model</label>
+                        <input pInputText type="text" placeholder="Choose model...">
+                      </div>
+                      <div class="field col-12 md:col-6">
+                        <label>Temperature</label>
+                        <p-inputNumber [max]="1" [min]="0" [step]="0.1" [maxFractionDigits]="1"></p-inputNumber>
+                      </div>
+                      <div class="field col-12 md:col-6">
+                        <label>Top-p</label>
+                        <p-inputNumber [max]="1" [min]="0" [step]="0.1" [maxFractionDigits]="1"></p-inputNumber>
+                      </div>
+                      <div class="field col-12 md:col-6">
+                        <label>Top-k</label>
+                        <p-inputNumber [max]="100" [min]="0" [step]="1" [maxFractionDigits]="0"></p-inputNumber>
+                      </div>
+
+                      <div class="field col-12">
+                        <label>Max Question Length: 240</label>
+                        <p-slider [ngModel]="240" [min]="10" [max]="1000" [step]="50"/>
+                      </div>
+
+                      <div class="field col-12">
+                        <p-checkbox [binary]="true" label="Enable COT"></p-checkbox>
+                        <small>Include the reasoning trace</small>
+                      </div>
+
+                      <div class="field col-12">
+                        <label>Generation Prompt</label>
+                        <textarea pInputTextarea [rows]="5"></textarea>
+                      </div>
+                      <div class="field col-12">
+                        <label>Labeling Prompt</label>
+                        <textarea pInputTextarea [rows]="5"></textarea>
+                      </div>
+                    </div>
+                    <div class="flex gap-2">
+                      <button pButton size="small" label="Generate"></button>
+                      <button pButton size="small" outlined  label="Reset"></button>
+                    </div>
+                  </sm-card>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-3">
+              <p class="font-bold mb-3">Generation Jobs</p>
+              <sm-job-list [executor]="ExecutorType.TEKTON" [type]="[IJobType.QUESTION_GENERATION]" [showFilterPanel]="false"></sm-job-list>
+            </div>
+          </ng-template>
+        </p-stepperPanel>
+        <p-stepperPanel header="Generate Answers">
+          <ng-template pTemplate="content"  let-prevCallback="prevCallback" let-nextCallback="nextCallback" let-index="index">
+            <div class="grid gap-3">
+              <div class="col-8 flex flex-column gap-4">
+                <sm-card header="Generated Questions" [icon]="Columns3">
+                  <div class="flex gap-2 align-items-center mb-3">
+                    <div><input pInputText placeholder="Search..."/></div>
+                    <div><input pInputText placeholder="Status"/></div>
+                    <div><input pInputText placeholder="Sort by..."/></div>
+                    <div><button pButton size="small" label="Search" outlined></button></div>
+                  </div>
+                  <p-table [value]="answers" [tableStyle]="{'table-layout': 'auto', 'width': '100%'}" styleClass="text-sm">
+                    <ng-template pTemplate="header">
+                      <tr>
+                        <th class="text-500">Answer ID</th>
+                        <th class="text-500">Question</th>
+                        <th class="text-500">Answer</th>
+                        <th class="text-500">Tokens</th>
+                        <th class="text-500">Status</th>
+                        <th class="text-500">Actions</th>
+                      </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-answer>
+                      <tr>
+                        <td>{{answer.id}}</td>
+                        <td>{{answer.question}}</td>
+                        <td>{{answer.text}}</td>
+                        <td>{{answer.tokens}}</td>
+                        <td>{{answer.status}}</td>
+                        <td>Delete</td>
+                      </tr>
+                    </ng-template>
+                  </p-table>
+                </sm-card>
+              </div>
+
+              <div class="col">
+                <div class="flex flex-column gap-3">
+                  <sm-card header="Generation Settings" [icon]="Settings">
+                    <div class="formgrid grid text-sm p-fluid">
+                      <div class="field col-12 md:col-6">
+                        <label>Model</label>
+                        <input pInputText type="text" placeholder="Choose model...">
+                      </div>
+                      <div class="field col-12 md:col-6">
+                        <label>Temperature</label>
+                        <p-inputNumber [max]="1" [min]="0" [step]="0.1" [maxFractionDigits]="1"></p-inputNumber>
+                      </div>
+                      <div class="field col-12 md:col-6">
+                        <label>Top-p</label>
+                        <p-inputNumber [max]="1" [min]="0" [step]="0.1" [maxFractionDigits]="1"></p-inputNumber>
+                      </div>
+                      <div class="field col-12 md:col-6">
+                        <label>Top-k</label>
+                        <p-inputNumber [max]="100" [min]="0" [step]="1" [maxFractionDigits]="0"></p-inputNumber>
+                      </div>
+
+                      <div class="field col-12">
+                        <label>Max Answer Length: 240</label>
+                        <p-slider [ngModel]="240" [min]="10" [max]="1000" [step]="50"/>
+                      </div>
+
+                      <div class="field col-12">
+                        <p-checkbox [binary]="true" label="Enable COT"></p-checkbox>
+                        <small>Include the reasoning trace</small>
+                      </div>
+
+                      <div class="field col-12">
+                        <label>Generation Prompt</label>
+                        <textarea pInputTextarea [rows]="5"></textarea>
+                      </div>
+                    </div>
+                    <div class="flex gap-2">
+                      <button pButton size="small" label="Generate"></button>
+                      <button pButton size="small" outlined  label="Reset"></button>
+                    </div>
+                  </sm-card>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-3">
+              <p class="font-bold mb-3">Generation Jobs</p>
+              <sm-job-list [executor]="ExecutorType.TEKTON" [type]="[IJobType.ANSWER_GENERATION]" [showFilterPanel]="false"></sm-job-list>
+            </div>
+          </ng-template>
+        </p-stepperPanel>
+        <p-stepperPanel header="Output">
+          <ng-template pTemplate="content"  let-prevCallback="prevCallback" let-index="index">
+            <sm-card header="Dataset info" [icon]="Flame" iconClass="text-orange-500" class="mb-5">
+              <div class="formgrid grid text-sm p-fluid">
+                <div class="field col-12">
+                  <label>Name</label>
+                  <input pInputText type="text" class="">
+                </div>
+                <div class="field col-12">
+                  <label>Description</label>
+                  <textarea pInputTextarea type="text" class="" rows="3"></textarea>
+                </div>
+                <div class="field col-12 md:col-6">
+                  <label>Repository</label>
+                  <input pInputText type="text" placeholder="Choose repository...">
+                </div>
+                <div class="field col-12 md:col-6">
+                  <label>Branch</label>
+                  <input pInputText type="text" class="">
+                </div>
+              </div>
+            </sm-card>
+            <div class="flex pt-4 justify-content-start">
+              <p-button label="Save" icon="pi pi-save" />
+            </div>
+          </ng-template>
+        </p-stepperPanel>
+      </p-stepper>
+    </ng-template>
+  </sm-page-loader>
+</sm-page>

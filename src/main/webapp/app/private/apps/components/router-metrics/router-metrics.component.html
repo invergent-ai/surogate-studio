@@ -1,0 +1,216 @@
+<sm-page-loader [loading]="loading">
+  <ng-template>
+    <!-- Container Selection -->
+    <p-card styleClass="mb-3">
+      <div class="field m-0">
+        <label class="font-normal">Choose Container:</label>
+        <p-dropdown
+          #containerDropdown
+          [options]="containers()"
+          [(ngModel)]="selectedContainer"
+          (onChange)="onContainerChange($event)"
+          optionLabel="label"
+          optionValue="value">
+        </p-dropdown>
+      </div>
+    </p-card>
+
+    <ng-container *ngIf="selectedContainer; else noMetrics">
+      <!-- Current Status Values -->
+      <div class="grid mb-4" *ngIf="currentValues">
+        <div class="col-12 md:col-3">
+          <p-card header="Requests Per Second" styleClass="text-center">
+            <div class="text-center">
+              <div class="text-4xl font-bold mb-2">
+                <p-tag
+                  [value]="formatNumber(currentValues.requestsPerSec || 0, 1)"
+                  [severity]="getThroughputSeverity()"
+                  styleClass="text-2xl px-3 py-2">
+                </p-tag>
+              </div>
+              <small class="text-500">Current throughput</small>
+            </div>
+          </p-card>
+        </div>
+
+        <div class="col-12 md:col-3">
+          <p-card header="Average Latency" styleClass="text-center">
+            <div class="text-center">
+              <div class="text-4xl font-bold mb-2">
+                <p-tag
+                  [value]="formatLatency(currentValues.avgLatency || 0)"
+                  [severity]="getLatencySeverity()"
+                  styleClass="text-2xl px-3 py-2">
+                </p-tag>
+              </div>
+              <small class="text-500">Response time</small>
+            </div>
+          </p-card>
+        </div>
+
+        <div class="col-12 md:col-3">
+          <p-card header="Active Connections" styleClass="text-center">
+            <div class="text-center">
+              <div class="text-4xl font-bold mb-2">
+                <p-tag
+                  [value]="currentValues.activeConnections.toString()"
+                  [severity]="getConnectionsSeverity()"
+                  styleClass="text-2xl px-3 py-2">
+                </p-tag>
+              </div>
+              <small class="text-500">Real-time connections</small>
+            </div>
+          </p-card>
+        </div>
+
+        <div class="col-12 md:col-3">
+          <p-card header="Healthy Workers" styleClass="text-center">
+            <div class="text-center">
+              <div class="text-4xl font-bold mb-2">
+                <p-tag
+                  [value]="currentValues.workersHealthy.toString()"
+                  severity="success"
+                  styleClass="text-2xl px-3 py-2">
+                </p-tag>
+              </div>
+              <small class="text-500">Available workers</small>
+            </div>
+          </p-card>
+        </div>
+      </div>
+
+      <!-- System Resources Row -->
+      <div class="grid mb-4" *ngIf="currentValues">
+        <div class="col-12 md:col-4">
+          <p-card header="CPU Usage" styleClass="text-center">
+            <div class="text-center">
+              <div class="text-4xl font-bold mb-2">
+                <p-tag
+                  [value]="formatPercentage(currentValues.cpuUsage || 0)"
+                  [severity]="getResourceSeverity(currentValues.cpuUsage || 0)"
+                  styleClass="text-2xl px-3 py-2">
+                </p-tag>
+              </div>
+              <small class="text-500">Router CPU</small>
+            </div>
+          </p-card>
+        </div>
+
+        <div class="col-12 md:col-4">
+          <p-card header="Memory Usage" styleClass="text-center">
+            <div class="text-center">
+              <div class="text-4xl font-bold mb-2">
+                <p-tag
+                  [value]="formatPercentage(currentValues.memoryUsage || 0)"
+                  [severity]="getResourceSeverity(currentValues.memoryUsage || 0)"
+                  styleClass="text-2xl px-3 py-2">
+                </p-tag>
+              </div>
+              <small class="text-500">Router Memory</small>
+            </div>
+          </p-card>
+        </div>
+
+        <div class="col-12 md:col-4">
+          <p-card header="Worker Load" styleClass="text-center">
+            <div class="text-center">
+              <div class="text-4xl font-bold mb-2">
+                <p-tag
+                  [value]="formatNumber(currentValues.averageWorkerLoad || 0, 2)"
+                  [severity]="getWorkerLoadSeverity()"
+                  styleClass="text-2xl px-3 py-2">
+                </p-tag>
+              </div>
+              <small class="text-500">QPS per worker</small>
+            </div>
+          </p-card>
+        </div>
+      </div>
+
+      <!-- Time Series Charts -->
+      <div class="grid" *ngIf="timeSeriesData">
+        <!-- Performance Chart (Dual Axis) -->
+        <div class="col-12 lg:col-6">
+          <p-card header="Performance Overview" styleClass="text-center">
+            <p-chart
+              type="line"
+              height="300"
+              [data]="timeSeriesData.performanceData"
+              [options]="initDualAxisChartOptions()"
+              *ngIf="timeSeriesData.performanceData">
+            </p-chart>
+          </p-card>
+        </div>
+
+        <!-- Latency & Load Chart (Dual Axis) -->
+        <div class="col-12 lg:col-6">
+          <p-card header="Latency & Worker Load" styleClass="text-center">
+            <p-chart
+              type="line"
+              height="300"
+              [data]="timeSeriesData.latencyLoadData"
+              [options]="initDualAxisChartOptions()"
+              *ngIf="timeSeriesData.latencyLoadData">
+            </p-chart>
+          </p-card>
+        </div>
+
+        <!-- System Resources Chart -->
+        <div class="col-12 lg:col-6">
+          <p-card header="System Resources" styleClass="text-center">
+            <p-chart
+              type="line"
+              height="300"
+              [data]="timeSeriesData.systemResourcesData"
+              [options]="chartOptions"
+              *ngIf="timeSeriesData.systemResourcesData">
+            </p-chart>
+          </p-card>
+        </div>
+
+        <!-- Error Rates Chart -->
+        <div class="col-12 lg:col-6">
+          <p-card header="Error & Timeout Rates" styleClass="text-center">
+            <p-chart
+              type="line"
+              height="300"
+              [data]="timeSeriesData.errorRateData"
+              [options]="chartOptions"
+              *ngIf="timeSeriesData.errorRateData">
+            </p-chart>
+          </p-card>
+        </div>
+
+        <!-- Health Chart -->
+        <div class="col-12 lg:col-6">
+          <p-card header="Worker Health" styleClass="text-center">
+            <p-chart
+              type="line"
+              height="300"
+              [data]="timeSeriesData.healthData"
+              [options]="chartOptions"
+              *ngIf="timeSeriesData.healthData">
+            </p-chart>
+          </p-card>
+        </div>
+      </div>
+
+      <!-- Last Updated Info -->
+      <div class="text-center mt-3" *ngIf="currentValues">
+        <small class="text-500">
+          Last updated: {{ currentValues.lastUpdated | date:'medium' }}
+        </small>
+      </div>
+    </ng-container>
+
+    <ng-template #noMetrics>
+      <div class="text-center mt-4">
+        <i class="pi pi-info-circle text-3xl text-500 mb-3"></i>
+        <p class="text-500">
+          <span *ngIf="!status()">Loading router status...</span>
+          <span *ngIf="status() && containers().length === 0">No router containers available</span>
+        </p>
+      </div>
+    </ng-template>
+  </ng-template>
+</sm-page-loader>

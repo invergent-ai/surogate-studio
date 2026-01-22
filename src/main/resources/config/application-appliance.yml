@@ -1,0 +1,138 @@
+# ===================================================================
+# https://www.jhipster.tech/common-application-properties/
+# http://docs.spring.io/spring-boot/docs/current/reference/html/common-application-properties.html
+# ===================================================================
+spring:
+  application:
+    name: Surogate Studio
+  liquibase:
+    enabled: false
+  jmx:
+    enabled: false
+  threads:
+    virtual:
+      enabled: true
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+      enabled: true
+  data:
+    jpa:
+      repositories:
+        bootstrap-mode: deferred
+  sql:
+    init:
+      mode: always
+      continue-on-error: true
+      data-locations: optional:classpath*:data-appliance.sql
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate.jdbc.time_zone: UTC
+      hibernate.timezone.default_storage: NORMALIZE
+      #hibernate.type.preferred_instant_jdbc_type: TIMESTAMP
+      hibernate.id.new_generator_mappings: true
+      hibernate.connection.provider_disables_autocommit: true
+      hibernate.cache.use_second_level_cache: true
+      hibernate.cache.use_query_cache: false
+      hibernate.generate_statistics: false
+      # modify batch size as necessary
+      hibernate.jdbc.batch_size: 25
+      hibernate.order_inserts: true
+      hibernate.order_updates: true
+      hibernate.query.fail_on_pagination_over_collection_fetch: true
+      hibernate.query.in_clause_parameter_padding: true
+      hibernate.javax.cache.missing_cache_strategy: create
+    hibernate:
+      ddl-auto: update
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+        implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
+    defer-datasource-initialization: true
+    show-sql: false
+  messages:
+    basename: i18n/messages
+  main:
+    allow-bean-definition-overriding: true
+  mvc:
+    problemdetails:
+      enabled: true
+  thymeleaf:
+    mode: HTML
+
+server:
+  compression:
+    enabled: true
+  http2:
+    enabled: false
+  servlet:
+    session:
+      cookie:
+        http-only: true
+  max-http-request-header-size: 200MB
+
+springdoc:
+  show-actuator: false
+
+# Properties to be exposed on the /info management endpoint
+info:
+  # Comma separated list of profiles that will trigger the ribbon to show
+  display-ribbon-on-profiles: 'dev'
+
+# ===================================================================
+# JHipster specific properties
+#
+# Full reference is available at: https://www.jhipster.tech/common-application-properties/
+# ===================================================================
+
+jhipster:
+  clientApp:
+    name: 'stateMeshApp'
+  security:
+    content-security-policy: "frame-src 'self' data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://storage.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com;"
+
+# ===================================================================
+# Application specific properties
+# Add your own application properties here, see the ApplicationProperties class
+# to have type-safe configuration, like in the JHipsterProperties above
+#
+# More documentation is available at:
+# https://www.jhipster.tech/common-application-properties/
+# ===================================================================
+
+# application:
+app:
+  rate-limiter:
+    rate-limit-tokens: 600 # Tokens per minute => 10 req / sec
+    smid-rate-limit-tokens: 10 # Tokens per 10 seconds => 2 req / 10 sec (must be at least two)
+  node-reservation-duration: 5265000 # Minutes # Will last ~10years because we need to allow nodes to reboot
+  check-node-resource-updates: false
+  job:
+    delete-terminating-schedule: 0 0 0 * * ? # // Every day at midnight
+    update-node-status-schedule: 0 0/1 * * * ? # Every minute
+    terminating-pods-delete-finalizers: true
+  k8s-task:
+    resource-operation-poll-interval: 3 # Seconds
+    resource-operation-wait-timeout: 20 # Seconds
+    resource-operation-watch-timeout: 30 # Seconds - Deprecated
+    request-vs-limits-coefficient-cpu: 0.25
+    request-vs-limits-coefficient-memory: 0.75
+  metrics:
+    logs-watch-timeout: 600 # Seconds
+    shell-watch-timeout: 600 # Seconds
+    metrics-poll-interval: 5 # Seconds
+    metrics-wait-timeout: 600 # Seconds
+    status-poll-interval: 3 # Seconds
+    status-wait-timeout: 1800 # Seconds
+  profile:
+    datacenters:
+      - default
+    rayClusters:
+      - name: raycluster-kuberay
+        cid: densemax
+        url: http://localhost:8265
+        aimUrl: http://localhost:31002
+  mail:
+    from: noreply@densemax.local
+

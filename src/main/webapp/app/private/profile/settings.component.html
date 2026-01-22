@@ -1,0 +1,187 @@
+<sm-page>
+  <sm-page-loader [loading]="loading">
+    <ng-template>
+      <div>
+        <h1 class="page-title">User Profile</h1>
+        <p class="page-subtitle">Your user details on Surogate Studio</p>
+      </div>
+
+      <p-card styleClass="mt-5">
+        <form name="form" role="form" (ngSubmit)="save()" [formGroup]="settingsForm" *ngIf="settingsForm.value.login">
+          <div class="field mb-4">
+            <label class="block text-sm mb-1" for="firstName">First Name</label>
+            <input
+              type="text"
+              pInputText
+              class="w-full"
+              id="firstName"
+              name="firstName"
+              formControlName="firstName"
+            />
+
+            <div
+              *ngIf="settingsForm.get('firstName')!.invalid && (settingsForm.get('firstName')!.dirty || settingsForm.get('firstName')!.touched)">
+              <small
+                class="p-error block"
+                *ngIf="settingsForm.get('firstName')?.errors?.required"
+              >Your first name is required.</small>
+
+              <small
+                class="p-error block"
+                *ngIf="settingsForm.get('firstName')?.errors?.minlength"
+              >Your first name is required to be at least 1 character</small>
+
+              <small
+                class="p-error block"
+                *ngIf="settingsForm.get('firstName')?.errors?.maxlength"
+              >Your first name cannot be longer than 50 characters</small>
+            </div>
+          </div>
+
+          <div class="field mb-4">
+            <label class="block text-sm mb-1" for="lastName">Last Name</label>
+            <input
+              type="text"
+              pInputText
+              class="w-full"
+              id="lastName"
+              name="lastName"
+              formControlName="lastName"
+            />
+
+            <div
+              *ngIf="settingsForm.get('lastName')!.invalid && (settingsForm.get('lastName')!.dirty || settingsForm.get('lastName')!.touched)">
+              <small
+                class="p-error block"
+                *ngIf="settingsForm.get('lastName')?.errors?.required"
+              >Your last name is required.</small>
+
+              <small
+                class="p-error block"
+                *ngIf="settingsForm.get('lastName')?.errors?.minlength"
+              >Your last name is required to be at least 1 character</small>
+
+              <small
+                class="p-error block"
+                *ngIf="settingsForm.get('lastName')?.errors?.maxlength"
+              >Your last name cannot be longer than 50 characters</small>
+            </div>
+          </div>
+
+          <div class="field mb-4">
+            <label class="block text-sm mb-1" for="email">Email</label>
+            <input
+              [readOnly]="true"
+              type="email"
+              pInputText
+              class="w-full"
+              id="email"
+              name="email"
+              [placeholder]="'global.form.email.placeholder' | translate"
+              formControlName="email"
+              data-cy="email"
+            />
+
+            <div
+              *ngIf="settingsForm.get('email')!.invalid && (settingsForm.get('email')!.dirty || settingsForm.get('email')!.touched)">
+              <small
+                class="p-error block"
+                *ngIf="settingsForm.get('email')?.errors?.required"
+              >Your email is required.</small>
+
+              <small
+                class="p-error block"
+                *ngIf="settingsForm.get('email')?.errors?.email"
+              >Your email is invalid.</small>
+
+              <small
+                class="p-error block"
+                *ngIf="settingsForm.get('email')?.errors?.minlength"
+              >Your email is required to be at least 5 characters.</small>
+
+              <small
+                class="p-error block"
+                *ngIf="settingsForm.get('email')?.errors?.maxlength"
+              >Your email cannot be longer than 50 characters.</small>
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <button pButton type="submit" [disabled]="settingsForm.invalid" label="Save settings" severity="primary" size="small"></button>
+          </div>
+        </form>
+      </p-card>
+
+      <div class="mt-3">
+        <p-accordion #passwordAccordion>
+          <p-accordionTab>
+            <ng-template pTemplate="header">
+              <span>Change Password</span>
+            </ng-template>
+
+            <form name="passwordForm" role="form" class="p-2" (ngSubmit)="changePassword()" [formGroup]="passwordForm">
+              <div class="field mb-4">
+                <label class="block text-sm mb-1">Password</label>
+                <div class="p-input-icon-right w-full">
+                  <i class="pi" [ngClass]="showCurrentPassword ? 'pi-eye-slash' : 'pi-eye'"
+                     (click)="showCurrentPassword = !showCurrentPassword"
+                     style="cursor: pointer"></i>
+                  <input [type]="showCurrentPassword ? 'text' : 'password'"
+                         pInputText
+                         class="w-full"
+                         formControlName="currentPassword"
+                         placeholder="Current password"/>
+                </div>
+              </div>
+
+              <div class="field mb-4">
+                <label class="block text-sm mb-1">New Password</label>
+                <div class="p-input-icon-right w-full">
+                  <i class="pi" [ngClass]="showNewPassword ? 'pi-eye-slash' : 'pi-eye'"
+                     (click)="showNewPassword = !showNewPassword"
+                     style="cursor: pointer"></i>
+                  <input [type]="showNewPassword ? 'text' : 'password'"
+                         pInputText
+                         class="w-full"
+                         formControlName="newPassword"
+                         placeholder="New password"/>
+                </div>
+              </div>
+
+              <div class="field mb-4">
+                <label class="block text-sm mb-1">Confirm Password</label>
+                <div class="p-input-icon-right w-full">
+                  <i class="pi" [ngClass]="showConfirmPassword ? 'pi-eye-slash' : 'pi-eye'"
+                     (click)="showConfirmPassword = !showConfirmPassword"
+                     style="cursor: pointer"></i>
+                  <input [type]="showConfirmPassword ? 'text' : 'password'"
+                         pInputText
+                         class="w-full"
+                         formControlName="confirmPassword"
+                         placeholder="Confirm new password"/>
+                </div>
+              </div>
+
+              <div class="field mb-3">
+                <small class="p-error block" *ngIf="passwordForm.get('newPassword').value !== passwordForm.get('confirmPassword').value">
+                  Passwords do not match
+                </small>
+              </div>
+
+              <div>
+                <button pButton
+                        type="submit"
+                        [disabled]="!canChangePassword()"
+                        label="Change Password"
+                        class="p-button-primary">
+                </button>
+              </div>
+            </form>
+          </p-accordionTab>
+        </p-accordion>
+      </div>
+    </ng-template>
+  </sm-page-loader>
+</sm-page>
+
+<p-confirmDialog></p-confirmDialog>

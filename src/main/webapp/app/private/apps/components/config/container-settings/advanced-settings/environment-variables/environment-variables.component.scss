@@ -1,0 +1,101 @@
+:host ::ng-deep {
+  .card {
+    background: var(--surface-card);
+    border: 1px solid var(--surface-border);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border-radius: 6px;
+  }
+
+  .env-var-table {
+    .p-inputtext {
+      background-color: var(--surface-ground);
+      border-radius: 6px;
+      border: 1px solid var(--surface-border);
+      padding: 0.5rem;
+
+      &:focus {
+        box-shadow: none;
+        border-color: var(--primary-color);
+      }
+    }
+
+    .custom-button {
+      background-color: transparent;
+      border: 1px solid var(--primary-color);
+      color: var(--primary-color);
+      border-radius: 6px;
+
+      &:hover {
+        background: var(--primary-color);
+        color: var(--surface-ground);
+      }
+    }
+
+    .p-button-danger {
+      &.p-button-text {
+        color: var(--red-500);
+        background: transparent;
+
+        &:hover {
+          background: transparent;
+
+          .p-button-icon {
+            color: var(--red-200);
+            transition: color 0.2s;
+          }
+        }
+
+        &:focus {
+          box-shadow: none;
+        }
+      }
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      min-height: 70px;
+
+      .p-error {
+        color: var(--red-500);
+        font-size: 0.75rem;
+        margin-top: 0.25rem;
+        position: absolute;
+        bottom: -20px;
+      }
+    }
+
+    .env-var-entry {
+      margin-bottom: 2rem;
+      position: relative;
+    }
+  }
+}
+
+.action-buttons {
+  margin-left: auto;
+  order: 2;
+}
+
+.hidden-file-input {
+  opacity: 0;
+  position: absolute;
+  z-index: -1;
+  width: 0.1px;
+  height: 0.1px;
+  overflow: hidden;
+
+  input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+  }
+}
+
+

@@ -1,0 +1,30 @@
+<sm-page>
+  <sm-page-loader>
+    <ng-template>
+      <div class="mb-3">
+        <h1 class="page-title text-xl flex gap-3">
+          <span class="font-medium">{{ repository().metadata?.displayName  ? repository().metadata.displayName: repository().id }}</span>
+          <p-tag severity="info">
+            <div class="flex gap-1 align-items-center px-1">
+              <i-lucide [img]="Bot" class="w-1rem h-1rem"></i-lucide>
+              <p>Model</p>
+            </div>
+          </p-tag>
+        </h1>
+      </div>
+
+      <p-tabMenu [model]="menu" [activeItem]="menu[2]">
+        <ng-template pTemplate="item" let-item>
+          <a [routerLink]="item.route" [queryParams]="item.queryParams" class="p-menuitem-link">
+            <span [class]="item.icon"></span>
+            <span class="ml-2">{{ item.label }}</span>
+          </a>
+        </ng-template>
+      </p-tabMenu>
+
+      <div class="mt-3">
+        <sm-hub-refs [repository]="repository()" type="tag"></sm-hub-refs>
+      </div>
+    </ng-template>
+  </sm-page-loader>
+</sm-page>

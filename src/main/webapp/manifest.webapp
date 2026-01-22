@@ -1,0 +1,11 @@
+{
+  "name": "Surogate Studio",
+  "short_name": "Surogate",
+  "icons": [
+  ],
+  "theme_color": "#000000",
+  "background_color": "#e0e0e0",
+  "start_url": ".",
+  "display": "standalone",
+  "orientation": "portrait"
+}

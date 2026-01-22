@@ -1,0 +1,95 @@
+<div class="container-wrapper" [formGroup]="containerForm">
+  <p class="font-bold mb-1">Resource allocation</p>
+  <small class="block text-color">Set custom resource limits for the container.</small>
+
+  <div class="mt-3">
+    <p-inputSwitch [(ngModel)]="showForm" [ngModelOptions]="{standalone: true}"></p-inputSwitch>
+
+    <div class="mt-3" *ngIf="showForm">
+<!--      Uncomment this when GPU is also available-->
+
+<!--      <div class="flex align-items-center justify-content-end w-full">-->
+<!--        <p-dropdown-->
+<!--          [options]="resourceTypes" appendTo="body"-->
+<!--          formControlName="resourceType"-->
+<!--          placeholder="Select Resource Type"-->
+<!--          (onChange)="onResourceTypeChange()"-->
+<!--          (click)="$event.stopPropagation()"-->
+<!--          class="w-15rem">-->
+<!--        </p-dropdown>-->
+<!--      </div>-->
+
+      <div class="resource-content">
+        <!-- Resource Type Dropdown -->
+        <div class="grid">
+          <!-- CPU Section -->
+          <div *ngIf="showCPUSettings()" [ngClass]="getColumnClass()">
+            <div class="field">
+<!--              Requests impact the k8s scheduler which looks for the requested minimum of resources-->
+<!--              Limits are written in cgroups which limit the maximum allocation-->
+<!--              We will allow users to configure just the limits and handle ourselves the requests in the BE with a configurable coefficient-->
+
+<!--              <div class="p-inputgroup">-->
+<!--                <p-inputNumber id="cpuRequest" mode="decimal" inputId="cpuRequest"-->
+<!--                               formControlName="cpuRequest" [showButtons]="true" [min]="1" [max]="100"></p-inputNumber>-->
+<!--                <span class="p-inputgroup-addon">cores</span>-->
+<!--              </div>-->
+            </div>
+            <div class="field mt-4">
+              <label class="block mb-3">CPU Limit</label>
+              <div class="p-inputgroup">
+                <p-inputNumber id="cpuLimit" mode="decimal" inputId="cpuLimit"
+                               [minFractionDigits]="2" [maxFractionDigits]="3" [step]="0.01"
+                               formControlName="cpuLimit" [showButtons]="true" [min]="0.001" [max]="100"></p-inputNumber>
+                <span class="p-inputgroup-addon">cores</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Memory Section -->
+          <div [ngClass]="getColumnClass()">
+            <div class="field">
+<!--              <div class="p-inputgroup">-->
+<!--                <p-inputNumber id="memRequest" mode="decimal" inputId="memRequest"-->
+<!--                               formControlName="memRequest" [showButtons]="true" [min]="256" [max]="262144"></p-inputNumber>-->
+<!--                <span class="p-inputgroup-addon">MB</span>-->
+<!--              </div>-->
+            </div>
+            <div class="field mt-4">
+              <label class="block mb-3">Memory Limit</label>
+              <div class="p-inputgroup">
+                <p-inputNumber id="memLimit" mode="decimal" inputId="memLimit"
+                               formControlName="memLimit" [showButtons]="true" [min]="256" [max]="262144"></p-inputNumber>
+                <span class="p-inputgroup-addon">MB</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- GPU Section -->
+          <div [ngClass]="getColumnClass()">
+<!--            <div class="field">-->
+<!--              <div class="flex align-items-center gap-2 mb-3">-->
+<!--                <img src="../../../../../../assets/layout/images/video-card-container.svg" class="resource-icon" alt=""/>-->
+<!--                <label>GPU Type</label>-->
+<!--              </div>-->
+<!--              <p-dropdown [options]="gpuTypes"-->
+<!--                          formControlName="gpuType" appendTo="body"-->
+<!--                          placeholder="Select GPU Type"-->
+<!--                          class="w-full">-->
+<!--              </p-dropdown>-->
+<!--            </div>-->
+            <div class="field mt-4">
+              <label class="block mb-3">GPU Limit</label>
+              <div class="p-inputgroup">
+                <p-inputNumber id="gpuLimit" mode="decimal" inputId="gpuLimit"
+                               formControlName="gpuLimit" [showButtons]="true" [min]="0" [max]="100"></p-inputNumber>
+                <span class="p-inputgroup-addon">units</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

@@ -1,0 +1,57 @@
+<div class="mt-2 mb-1">
+  <form [formGroup]="registryForm">
+    <div class="col-12" style="margin-top: 0.25rem;">
+      <span>Use your private Docker repository or registry</span>
+    </div>
+
+    <div class="flex flex-column px-2">
+      <!-- Registry URL -->
+      <div class="field">
+        <input pInputText
+               placeholder="Repository name or Registry URL"
+               formControlName="registryUrl"
+               class="w-full dark-input"
+               id="registryUrl"/>
+      </div>
+
+      <!-- Registry Username -->
+      <div class="field">
+        <input pInputText
+               placeholder="Username"
+               formControlName="registryUser"
+               class="w-full dark-input"
+               id="registryUser"/>
+      </div>
+
+      <!-- Registry Password -->
+      <div class="field">
+        <input pInputText
+               type="password"
+               placeholder="Password"
+               formControlName="registryPassword"
+               class="w-full dark-input"
+               id="registryPassword"/>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex justify-content-center mt-1 gap-2">
+      <button pButton size="small" label="Cancel"
+              type="button"
+              severity="danger"
+              (click)="hide()">
+      </button>
+      <button pButton size="small" label="Save"
+              type="button"
+              severity="success"
+              (click)="saveRegistry()">
+      </button>
+      <button pButton size="small" label="Back to DockerHub"
+              pTooltip="Go back to DockerHub"
+              type="button"
+              severity="secondary"
+              (click)="cancelPrivate()">
+      </button>
+    </div>
+  </form>
+</div>

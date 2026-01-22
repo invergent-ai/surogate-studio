@@ -1,0 +1,5 @@
+export enum CloudStatus {
+  INITIALIZED = 'INITIALIZED',
+  CONFIGURED = 'CONFIGURED',
+  PROVISIONED = 'PROVISIONED',
+}

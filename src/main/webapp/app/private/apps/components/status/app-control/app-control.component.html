@@ -1,0 +1,30 @@
+<div class="">
+  <button pButton size="small" severity="success" icon="pi pi-play" tooltipPosition="bottom" pTooltip="Start"
+          [loading]="loading()" [disabled]="loading() || startDisabled()"
+          (click)="startApp()"></button>
+  <button pButton size="small" severity="danger" icon="pi pi-stop" tooltipPosition="bottom" pTooltip="Stop"
+          [loading]="loading()" [disabled]="loading() || stopDisabled()"
+          (click)="stopApp()"></button>
+  <button pButton size="small" icon="pi pi-replay" tooltipPosition="bottom" pTooltip="Restart"
+          [loading]="loading()" [disabled]="loading()" (click)="restartApp()"></button>
+
+  @if (application()?.mode !== ApplicationMode.MODEL) {
+    <button pButton size="small" icon="pi pi-arrows-alt" tooltipPosition="bottom" pTooltip="Scale"
+          [loading]="loading()" [disabled]="loading()" (click)="op.toggle($event)"></button>
+  }
+
+  <p-overlayPanel #op [showCloseIcon]="false" class="w-auto">
+    <!-- Replicas -->
+    <div class="flex flex-column gap-3 w-15rem">
+      <label for="replicas">Replicas:</label>
+      <p-inputGroup id="replicas">
+        <p-inputNumber [(ngModel)]="replicas" mode="decimal" [min]="0" [max]="10" [size]="2"
+                       buttonLayout="horizontal" incrementButtonIcon="pi pi-plus"  decrementButtonIcon="pi pi-minus"
+                       [showButtons]="true"></p-inputNumber>
+        <p-inputGroupAddon class="py-0 bg-transparent">
+          <button pButton type="button" [disabled]="loading()" (click)="scaleApp()" [loading]="loading()" label="Scale"></button>
+        </p-inputGroupAddon>
+      </p-inputGroup>
+    </div>
+  </p-overlayPanel>
+</div>

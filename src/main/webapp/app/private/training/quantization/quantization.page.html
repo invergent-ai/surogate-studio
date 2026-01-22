@@ -1,0 +1,114 @@
+<sm-page>
+  <sm-page-loader>
+    <ng-template>
+      <div class="mb-5">
+        <h1 class="page-title">Quantize model</h1>
+        <p class="page-subtitle">Shrink model size and speed up inference by lowering numeric precision.</p>
+      </div>
+
+      <form [formGroup]="form" class="grid gap-3">
+        <div class="col-8 flex flex-column gap-4">
+          <sm-card header="Run basics" [icon]="Flame" iconClass="text-orange-500">
+            <ng-template pTemplate="toolbar">
+              <p-tag severity="secondary" rounded>
+                <div class="p-fluid p-1 font-normal text-sm">
+                  <p-checkbox [binary]="true" formControlName="fromCheckpoint"
+                              label="Continue from checkpoint">
+                  </p-checkbox>
+                </div>
+              </p-tag>
+            </ng-template>
+
+            <div class="formgrid grid text-sm p-fluid">
+              <div class="field col-12">
+                <sm-label-tooltip [tooltip]="BASE_RUN_NAME">Run name</sm-label-tooltip>
+                <input pInputText type="text" formControlName="runName">
+              </div>
+              <div class="field col-12 md:col-6">
+                <sm-label-tooltip [tooltip]="BASE_MODEL_REPOSITORY">Model repository</sm-label-tooltip>
+                <sm-repo-selector formControlName="baseModel" [repoType]="'model'"></sm-repo-selector>
+              </div>
+              <div class="field col-12 md:col-6">
+                <sm-label-tooltip [tooltip]="BASE_NEW_BRANCH">New Branch</sm-label-tooltip>
+                <input pInputText type="text" formControlName="newBranch" class="">
+              </div>
+              <div *ngIf="form.value.fromCheckpoint" class="field col-12 md:col-6">
+                <sm-label-tooltip [tooltip]="BASE_CHECKPOINT">Base checkpoint</sm-label-tooltip>
+                <input pInputText type="text" formControlName="checkpoint" placeholder="Choose checkpoint from model repository...">
+              </div>
+              <div class="field col-12">
+                <label>Description</label>
+                <textarea pInputTextarea type="text" formControlName="description" placeholder="Describe your magic..." rows="3"></textarea>
+              </div>
+            </div>
+          </sm-card>
+
+          <ng-container formArrayName="datasets">
+            <sm-dataset-table-chooser task="sft" [formArray]="datasets" title="Alignment Datasets"></sm-dataset-table-chooser>
+          </ng-container>
+
+          <div class="flex justify-content-between">
+            <p class="text-500">Config is saved as a draft until launch.</p>
+            <div class="flex gap-2">
+              <button pButton size="small" outlined class="flex gap-1" (click)="save()">
+                <i-lucide [img]="Save" class="w-1rem h-1rem"></i-lucide>
+                Save Draft
+              </button>
+              <button pButton size="small" class="flex gap-1" [disabled]="!form.valid" (click)="launch()">
+                <i-lucide [img]="ArrowRight" class="w-1rem h-1rem"></i-lucide>
+                Launch
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="col">
+          <div class="flex flex-column gap-4">
+            <sm-card header="Run summary" [icon]="ClipboardList">
+              <ng-template pTemplate="toolbar">
+                <p-tag severity="secondary" rounded value="Draft"></p-tag>
+              </ng-template>
+
+              <div class="flex flex-column gap-2">
+                <div class="flex justify-content-between text-sm">
+                  <p class="text-500">Run</p>
+                  <p class="font-semibold">-</p>
+                </div>
+                <div class="flex justify-content-between text-sm">
+                  <p class="text-500">Output</p>
+                  <p class="font-semibold">qwen3-6b-pretrain</p>
+                </div>
+                <div class="flex justify-content-between text-sm">
+                  <p class="text-500">Precision</p>
+                  <p class="font-semibold">FP4</p>
+                </div>
+              </div>
+
+              <div class="grid mt-3">
+                <div class="col-6">
+                  <div class="card border-round-xl border-1 border-300">
+                    <div class="flex flex-column justify-content-center align-items-center gap-2">
+                      <p class="text-500 text-xs">Throughput est.</p>
+                      <p class="text-900 text-lg font-semibold">10 s/it</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="card border-round-xl border-1 border-300">
+                    <div class="flex flex-column justify-content-center align-items-center gap-2">
+                      <p class="text-500 text-xs">ETA</p>
+                      <p class="text-900 text-lg font-semibold">30min</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </sm-card>
+
+            <sm-job-notification-settings></sm-job-notification-settings>
+          </div>
+        </div>
+      </form>
+
+    </ng-template>
+  </sm-page-loader>
+</sm-page>

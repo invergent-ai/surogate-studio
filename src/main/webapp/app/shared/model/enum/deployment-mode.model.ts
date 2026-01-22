@@ -1,0 +1,4 @@
+export enum DeploymentMode {
+  AGGREGATED = 'AGGREGATED',
+  DISAGGREGATED = 'DISAGGREGATED'
+}

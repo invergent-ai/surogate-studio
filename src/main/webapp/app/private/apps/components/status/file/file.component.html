@@ -1,0 +1,78 @@
+<!-- Drop Zone -->
+<div ng2FileDrop
+     [ngClass]="{'upload-dropzone-drag': dragOver}"
+     (fileOver)="onFileOver($event)"
+     (onFileDrop)="onFileDrop($event)"
+     [uploader]="uploader"
+     class="upload-dropzone text-center p-5 mb-3 cursor-pointer"
+     (click)="fileInput.click()"
+     role="button"
+     tabindex="0"
+     aria-label="Drop files here or click to browse">
+  <i class="pi pi-cloud-upload text-6xl text-primary mb-3"></i>
+  <h3 class="text-800 m-0 mb-2">Drag & Drop files here</h3>
+  <p class="text-700"><i class="pi pi-plus-circle mr-1"></i>or click to browse files</p>
+  <p class="text-sm text-500 mt-2">Supported types: PDF, JPG, PNG, TIF, ODT, TXT, DOC, DOCX, YAML</p>
+  <p class="text-sm text-500">Maximum file size: 20MB</p>
+  <!-- Hidden file input with correct styling -->
+  <div class="hidden-file-input">
+    <input #fileInput type="file" ng2FileSelect [uploader]="uploader" multiple
+           [accept]="supportedExtensions"
+           aria-label="Select files to upload"/>
+  </div>
+
+  <!-- Upload Queue -->
+  <div *ngIf="uploader?.queue?.length > 0" class="upload-queue mb-3">
+    <div class="flex justify-content-between align-items-center mb-2">
+      <h5 class="m-0">Files to upload ({{ uploader.queue.length }})</h5>
+      <div class="flex">
+        <input pInputText (click)="$event.stopPropagation()" [(ngModel)]="path"
+               placeholder="Path in container" class="w-full dark-input mr-3" />
+        <p-button icon="pi pi-upload" class="p-button-text p-button-success p-button-sm"
+                  (click)="uploadFiles($event)" pTooltip="Upload" tooltipPosition="top" aria-label="Upload"
+                  [disabled]="!uploader.getNotUploadedItems().length || isUploading"></p-button>
+        <p-button *ngIf="uploader.queue.length > 0"
+                  icon="pi pi-trash" styleClass="p-button-text p-button-danger p-button-sm"
+                  (click)="clearAll($event)"
+                  pTooltip="Clear all files"
+                  tooltipPosition="top"
+                  aria-label="Clear all files">
+        </p-button>
+      </div>
+
+    </div>
+
+    <p-scrollPanel [style]="{width: '100%', maxHeight: '200px'}" styleClass="border-1 border-round">
+      <div *ngFor="let item of uploader.queue" class="file-item p-2 border-bottom-1 surface-border">
+        <div class="flex justify-content-between align-items-center">
+          <div class="flex align-items-center">
+            <i class="pi pi-file mr-2 text-primary"></i>
+            <span class="file-name font-medium">{{ item?.file?.name }}</span>
+            <span class="file-size ml-2 text-500">({{ item?.file?.size! / 1024 | number:'1.0-1' }} KB)</span>
+          </div>
+          <button pButton pRipple icon="pi pi-times" class="p-button-text p-button-danger p-button-sm mr-3"
+                  (click)="removeFile(item, $event)" pTooltip="Remove file" tooltipPosition="top"
+                  [disabled]="isUploading" aria-label="Remove file"></button>
+        </div>
+        <p-progressBar *ngIf="item.isUploading" [value]="item.progress" styleClass="mt-1" [showValue]="true"></p-progressBar>
+        <p-progressBar *ngIf="item.isSuccess" [value]="100" styleClass="mt-1"></p-progressBar>
+        <!-- Display specific error for item if available -->
+        <small *ngIf="item.isError" class="p-error">Upload failed. {{ item.formData?.['_error'] }}</small>
+      </div>
+    </p-scrollPanel>
+  </div>
+  <!-- Upload Progress Indicator -->
+  <div *ngIf="isUploading" class="upload-progress mb-3">
+    <p-progressBar [value]="uploadProgress" [showValue]="true"></p-progressBar>
+  </div>
+</div>
+<div class="flex">
+  <input pInputText (click)="$event.stopPropagation()" [(ngModel)]="downloadPath"
+         placeholder="Absolute path of file in container to download" class="w-full dark-input mr-3" />
+  <p-button icon="pi pi-download" class="p-button-text p-button-success p-button-sm"
+            (click)="downloadFile($event)" pTooltip="Download" tooltipPosition="top" aria-label="Download"></p-button>
+</div>
+
+<div class="progress-spinner" *ngIf="isUploading">
+  <p-progressSpinner></p-progressSpinner>
+</div>

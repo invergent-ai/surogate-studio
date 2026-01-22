@@ -1,0 +1,13 @@
+<div class="layout-container" [ngClass]="containerClass">
+  <div class="layout-content-wrapper h-screen">
+    <sm-topbar></sm-topbar>
+    <sm-breadcrumb class="content-breadcrumb"></sm-breadcrumb>
+    <div class="layout-content">
+        <router-outlet></router-outlet>
+    </div>
+    <div class="layout-mask"></div>
+  </div>
+
+  <sm-profilemenu></sm-profilemenu>
+  <sm-config></sm-config>
+</div>

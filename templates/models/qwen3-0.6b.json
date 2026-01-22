@@ -1,0 +1,205 @@
+{
+  "name": "qwen3-06b",
+  "fromTemplate": true,
+  "type": "UI",
+  "mode": "MODEL",
+  "status": "CREATED",
+  "workloadType": "DEPLOYMENT",
+  "replicas": 1,
+  "updateStrategy": "ROLLING",
+  "schedulingRule": "DECENTRALIZED",
+  "extraConfig": "{\"modelName\":\"Qwen3-0.6B/main\",\"hfModelName\":\"Qwen/Qwen3-0.6B\",\"maxContextSize\":2048,\"l1Cache\":true,\"l1CacheSize\":1,\"gpuMemory\":4096,\"hfTotalSafetensors\":2174235648,\"hfConfig\":{\"architectures\":[\"Qwen3ForCausalLM\"],\"attention_bias\":false,\"attention_dropout\":0,\"bos_token_id\":151643,\"eos_token_id\":151645,\"head_dim\":128,\"hidden_act\":\"silu\",\"hidden_size\":4096,\"initializer_range\":0.02,\"intermediate_size\":12288,\"max_position_embeddings\":40960,\"max_window_layers\":36,\"model_type\":\"qwen3\",\"num_attention_heads\":32,\"num_hidden_layers\":36,\"num_key_value_heads\":8,\"quantization_config\":{\"backend\":\"autoawq\",\"bits\":4,\"do_fuse\":false,\"exllama_config\":null,\"fuse_max_seq_len\":null,\"group_size\":128,\"modules_to_fuse\":null,\"modules_to_not_convert\":null,\"quant_method\":\"awq\",\"version\":\"gemm\",\"zero_point\":true},\"rms_norm_eps\":0.000001,\"rope_scaling\":null,\"rope_theta\":1000000,\"sliding_window\":null,\"tie_word_embeddings\":false,\"torch_dtype\":\"float16\",\"transformers_version\":\"4.51.3\",\"use_cache\":true,\"use_sliding_window\":false,\"vocab_size\":151936},\"source\":\"hf\",\"branchToDeploy\":null,\"loraSourceModel\":null}",
+  "containers": [
+    {
+      "displayName": "Router",
+      "imageName": "lmcache/lmstack-router",
+      "imageTag": "latest",
+      "type": "WORKER",
+      "pullImageMode": "PULL",
+      "cpuRequest": 2,
+      "cpuLimit": 2,
+      "memRequest": "1024",
+      "memLimit": "2048",
+      "envVars": [
+        {
+          "key": "LMCACHE_LOG_LEVEL",
+          "value": "INFO"
+        }
+      ],
+      "ports": [
+        {
+          "name": "router",
+          "containerPort": 8000,
+          "ingressPort": true,
+          "servicePort": 80,
+          "protocol": {
+            "id": "bb7804cd-8818-4c48-b7a6-4f61ae3cefac",
+            "code": "TCP"
+          }
+        },
+        {
+          "name": "cache",
+          "containerPort": 9000,
+          "servicePort": 9000,
+          "protocol": {
+            "id": "bb7804cd-8818-4c48-b7a6-4f61ae3cefac",
+            "code": "TCP"
+          }
+        }
+      ],
+      "probes": [
+        {
+          "type": "LIVENESS",
+          "initialDelaySeconds": 30,
+          "periodSeconds": 5,
+          "failureThreshold": 3,
+          "httpPath": "/health",
+          "httpPort": 8000
+        },
+        {
+          "type": "READINESS",
+          "initialDelaySeconds": 5,
+          "periodSeconds": 5,
+          "failureThreshold": 3,
+          "httpPath": "/health",
+          "httpPort": 8000
+        }
+      ]
+    },
+    {
+      "displayName": "Worker",
+      "imageName": "lmcache/vllm-openai",
+      "imageTag": "nightly-2026-01-14",
+      "type": "WORKER",
+      "pullImageMode": "PULL",
+      "cpuRequest": 1,
+      "cpuLimit": 5,
+      "gpuLimit": 1,
+      "memRequest": "256",
+      "memLimit": "4096",
+      "startCommand": "/opt/venv/bin/vllm",
+      "startParameters": null,
+      "envVars": [
+        {
+          "key": "VLLM_USE_V1",
+          "value": "1"
+        },
+        {
+          "key": "LMCACHE_LOG_LEVEL",
+          "value": "DEBUG"
+        },
+        {
+          "key": "VLLM_LOGGING_LEVEL",
+          "value": "DEBUG"
+        },
+        {
+          "key": "VLLM_MARLIN_USE_ATOMIC_ADD",
+          "value": "1"
+        },
+        {
+          "key": "TORCH_CUDA_ARCH_LIST",
+          "value": "8.9"
+        },
+        {
+          "key": "VLLM_SERVER_DEV_MODE",
+          "value": "1"
+        }
+      ],
+      "volumeMounts": [
+        {
+          "containerPath": "/models",
+          "volume": {
+            "name": "hf-cache",
+            "type": "HOST_PATH",
+            "path": "/models"
+          }
+        },
+        {
+          "containerPath": "/root/.cache/vllm",
+          "volume": {
+            "name": "torch-cache",
+            "type": "HOST_PATH",
+            "path": "/torch"
+          }
+        }
+      ],
+      "ports": [
+        {
+          "name": "llm",
+          "containerPort": 8000,
+          "servicePort": 80,
+          "protocol": {
+            "id": "bb7804cd-8818-4c48-b7a6-4f61ae3cefac",
+            "code": "TCP"
+          }
+        },
+        {
+          "name": "zmq",
+          "containerPort": 55555,
+          "servicePort": 55555,
+          "protocol": {
+            "id": "bb7804cd-8818-4c48-b7a6-4f61ae3cefac",
+            "code": "TCP"
+          }
+        },
+        {
+          "name": "ucx",
+          "containerPort": 9999,
+          "servicePort": 9999,
+          "protocol": {
+            "id": "bb7804cd-8818-4c48-b7a6-4f61ae3cefac",
+            "code": "TCP"
+          }
+        }
+      ],
+      "probes": [
+        {
+          "type": "LIVENESS",
+          "initialDelaySeconds": 300,
+          "periodSeconds": 20,
+          "timeoutSeconds": 3,
+          "successThreshold": 1,
+          "failureThreshold": 10,
+          "httpPath": "/health",
+          "httpPort": 8000
+        },
+        {
+          "type": "READINESS",
+          "initialDelaySeconds": 30,
+          "periodSeconds": 20,
+          "timeoutSeconds": 5,
+          "successThreshold": 1,
+          "failureThreshold": 10,
+          "httpPath": "/health",
+          "httpPort": 8000
+        }
+      ]
+    },
+    {
+      "displayName": "Cache",
+      "imageName": "lmcache/vllm-openai",
+      "imageTag": "nightly-2025-08-27",
+      "type": "WORKER",
+      "pullImageMode": "PULL",
+      "cpuRequest": 1,
+      "cpuLimit": 4,
+      "memRequest": "256",
+      "memLimit": "2048",
+      "startCommand": "/opt/venv/bin/lmcache_server",
+      "startParameters": null,
+      "envVars": [],
+      "volumeMounts": [],
+      "ports": [
+        {
+          "name": "cache",
+          "containerPort": 9090,
+          "servicePort": 81,
+          "protocol": {
+            "id": "bb7804cd-8818-4c48-b7a6-4f61ae3cefac",
+            "code": "TCP"
+          }
+        }
+      ]
+    }
+  ]
+}

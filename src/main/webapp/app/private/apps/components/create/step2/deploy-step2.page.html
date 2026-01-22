@@ -1,0 +1,10 @@
+<sm-page>
+  <p-card header="Describe your app">
+    @if (mode) {
+      <sm-app-details [application]="application"
+                      [mode]="mode"
+                      (onCancel)="cancel()">
+      </sm-app-details>
+    }
+  </p-card>
+</sm-page>

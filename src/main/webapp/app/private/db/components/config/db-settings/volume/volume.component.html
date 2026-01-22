@@ -1,0 +1,57 @@
+<div class="p-3 border-round border-1 surface-border">
+  <div class="volume-settings">
+    <p class="font-bold mb-1">Storage</p>
+    <small class="block font-normal text-600">Set the volume used by the database.</small>
+    <small class="block text-orange-600 mt-1" *ngIf="!getVolumeMountsArray().length">
+      <i class="pi pi-exclamation-triangle mr-1"></i>
+      Please rely on default volume only for non-critical instances.
+    </small>
+
+    <div class="volume-table mt-3" [formGroup]="databaseForm">
+      <div formArrayName="volumeMounts" class="w-full">
+        <div *ngFor="let volumeMountForm of getVolumeMountsArray().controls; let i = index" [formGroupName]="i">
+          <div class="grid g-0 align-items-center justify-content-between mb-3">
+            <!-- Volume Name -->
+            <div class="col-4 xl:col-4 lg:pr-2">
+              <p-dropdown [options]="existingVolumes"
+                          placeholder="Choose a volume"
+                          (onChange)="selectVolume($event, volumeMountForm)"
+                          formControlName="volumeId" appendTo="body"
+                          optionLabel="name"
+                          optionValue="id"
+                          [class.ng-dirty]="volumeMountForm.get('volume').touched"
+                          [class.ng-invalid]="volumeMountForm.get('volume').touched && !volumeMountForm.get('volume').value?.name"
+                          styleClass="w-full">
+                <ng-template let-volume pTemplate="item">
+                  <div class="grid grid-nogutter" style="min-width: 20rem;">
+                    <p class="col-6">{{ volume.name }}</p>
+                    <p class="col-2 text-right">{{ volume.size }} GB</p>
+                    <p class="col-4 text-sm text-right"
+                       [class.font-semibold]="volume.type === VolumeType.PERSISTENT"
+                       [class.text-gray-400]="volume.type !== VolumeType.PERSISTENT"
+                    >{{ volume.type }}</p>
+                  </div>
+                </ng-template>
+              </p-dropdown>
+              <div>
+                <small class="text-primary cursor-pointer" routerLink="/volumes/create">Create a volume</small>
+                <small class="p-error" *ngIf="volumeMountForm.get('volume').touched && !volumeMountForm.get('volume').value?.name">
+                  Volume is required
+                </small>
+              </div>
+            </div>
+
+            <!-- Remove Button -->
+            <div class="col-1">
+              <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-danger" (click)="removeVolumeMount(i)"></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex mt-4 gap-2 flex-wrap sm:flex-nowrap">
+        <button pButton type="button" size="small" label="Add volume" (click)="addVolumeMount()"></button>
+      </div>
+    </div>
+  </div>
+</div>

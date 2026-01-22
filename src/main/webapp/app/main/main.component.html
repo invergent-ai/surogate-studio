@@ -1,0 +1,11 @@
+<router-outlet></router-outlet>
+
+<p-dialog header="Error" [visible]="hasGlobalError$ | async" [style]="{width : '50vw'}" [modal]="true">
+  <div class="flex py-2 justify-content-center">
+    <div>An error occurred: {{ globalError$ | async }}. Please reload the app.</div>
+    <div>
+      <p-button (click)="dismissError()">Dismiss</p-button>
+    </div>
+  </div>
+</p-dialog>
+<p-toast position="bottom-right" [preventOpenDuplicates]="true"></p-toast>

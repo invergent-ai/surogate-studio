@@ -1,0 +1,49 @@
+<sm-page-loader [loading]="loading">
+  <ng-template>
+    <form ngForm [formGroup]="databaseForm" (ngSubmit)="saveDatabase()" class="p-fluid">
+      <!-- Name -->
+      <div class="field">
+        <label for="name">Name:</label>
+        <input type="text" pInputText id="name" formControlName="name" [class.ng-dirty]="databaseForm.dirty"
+               placeholder="Enter database name"/>
+        <small [class.text-red-500]="databaseForm.dirty && databaseForm.get('name')?.errors?.required">
+          The name is required</small>
+        <small [class.text-red-500]="databaseForm.dirty &&
+                 (databaseForm.get('name')?.errors?.minlength || databaseForm.get('name')?.errors?.maxlength)">
+          and must be at least 3 and at most 50 characters.</small>
+      </div>
+
+      <!-- Description -->
+      <div class="field">
+        <label for="description">Description:</label>
+        <textarea type="text" pInputTextarea rows="5" id="description" formControlName="description"
+                  placeholder="The description can contain any characters and the maximum length is 250 characters."></textarea>
+      </div>
+
+      <!-- Project -->
+      <div class="field">
+        <label for="project">Project:</label>
+        <p-dropdown [options]="projects" id="project" inputId="project" optionLabel="name" optionDisabled="disabled"
+                    formControlName="project" appendTo="body">
+          <ng-template let-item pTemplate="item">
+            <span>{{ item.name }}</span>
+          </ng-template>
+          <ng-template pTemplate="selectedItem">
+            <span>{{databaseForm.get('project').value?.name}}</span>
+          </ng-template>
+        </p-dropdown>
+        <small [class.text-red-500]="databaseForm.dirty &&
+             (databaseForm.get('project')?.errors?.['required'] || !databaseForm.get('project').getRawValue().id)">Choose a project for your database</small>
+      </div>
+
+      <div class="flex flex-row column-gap-3 mt-5">
+        <button pButton pRipple type="submit" class="block w-8rem"
+                [disabled]="!databaseForm.valid || isSaving"
+                [loading]="isSaving">
+          Continue
+        </button>
+        <button pButton pRipple type="button" class="block w-8rem p-button-danger " (click)="cancel()">Cancel</button>
+      </div>
+    </form>
+  </ng-template>
+</sm-page-loader>

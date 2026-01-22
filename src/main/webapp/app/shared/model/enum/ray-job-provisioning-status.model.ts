@@ -1,0 +1,9 @@
+export enum RayJobProvisioningStatus {
+  CREATED = 'CREATED',
+  DEPLOYING = 'DEPLOYING',
+  DEPLOYED = 'DEPLOYED',
+  ERROR = 'ERROR',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED'
+}
+

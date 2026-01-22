@@ -1,0 +1,54 @@
+::ng-deep .tpl-markdown {
+  a {
+    color: var(--surface-900);
+  }
+  p {
+    margin-bottom: 1rem;
+  }
+  ul, ol {
+    padding-left: 2rem;
+    padding-top: 0.5rem;
+
+    li+li {
+      margin-top: .25rem;
+    }
+
+    ul, ol {
+      li+li {
+        margin-top: .25rem;
+      }
+    }
+  }
+  pre {
+    padding: 1rem;
+    color: var(--surface-900);
+    background-color: var(--surface-50);
+    code {
+      word-break: normal;
+      white-space: pre;
+      background: transparent;
+    }
+  }
+  table {
+    display: block;
+    width: max-content;
+    max-width: 100%;
+    overflow: auto;
+    font-variant: tabular-nums;
+    margin-bottom: 1rem;
+    border-collapse: collapse;
+    border-spacing: 0;
+    tr {
+      border-top: 1px solid var(--surface-50);
+
+      td, th {
+        padding: 6px 13px;
+        border: 1px solid var(--surface-50);
+      }
+    }
+  }
+  video {
+    max-height: 640px;
+    min-height: 200px;
+  }
+}

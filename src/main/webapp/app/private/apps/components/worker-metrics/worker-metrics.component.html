@@ -1,0 +1,151 @@
+<sm-page-loader [loading]="loading">
+  <ng-template>
+    <!-- Container Selection -->
+    <p-card styleClass="mb-3">
+      <div class="field">
+        <label>Worker Container:</label>
+        <p-dropdown
+          #containerDropdown
+          [options]="containers()"
+          [(ngModel)]="selectedContainer"
+          (onChange)="onContainerChange($event)"
+          optionLabel="label"
+          optionValue="value">
+        </p-dropdown>
+      </div>
+    </p-card>
+
+    <ng-container *ngIf="selectedContainer && containers().length > 0; else noMetrics">
+      <!-- Current Status Values -->
+      <div class="grid mb-4" *ngIf="currentValues">
+        <div class="col-12 md:col-3">
+          <p-card header="Requests Running" styleClass="text-center">
+            <div class="text-center">
+              <div class="text-4xl font-bold mb-2">
+                <p-tag
+                  [value]="currentValues.requestsRunning.toString()"
+                  [severity]="getRequestsSeverity()"
+                  styleClass="text-2xl px-3 py-2">
+                </p-tag>
+              </div>
+              <small class="text-500">Active requests</small>
+            </div>
+          </p-card>
+        </div>
+
+        <div class="col-12 md:col-3">
+          <p-card header="Requests Waiting" styleClass="text-center">
+            <div class="text-center">
+              <div class="text-4xl font-bold mb-2">
+                <p-tag
+                  [value]="currentValues.requestsWaiting.toString()"
+                  severity="warning"
+                  styleClass="text-2xl px-3 py-2">
+                </p-tag>
+              </div>
+              <small class="text-500">Queued requests</small>
+            </div>
+          </p-card>
+        </div>
+
+        <div class="col-12 md:col-3">
+          <p-card header="KV Cache Usage" styleClass="text-center">
+            <div class="text-center">
+              <div class="text-4xl font-bold mb-2">
+                <p-tag
+                  [value]="(currentValues.kvCacheUsage * 100).toFixed(1) + '%'"
+                  [severity]="getCacheSeverity()"
+                  styleClass="text-2xl px-3 py-2">
+                </p-tag>
+              </div>
+              <small class="text-500">Memory utilization</small>
+            </div>
+          </p-card>
+        </div>
+
+        <div class="col-12 md:col-3">
+          <p-card header="Generation Speed" styleClass="text-center">
+            <div class="text-center">
+              <div class="text-4xl font-bold mb-2">
+                <p-tag
+                  [value]="currentValues.generationTokensPerSec.toFixed(1)"
+                  severity="info"
+                  styleClass="text-2xl px-3 py-2">
+                </p-tag>
+              </div>
+              <small class="text-500">Tokens/sec</small>
+            </div>
+          </p-card>
+        </div>
+      </div>
+
+      <!-- Time Series Charts -->
+      <div class="grid" *ngIf="timeSeriesData">
+        <div class="col-12 lg:col-6">
+          <p-card header="Request Queue" styleClass="text-center">
+            <p-chart
+              type="line"
+              height="250"
+              [data]="timeSeriesData.requestsData"
+              [options]="chartOptions"
+              *ngIf="timeSeriesData.requestsData">
+            </p-chart>
+          </p-card>
+        </div>
+
+        <div class="col-12 lg:col-6">
+          <p-card header="Token Processing" styleClass="text-center">
+            <p-chart
+              type="line"
+              height="250"
+              [data]="timeSeriesData.tokensData"
+              [options]="chartOptions"
+              *ngIf="timeSeriesData.tokensData">
+            </p-chart>
+          </p-card>
+        </div>
+
+        <div class="col-12 lg:col-6">
+          <p-card header="Response Timing" styleClass="text-center">
+            <p-chart
+              type="line"
+              height="250"
+              [data]="timeSeriesData.timingData"
+              [options]="chartOptions"
+              *ngIf="timeSeriesData.timingData">
+            </p-chart>
+          </p-card>
+        </div>
+
+        <div class="col-12 lg:col-6">
+          <p-card header="Cache Utilization" styleClass="text-center">
+            <p-chart
+              type="line"
+              height="250"
+              [data]="timeSeriesData.cacheData"
+              [options]="chartOptions"
+              *ngIf="timeSeriesData.cacheData">
+            </p-chart>
+          </p-card>
+        </div>
+      </div>
+
+      <!-- Last Updated Info -->
+      <div class="text-center mt-3" *ngIf="currentValues">
+        <small class="text-500">
+          Last updated: {{ currentValues.lastUpdated | date:'medium' }}
+        </small>
+      </div>
+    </ng-container>
+
+    <ng-template #noMetrics>
+      <div class="text-center mt-4">
+        <i class="pi pi-info-circle text-3xl text-500 mb-3"></i>
+        <p class="text-500">
+          <span *ngIf="!status()">Loading worker status...</span>
+          <span *ngIf="status() && containers().length === 0">No worker containers available</span>
+        </p>
+      </div>
+    </ng-template>
+  </ng-template>
+</sm-page-loader>

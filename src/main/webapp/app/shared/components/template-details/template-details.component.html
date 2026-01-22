@@ -1,0 +1,14 @@
+<sm-page-loader [loading]="loading">
+  <ng-template>
+    <h2 class="flex align-items-center column-gap-5">
+      <p><i class="pi pi-angle-left text-3xl cursor-pointer" (click)="goBack()"></i> {{ template.name }}</p>
+<!--      <button class="p-button-sm p-button-outlined h-2rem" pButton (click)="createAppFromTemplate()">Deploy</button>-->
+    </h2>
+    <div class="p-4">
+      <markdown *ngIf="template.longDescription; else noDescription" [data]="template.longDescription" class="tpl-markdown"></markdown>
+      <ng-template #noDescription>
+        <p class="text-lg">No long description available.</p>
+      </ng-template>
+    </div>
+  </ng-template>
+</sm-page-loader>

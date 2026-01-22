@@ -1,0 +1,5 @@
+export enum WorkloadType {
+  DEPLOYMENT = 'DEPLOYMENT',
+  STATEFUL_SET = 'STATEFUL_SET',
+  DAEMON_SET = 'DAEMON_SET',
+}

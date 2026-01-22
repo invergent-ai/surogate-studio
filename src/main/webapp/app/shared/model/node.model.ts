@@ -1,0 +1,58 @@
+import dayjs from 'dayjs/esm';
+import { INodeResource } from './node-resource.model';
+import { INodeCondition } from './node-condition.model';
+import { NodeType } from './enum/node-type.model';
+import { ComputeType } from './enum/compute-type.model';
+import { NodeStatus } from './enum/node-status.model';
+import { CloudType } from './enum/cloud-type.model';
+import { NodeRole } from './enum/node-role.model';
+import { CloudStatus } from './enum/cloud-status.model';
+import { ICluster } from './cluster.model';
+import { IUser } from './user.model';
+import { IBaseEntity } from './base-entity.model';
+
+export interface INode extends IBaseEntity {
+  name?: string | null;
+  description?: string | null;
+  type?: keyof typeof NodeType | null;
+  computeType?: keyof typeof ComputeType | null;
+  hourlyPrice?: number | null;
+  ingressPrice?: number | null;
+  estimatedNodeCosts?: number | null;
+  freeIngressBytes?: number | null;
+  egressPrice?: number | null;
+  freeEgressBytes?: number | null;
+  status?: keyof typeof NodeStatus | null;
+  lastStartTime?: dayjs.Dayjs | null;
+  publicCloud?: boolean | null;
+  cloudType?: keyof typeof CloudType | null;
+  cloudStatus?: keyof typeof CloudStatus | null;
+  nodeRole?: keyof typeof NodeRole | null;
+  creationTime?: dayjs.Dayjs | null;
+  deleted?: boolean | null;
+  lastUpdated?: dayjs.Dayjs | null;
+  internalName?: string | null;
+  ipv4?: string | null;
+  ipv6?: string | null;
+  hostname?: string | null;
+  architecture?: string | null;
+  kernelVersion?: string | null;
+  os?: string | null;
+  osImage?: string | null;
+  datacenterName?: string | null;
+  rayCluster?: string | null;
+  kubeletVersion?: string | null;
+  zoneMatch?: boolean | null;
+  yaml?: string | null;
+  firstTx?: dayjs.Dayjs | null;
+  totalNodeEarnings?: number | null;
+  monthlyNodeEarnings?: number | null;
+  monthlyNodeProfit?: number | null;
+  totalNodeProfit?: number | null;
+  cluster?: Pick<ICluster, 'id' | 'cid' | 'name' | 'zone'> | null;
+  user?: Pick<IUser, 'id' | 'fullName'> | null;
+  resource?: Omit<INodeResource, 'node'> | null;
+  condition?: Pick<INodeCondition, 'id'> | null;
+}
+
+export type NewNode = Omit<INode, 'id'> & { id: null };

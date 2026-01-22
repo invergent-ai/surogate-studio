@@ -1,0 +1,5 @@
+export enum SchedulingRule {
+  DECENTRALIZED = 'DECENTRALIZED',
+  CENTRALIZED = 'CENTRALIZED',
+  DEFAULT = 'DEFAULT',
+}

@@ -1,0 +1,18 @@
+::ng-deep .p-datatable .p-datatable-tbody > tr > td {
+  border: none !important;
+}
+
+.buffer-pill {
+  background: #00BCD4;  // or any color that matches your theme
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  margin-left: 8px;
+  font-weight: 500;
+}

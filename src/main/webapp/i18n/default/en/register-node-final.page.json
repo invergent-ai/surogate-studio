@@ -1,0 +1,7 @@
+{
+  "registerNodeFinal": {
+    "loginToMachine": "1. Login to your new appliance",
+    "registerOnStateMesh": "2. Run registration",
+    "registerOnStateMeshDetail": "Once you have successfully connected to your machine, run the following command to register it:"
+  }
+}

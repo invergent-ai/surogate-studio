@@ -1,0 +1,46 @@
+<sm-page>
+  <sm-page-loader [loading]="loading">
+    <ng-template>
+      <div class="mb-5" *ngIf="database">
+        <h1 class="page-title">{{database.name}}</h1>
+        <p class="page-subtitle">Database management</p>
+      </div>
+
+      <sm-db-header-card
+        *ngIf="database"
+        [database]="database"
+        [dbStatus]="dbStatus"
+        [ingressHostName]="ingressHostName"
+        [internalEndpoint]="database?.internalName"
+        [password]="password"
+        (controlFinished)="handleControlFinished()">
+      </sm-db-header-card>
+
+      @if (database && database.status === DatabaseStatus.CREATED) {
+        <div class="m-2">
+          <p-messages [value]="[{severity: 'warn', detail: 'Publish your database to get started.'}]" [enableService]="false" />
+        </div>
+      }
+
+      <!--Configuration Tab-->
+      <p-tabView styleClass="mt-3 px-2" [(activeIndex)]="activeTab" *ngIf="database">
+        <p-tabPanel header="Configuration"
+                    [disabled]="database?.status === DatabaseStatus.DEPLOYING">
+          <ng-template pTemplate="content">
+            <sm-db-config (publishing)="publishing($event)"
+                          [database]="database"></sm-db-config>
+          </ng-template>
+        </p-tabPanel>
+      </p-tabView>
+    </ng-template>
+  </sm-page-loader>
+</sm-page>
+
+<div class="progress-spinner" *ngIf="lockScreen">
+  <p-progressSpinner></p-progressSpinner>
+</div>
+<i *ngIf="timeoutOccurred"
+   class="pi pi-exclamation-triangle pulsating-warning centered-warning"
+   pTooltip="Connection timed out. Click to reconnect."
+   (click)="refreshConnection()">
+</i>

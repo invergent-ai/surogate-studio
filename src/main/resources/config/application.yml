@@ -1,0 +1,14 @@
+# ===================================================================
+# https://www.jhipster.tech/common-application-properties/
+# http://docs.spring.io/spring-boot/docs/current/reference/html/common-application-properties.html
+# ===================================================================
+spring:
+  profiles:
+    group:
+      appliance-dev:
+        - appliance
+        - dev
+        - tls
+      appliance-prod:
+        - appliance
+        - prod

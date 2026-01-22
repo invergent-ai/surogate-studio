@@ -1,0 +1,67 @@
+<div class="surface-card border-round h-full flex flex-column overflow-hidden">
+  <div class="flex justify-content-between align-items-center px-3 py-2 surface-section border-bottom-1 surface-border border-round-top">
+    <div class="flex align-items-center gap-2">
+      <span class="text-lg">Notifications</span>
+      <span class="text-sm text-500">({{unreadCount$ | async}})</span>
+    </div>
+    <button *ngIf="(unreadCount$ | async) > 0"
+            pButton
+            type="button"
+            icon="pi pi-check-circle"
+            class="p-button-text p-button-sm"
+            (click)="markAllAsRead()"
+            pTooltip="Mark all as read">
+    </button>
+  </div>
+
+  <p-virtualScroller
+    #scroller
+    [value]="notifications$ | async"
+    [itemSize]="80"
+    styleClass="custom-scroller"
+    scrollHeight="400px">
+
+    <ng-template pTemplate="header">
+      <div *ngIf="loading" class="flex align-items-center justify-content-center p-2">
+        <p-progressSpinner [style]="{width: '30px', height: '30px'}"
+                           styleClass="custom-spinner"
+                           strokeWidth="3">
+        </p-progressSpinner>
+      </div>
+    </ng-template>
+
+    <ng-template pTemplate="empty">
+      <div class="flex align-items-center justify-content-center p-4 text-500">
+        No notifications available
+      </div>
+    </ng-template>
+
+    <ng-template pTemplate="item" let-notification>
+      <div class="cursor-pointer py-2 px-3 border-bottom-1 surface-border transition-colors-200 hover:surface-hover w-full"
+           [ngClass]="{'surface-ground font-semibold': !notification.read}"
+           (click)="openNotificationDialog(notification)">
+        <div class="flex align-items-start gap-2">
+          <i [class]="getNotificationIcon(notification.type) + ' text-xl mt-1'"
+             [ngClass]="{
+               'text-primary': notification.type === 'SYSTEM',
+               'text-500': notification.type === 'USER',
+               'text-700': notification.type === 'NONE'
+             }"></i>
+          <div class="flex-auto">
+            <div class="mb-2 line-height-3">{{truncateMessage(notification.message)}}</div>
+            <div class="text-sm text-500">{{getFormattedDate(notification.createdTime)}}</div>
+          </div>
+          <button *ngIf="!notification.read"
+                  pButton
+                  type="button"
+                  icon="pi pi-check"
+                  class="p-button-text p-button-rounded transition-opacity-200 opacity-0 hover:surface-hover"
+                  [ngClass]="{'opacity-100': !notification.read}"
+                  (click)="markAsRead(notification); $event.stopPropagation()">
+          </button>
+          <i *ngIf="notification.read" class="pi pi-check text-500"></i>
+        </div>
+      </div>
+    </ng-template>
+  </p-virtualScroller>
+</div>

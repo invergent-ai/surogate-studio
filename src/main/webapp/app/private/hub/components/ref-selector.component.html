@@ -1,0 +1,52 @@
+<p-button
+  (onClick)="op.toggle($event)"
+  icon="pi pi-search"
+  [size]="buttonSize()"
+  [disabled]="!canSelect()"
+  [label]="selectedValueLabel()" />
+
+<p-overlayPanel #op [style]="{ width: '450px' }" (onHide)="navigateBackToRefs()">
+  <ng-template pTemplate="content">
+    <p-tabView [activeIndex]="showBranches() ? 0 : 1">
+      <p-tabPanel [disabled]="!showBranches()" header="Branches">
+        <ng-template pTemplate="content">
+          @if (selectedRefForCommits()) {
+            <div>
+              <div class="flex align-items-center p-2 border-bottom-1 surface-border">
+                <a (click)="navigateBackToRefs()" class="mr-2"><i-lucide [img]="ChevronLeft" class="w-1.5rem h-1.5rem"></i-lucide></a>
+                <span class="font-bold">Commits on {{selectedRefForCommits()}}</span>
+              </div>
+              @for (commit of commits(); track commit.id; let first = $first) {
+                <div class="flex justify-content-between align-items-center p-2" [ngClass]="{ 'border-top-1 surface-border': !first }">
+                  <a class="hover:underline font-medium" (click)="setSelectedValue('commit', commit.id)">{{commit.message || '[No commit message]'}}</a>
+                  <p>{{commit.id.substring(0, 9)}}</p>
+                </div>
+              }
+            </div>
+          } @else {
+            @for (branch of branches(); track branch.id; let first = $first; let last = $last) {
+              <div class="flex justify-content-between align-items-center p-2" [ngClass]="{ 'border-top-1 surface-border': !first }">
+                <a class="hover:underline" (click)="setSelectedValue('branch', branch.id, branch.metadata)">{{ branch.id }}</a>
+                <div class="flex gap-2">
+                  <p-tag *ngIf="branch.id === repository().defaultBranch" value="DEFAULT"></p-tag>
+                  @if (showCommits()) {
+                    <a (click)="navigateToCommits('branch', branch.id)"><i-lucide [img]="ChevronRight" class="w-1.5rem h-1.5rem"></i-lucide></a>
+                  }
+                </div>
+              </div>
+            }
+          }
+        </ng-template>
+      </p-tabPanel>
+      <p-tabPanel [disabled]="!showTags()" header="Tags">
+        <ng-template pTemplate="content">
+          @for (tag of tags(); track tag.id; let first = $first; let last = $last) {
+            <div class="flex justify-content-between align-items-center p-2" [ngClass]="{ 'border-top-1 surface-border': !first }">
+              <a class="hover:underline" (click)="setSelectedValue('tag', tag.id)">{{tag.id}}</a>
+            </div>
+          }
+        </ng-template>
+      </p-tabPanel>
+    </p-tabView>
+  </ng-template>
+</p-overlayPanel>

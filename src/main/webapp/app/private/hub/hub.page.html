@@ -1,0 +1,199 @@
+<sm-page>
+  <sm-page-loader>
+    <ng-template>
+      <div class="mb-5">
+        <h1 class="page-title">Data Hub</h1>
+        <p class="page-subtitle">Your central hub for managing models, datasets, and other data</p>
+      </div>
+
+      <div class="grid no-gutter align-items-center">
+        <div class="col">
+          <p-iconField iconPosition="left" class="w-full">
+            <p-inputIcon styleClass="pi pi-search" />
+            <input type="text" pInputText [ngModel]="searchText()" (ngModelChange)="searchText.set($event)"  placeholder="Search by name..." class="w-full"/>
+          </p-iconField>
+        </div>
+
+        <div class="col">
+          <p-selectButton [options]="repoTypes" [ngModel]="displayRepoType()" class="block w-fit"
+                          (ngModelChange)="changeRepositoryType($event)"  [allowEmpty]="false"
+                          optionLabel="label" optionValue="value" />
+        </div>
+
+        <div class="col flex gap-2 align-items-center justify-content-end">
+          <div>
+            <button pButton size="small" (click)="showNewRepoDialog()">
+              <i-lucide [img]="Plus" class="w-1rem h-1rem"></i-lucide> &nbsp; New repository
+            </button>
+          </div>
+          <div>
+            <button pButton size="small" severity="contrast" outlined (click)="showDownloadDialog()">
+              <i-lucide [img]="CloudDownload" class="w-1rem h-1rem"></i-lucide> &nbsp; Import ...
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-5">
+        <div class="card surface-50 border-round-xl border-1 border-300" style="padding: 3px;">
+          <p-table [value]="tblRepositories()" [loading]="loading()" [tableStyle]="{ 'min-width': '50rem' }" styleClass="text-sm">
+            <ng-template pTemplate="header">
+              <tr>
+                <th class="text-500">Name</th>
+                <th class="text-500">Default Branch</th>
+                <th class="text-500">External ID</th>
+                <th class="text-500">Created</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-repo>
+              <tr>
+                <td class="flex gap-3 align-items-center">
+                  <div [routerLink]="['/hub/files', repo.id]" class="flex justify-content-center align-items-center w-2.5rem h-2.5rem border-round-xl bg-blue-100 align-items-center text-purple-800 shadow-1 cursor-pointer">
+                    <i-lucide [img]="Bot" class="w-1.5rem h-1.5rem"></i-lucide>
+                  </div>
+                  <div class="flex flex-column gap-1">
+                    <a [routerLink]="['/hub/files', repo.id]" class="font-medium hover:underline text-base">{{ repo.metadata?.displayName  ? repo.metadata.displayName: repo.id }}</a>
+                    <p class="text-500 text-xs" >lakefs://{{ repo.id }}</p>
+                  </div>
+                </td>
+                <td>{{ repo.defaultBranch }}</td>
+                <td>{{ repo.metadata.externalId || '-'}}</td>
+                <td>{{ dayjs(repo.creationDate * 1000).fromNow(false)}}</td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+      </div>
+
+      <sm-card header="Import Jobs" class="block mt-5">
+        <sm-job-list [executor]="ExecutorType.TEKTON" [type]="jobTypes" [snapshotTime]="taskSnapshotTime()">
+          <ng-template pTemplate="detail" let-task>
+            <p>Hello task {{task.name}}</p>
+          </ng-template>
+          <ng-template pTemplate="progress" let-progress let-task="task">
+            @if (taskProgress(progress)) {
+              <p-progressBar [value]="taskProgress(progress)" [showValue]="true" [style]="{ height: '6px' }"></p-progressBar>
+            } @else {
+              <p-progressBar mode="indeterminate" [style]="{ height: '6px' }"></p-progressBar>
+            }
+          </ng-template>
+        </sm-job-list>
+      </sm-card>
+    </ng-template>
+  </sm-page-loader>
+</sm-page>
+
+<p-dialog [modal]="true" [style]="{ width: '30vw' }" header="Create new repository" [closable]="true"
+          [closeOnEscape]="true"
+          [draggable]="false" [resizable]="false" [(visible)]="newRepoDialogVisible">
+  <p class="text-sm text-500">Repositories are lakeFS‑backed and behave like versioned Git repos.</p>
+
+  <form [formGroup]="newRepoForm" class="mt-5" (ngSubmit)="createRepository()">
+    <div class="field">
+      <label for="repoType">Type</label>
+      <p-selectButton id="repoType" [options]="repoTypes2" formControlName="repoType" optionLabel="label" optionValue="value"></p-selectButton>
+    </div>
+
+    <div class="formgrid grid p-fluid">
+      <div class="field col-12 md:col-8">
+        <label for="repoId">Name</label>
+        <input id="repoId" pInputText formControlName="repoId" [maxlength]="62" placeholder="e.g. Qwen3-8B"/>
+        <small>Only alphanumeric characters, - and .</small>
+      </div>
+      <div class="field col-12 md:col-4">
+        <label for="defaultBranch">Default Branch</label>
+        <input id="defaultBranch" pInputText formControlName="defaultBranch"/>
+      </div>
+    </div>
+
+    <div class="field p-fluid">
+      <label for="description">Description</label>
+      <textarea id="description" pInputTextarea formControlName="description" rows="5" placeholder="This description will be used to generate the README.md file"></textarea>
+    </div>
+
+    <div class="field p-fluid">
+      <label for="tags">Tags</label>
+      <p-chips formControlName="tags" separator="," [allowDuplicate]="false" id="tags"
+               placeholder="e.g. text, vision, reasoning, OCR..."/>
+      <small>Press Enter or add a comma after each tag</small>
+    </div>
+
+    <div class="flex gap-2 justify-content-end mt-3">
+      <button pButton type="button" outlined size="small" label="Cancel" (click)="newRepoDialogVisible.set(false)"></button>
+      <button pButton type="submit" size="small" label="Create" [disabled]="!newRepoForm.valid" [loading]="newRepoLoading()"></button>
+    </div>
+  </form>
+</p-dialog>
+
+<p-dialog [modal]="true" [style]="{ width: '30vw' }" header="Import data" [closable]="true"
+          [closeOnEscape]="true"
+          [draggable]="false" [resizable]="false" [(visible)]="downloadDialogVisible">
+  <p class="text-sm text-500">Pull models and datasets from HuggingFace or Modelscope repositories.</p>
+
+  <form [formGroup]="downloadForm" class="mt-5" (ngSubmit)="importData()">
+    <div class="field">
+      <label for="source">Source</label>
+      <p-selectButton id="source" [options]="downloadSources" formControlName="source" optionLabel="label" optionValue="value"></p-selectButton>
+    </div>
+
+    <div class="formgrid grid p-fluid">
+      <div class="field col-12">
+        <label for="sourceRepo">Source Repository</label>
+        <p-autoComplete formControlName="repo" placeholder="Type to search..." scrollHeight="350px" id="sourceRepo"
+                        [suggestions]="hfSuggestions" optionLabel="name" appendTo="body" [dropdown]="true"
+                        (completeMethod)="searchHf($event)" [minLength]="2" [delay]="500">
+          <ng-template let-item pTemplate="item">
+            <div>
+              <p class="font-semibold text-sm">{{item.name}}</p>
+              <div class="flex gap-2 align-items-center mt-2 text-500">
+                @if (displayRepoType() === LakeFsRepositoryType.MODEL) {
+                  <p-tag [value]="item.task" severity="secondary"></p-tag>
+                }
+                <small class="text-sm flex gap-1 align-items-center">
+                  <i-lucide [img]="Building2" class="w-1rem h-1rem text-400"></i-lucide>
+                  <span>{{item.author}}</span>
+                </small>
+                <small class="text-sm flex gap-1 align-items-center">
+                  <i-lucide [img]="Download" class="w-1rem h-1rem text-400"></i-lucide>
+                  <span>{{item.downloads}}</span>
+                </small>
+                <small class="text-sm flex gap-1 align-items-center">
+                  <i-lucide [img]="CalendarArrowUp" class="w-1rem h-1rem text-400"></i-lucide>
+                  <span>{{item.createdAt | date: 'dd MMM yyyy'}}</span>
+                </small>
+                <small *ngIf="item.gated !== false" class="text-sm flex gap-1 align-items-center">
+                  <i-lucide [img]="Lock" class="w-1rem h-1rem text-400"></i-lucide>
+                </small>
+              </div>
+            </div>
+          </ng-template>
+        </p-autoComplete>
+      </div>
+    </div>
+
+<!--    <div class="field p-fluid">-->
+<!--      <label for="source">Access Token</label>-->
+<!--      <p-password formControlName="token" [showClear]="true" [feedback]="false" autocomplete="false"></p-password>-->
+<!--      <small class="flex align-items-center gap-1">-->
+<!--        <i-lucide [img]="Info" class="w-1rem h-1rem"></i-lucide>-->
+<!--        <p>Your token is discarded immediately after use</p>-->
+<!--      </small>-->
+<!--    </div>-->
+
+    @if (displayRepoType() === 'dataset') {
+      <div class="field p-fluid">
+        <label for="source">Dataset Config/Subset (optional)</label>
+        <input pInputText formControlName="subset" />
+        <small class="flex align-items-center gap-1">
+          <i-lucide [img]="Info" class="w-1rem h-1rem"></i-lucide>
+          <p>Some datasets have multiple configs (or subsets), and import will fail if a config is not provided. <br/>You can find them on the Huggingface Dataset Viewer</p>
+        </small>
+      </div>
+    }
+
+    <div class="flex gap-2 justify-content-end mt-3">
+      <button pButton type="button" outlined size="small" label="Cancel" (click)="downloadDialogVisible.set(false)"></button>
+      <button pButton type="submit" size="small" label="Start sync" [disabled]="!downloadForm.valid" [loading]="downloadLoading()"></button>
+    </div>
+  </form>
+</p-dialog>

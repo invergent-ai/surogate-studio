@@ -1,0 +1,36 @@
+@keyframes pulsate {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.pulsating-warning {
+  animation: pulsate 1.5s ease-in-out infinite;
+  color: #f59e0b;
+  cursor: pointer;
+  font-size: 7rem; // Made bigger
+  display: block;
+  margin: 1rem 0;
+
+  &:hover {
+    animation: none;
+    opacity: 0.8;
+  }
+}
+
+.centered-warning {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 10000;
+}
+

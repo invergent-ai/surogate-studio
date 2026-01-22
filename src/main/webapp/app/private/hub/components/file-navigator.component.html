@@ -1,0 +1,51 @@
+<p-treeTable [value]="displayedNodes()" [tableStyle]="{'table-layout': 'auto', 'width': '100%'}">
+  <ng-template pTemplate="body" let-rowNode let-rowData="rowData">
+    <tr [ttRow]="rowNode">
+      <td>
+        @if (rowNode.node.type === 'dir' || rowNode.node.type === 'up') {
+          <a class="hover:underline hover:text-primary-800 flex align-items-center gap-2" (click)="selectFolder(rowNode.node)">
+            <i-lucide [img]="Folder" class="w-1.5rem h-1.5rem"></i-lucide>
+            <p>{{trimFilename(rowNode.node.label)}}</p>
+            @if (selectable() && rowNode.node.type === 'dir') {
+              <button pButton size="small" class="p-button-xs" label="Select" (click)="selectFolder2(rowNode.node)"></button>
+            }
+          </a>
+        } @else {
+          <a class="hover:underline hover:text-primary-800 flex align-items-center gap-2" (click)="selectFile(rowNode.node)">
+            <i-lucide [img]="File" class="w-1.5rem h-1.5rem"></i-lucide>
+            <p>{{trimFilename(rowNode.node.label)}}</p>
+          </a>
+        }
+      </td>
+
+      @if (rowNode.node.type === 'dir' || rowNode.node.type === 'up') {
+        <td></td>
+        <td></td>
+        <td></td>
+      } @else {
+        <td style="width: 10%">{{rowData.sizeBytes | filesize}}</td>
+        <td style="width: 15%">{{dayjs(rowData.mtime * 1000).fromNow(false)}}</td>
+        <td style="width: 10%">
+          <p-button *ngIf="showItemActions()" (onClick)="showItemMenu($event, rowData)" size="small" outlined icon="pi pi-align-justify"/>
+        </td>
+      }
+    </tr>
+  </ng-template>
+</p-treeTable>
+
+<p-overlayPanel>
+  <div class="flex flex-column">
+    <div class="p-2 flex gap-2 align-items-center cursor-pointer hover:bg-primary-50" (click)="triggerFileAction('download')">
+      <i-lucide [img]="Download" class="w-1rem h-1rem"></i-lucide>
+      <span>Download</span>
+    </div>
+    <div class="p-2 flex gap-2 align-items-center cursor-pointer hover:bg-primary-50" (click)="triggerFileAction('copy')">
+      <i-lucide [img]="Copy" class="w-1rem h-1rem"></i-lucide>
+      <span>Copy URL</span>
+    </div>
+    <div class="p-2 flex gap-2 align-items-center cursor-pointer text-red-500 hover:bg-primary-50" (click)="triggerFileAction('delete')">
+      <i-lucide [img]="Trash" class="w-1rem h-1rem"></i-lucide>
+      <span>Delete</span>
+    </div>
+  </div>
+</p-overlayPanel>

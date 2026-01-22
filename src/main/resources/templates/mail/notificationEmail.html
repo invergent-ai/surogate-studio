@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}" lang="en">
+<head>
+  <title th:text="#{email.notification.title}">Notification</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+  <link rel="icon" th:href="@{|${baseUrl}/favicon.ico|}"/>
+</head>
+<body>
+<p th:text="#{email.greeting(${user.login})}">Dear</p>
+
+<p>
+    <span th:if="${event == T(net.statemesh.domain.enumeration.ProcessEvent).CREATED}">
+        App <span th:text="${resourceName}">RESOURCE</span> has been created successfully.
+    </span>
+  <span th:if="${event == T(net.statemesh.domain.enumeration.ProcessEvent).DEPLOYED}">
+        App <span th:text="${resourceName}">RESOURCE</span> has been deployed successfully.
+    </span>
+  <span th:if="${event == T(net.statemesh.domain.enumeration.ProcessEvent).DELETED}">
+        App <span th:text="${resourceName}">RESOURCE</span> has been deleted.
+    </span>
+  <span th:if="${event == T(net.statemesh.domain.enumeration.ProcessEvent).UPDATED}">
+        App <span th:text="${resourceName}">RESOURCE</span> has been updated successfully.
+    </span>
+  <span th:if="${event == T(net.statemesh.domain.enumeration.ProcessEvent).PENDING}">
+        App <span th:text="${resourceName}">RESOURCE</span> - deployment is pending.
+    </span>
+  <span th:if="${event == T(net.statemesh.domain.enumeration.ProcessEvent).ERROR}">
+        App <span th:text="${resourceName}">RESOURCE</span> - deployment failed.
+        <br/>
+        Error details: <span th:text="${errorMessage}">ERROR</span>
+    </span>
+  <span th:if="${event == T(net.statemesh.domain.enumeration.ProcessEvent).PAYMENT_SENT}">
+        Payment of <span th:text="${amount}">0.00</span> USDT has been sent for application <span th:text="${resourceName}">RESOURCE</span>.
+        <br/>
+        Transaction ID: <span th:text="${txid}">TXID</span>
+    </span>
+  <span th:if="${event == T(net.statemesh.domain.enumeration.ProcessEvent).PAYMENT_RECEIVED}">
+        Payment of <span th:text="${amount}">0.00</span> USDT has been received for application <span th:text="${resourceName}">RESOURCE</span>.
+        <br/>
+        Transaction ID: <span th:text="${txid}">TXID</span>
+    </span>
+  <span th:if="${event == T(net.statemesh.domain.enumeration.ProcessEvent).PAYMENT_ERROR}">
+    Payment processing failed for application <span th:text="${resourceName}">RESOURCE</span>.
+    <br/>
+    Error details: <span th:text="${error}">ERROR</span>
+</span>
+</p>
+
+<p>
+  <span th:text="#{email.timestamp}">Timestamp</span>:
+  <span th:text="${#temporals.format(timestamp, 'dd-MM-yyyy HH:mm')}">01-01-2024 12:00</span>
+</p>
+
+<p>
+  <span th:text="#{email.regards}">Regards,</span>
+  <br/>
+  <em th:text="#{email.signature}">The StateMesh team</em>
+</p>
+</body>
+</html>

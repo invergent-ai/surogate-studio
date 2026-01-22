@@ -1,0 +1,52 @@
+<div class="card">
+  <p class="font-bold mb-1">Annotations</p>
+  <small class="block text-color">Add annotations on your application.</small>
+
+  <div class="ann-var-table mt-4" [formGroup]="applicationForm">
+    <div formArrayName="annotations" class="w-full">
+      <div *ngFor="let ann of annotations.controls; let i = index"
+           [formGroupName]="i"
+           class="ann-var-entry mb-2">
+        <div class="grid g-0 align-items-start" style="justify-content: space-between;">
+          <div class="col-12 lg:col-5 px-2">
+            <input pInputText
+                   formControlName="key"
+                   placeholder="Key"
+                   class="w-full dark-input"/>
+            <small class="p-error" *ngIf="ann.get('key')?.errors?.required && ann.get('key')?.touched">
+              Key is required
+            </small>
+          </div>
+          <div class="col-10 lg:col-6 px-2">
+            <input pInputText
+                   formControlName="value"
+                   placeholder="Value"
+                   class="w-full dark-input"/>
+            <small class="p-error" *ngIf="ann.get('value')?.errors?.required && ann.get('value')?.touched">
+              Value is required
+            </small>
+          </div>
+          <div class="col-2 lg:col-1 flex justify-content-end">
+            <button pButton
+                    type="button"
+                    icon="pi pi-trash"
+                    class="p-button-text p-button-danger p-button-sm w-auto mx-auto"
+                    (click)="removeAnnotation(i)">
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex mt-4" style="gap: 0.5vw;">
+      <button pButton size="small"
+              type="button"
+              label="Add annotation"
+              (click)="addAnnotation()"
+              class="dark-button-outlined"
+              style="width: auto;"
+              [class]="layoutService.config.colorScheme === 'light' ? '' : 'p-button-outlined'">
+      </button>
+    </div>
+  </div>
+</div>

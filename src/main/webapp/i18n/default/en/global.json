@@ -1,0 +1,12 @@
+{
+  "global": {
+    "title": "Surogate Studio"
+  },
+  "app": {
+    "name": "Surogate Studio",
+    "copyright": "Copyright (c) 2025 Invergent SA"
+  },
+  "routes": {
+    "auth": "Login"
+  }
+}

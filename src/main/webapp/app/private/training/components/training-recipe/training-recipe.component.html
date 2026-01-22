@@ -1,0 +1,191 @@
+<form [formGroup]="trainingForm()">
+  <sm-card header="Training recipe" [icon]="Settings2" iconClass="text-purple-500">
+    <ng-template pTemplate="toolbar">
+      <div class="flex align-items-center gap-2">
+        <button pButton size="small" type="button" severity="secondary" (click)="advanced.set(!advanced())">
+          <div class="flex gap-2 align-items-center">
+            <i-lucide [img]="SlidersHorizontal" class="w-1rem h-1rem"></i-lucide>
+            <span>Advanced</span>
+          </div>
+        </button>
+      </div>
+    </ng-template>
+
+    <form [formGroup]="trainingForm()">
+      <div class="formgrid grid text-sm p-fluid">
+        <!--      Precision-->
+        <div class="field col-12 md:col-3">
+          <sm-label-tooltip [tooltip]="RECIPE">Precision</sm-label-tooltip>
+          <p-dropdown [options]="trainingPrecisions" id="recipe" formControlName="recipe"></p-dropdown>
+        </div>
+        <!--      Number of epochs-->
+        <div class="field col-12 md:col-3">
+          <sm-label-tooltip [tooltip]="NUM_EPOCHS">Number of epochs</sm-label-tooltip>
+          <p-inputNumber id="numEpochs" formControlName="numEpochs" [min]="1"></p-inputNumber>
+        </div>
+        <!--      Micro batch size-->
+        <div class="field col-12 md:col-3">
+          <sm-label-tooltip [tooltip]="MICRO_BATCH_SIZE">Micro batch size</sm-label-tooltip>
+          <p-inputNumber id="microBatchSize" [min]="1" formControlName="microBatchSize"
+                         [class.ng-dirty]="trainingForm().dirty"></p-inputNumber>
+          <small class="text-red-500"
+                 *ngIf="trainingForm().dirty && trainingForm().get('microBatchSize')?.errors?.required">
+            Micro batch size is required</small>
+        </div>
+        <!--      Gradient accumulation steps-->
+        <div class="field col-12 md:col-3">
+          <sm-label-tooltip [tooltip]="GRADIENT_ACCUMULATION_STEPS">Gradient accumulation steps</sm-label-tooltip>
+          <p-inputNumber id="gradientAccumulationSteps" [min]="1" formControlName="gradientAccumulationSteps"
+                         [class.ng-dirty]="trainingForm().dirty"></p-inputNumber>
+          <small class="text-red-500"
+                 *ngIf="trainingForm().dirty && trainingForm().get('gradientAccumulationSteps')?.errors?.required">
+            Gradient accumulation steps is required</small>
+        </div>
+        <!--      Learning rate-->
+        <div class="field col-12 md:col-6">
+          <sm-label-tooltip [tooltip]="LEARNING_RATE">Learning rate</sm-label-tooltip>
+          <input pInputText type="text" id="learningRate" formControlName="learningRate"
+                 [class.ng-dirty]="trainingForm().dirty" (beforeinput)="filterSciNumber($event)"/>
+          <small class="text-red-500"
+                 *ngIf="trainingForm().dirty && trainingForm().get('learningRate')?.errors?.required">
+            Learning rate is required</small>
+          <small class="text-red-500"
+                 *ngIf="trainingForm().dirty && trainingForm().get('learningRate')?.errors?.sciNumber">
+            Learning rate must be a valid number (e.g. 0.01 or scientific notation 2e-5)</small>
+        </div>
+        <!--      Sequence length-->
+        <div class="field col-12 md:col-6">
+          <sm-label-tooltip [tooltip]="SEQUENCE_LENGTH">Sequence length</sm-label-tooltip>
+          <input pInputText type="text" id="sequenceLength" formControlName="sequenceLength"
+                 [class.ng-dirty]="trainingForm().dirty">
+          <small class="text-red-500"
+                 *ngIf="trainingForm().dirty && trainingForm().get('sequenceLength')?.errors?.required">
+            Sequence length is required</small>
+        </div>
+        <!--      Optimizer-->
+        <div class="field col-12 md:col-4">
+          <sm-label-tooltip [tooltip]="OPTIMIZER">Optimizer</sm-label-tooltip>
+          <p-dropdown [options]="optimizers" id="optimizer" formControlName="optimizer"></p-dropdown>
+        </div>
+        <!--      Weight decay-->
+        <div class="field col-12 md:col-2">
+          <sm-label-tooltip [tooltip]="WEIGHT_DECAY">Weight decay</sm-label-tooltip>
+          <input pInputText id="weightDecay" formControlName="weightDecay" (beforeinput)="filterDouble($event)"/>
+          <small class="text-red-500" *ngIf="trainingForm().dirty && trainingForm().get('weightDecay')?.errors?.double">
+            Enter a positive number with up to 4 decimal places (e.g. 0.1234)</small>
+        </div>
+        <!--      Max grad norm-->
+        <div class="field col-12 md:col-2">
+          <sm-label-tooltip [tooltip]="MAX_GRAD_NORM">Max grad norm</sm-label-tooltip>
+          <input pInputText id="maxGradNorm" formControlName="maxGradNorm" (beforeinput)="filterDouble($event)"/>
+          <small class="text-red-500" *ngIf="trainingForm().dirty && trainingForm().get('maxGradNorm')?.errors?.double">
+            Enter a positive number with up to 4 decimal places (e.g. 0.1234)</small>
+        </div>
+        <!--      Max steps-->
+        <div class="field col-12 md:col-2">
+          <sm-label-tooltip [tooltip]="MAX_STEPS">Max steps</sm-label-tooltip>
+          <p-inputNumber [min]="1" id="maxSteps" formControlName="maxSteps"></p-inputNumber>
+        </div>
+        <!--      Train on inputs-->
+        <div class="field col-12 md:col-2 flex align-items-center gap-2">
+          <sm-label-tooltip [tooltip]="TRAIN_ON_INPUTS">Train on inputs</sm-label-tooltip>
+          <p-checkbox [binary]="true" id="trainOnInputs" formControlName="trainOnInputs"
+                      [class.ng-dirty]="trainingForm().dirty">
+          </p-checkbox>
+        </div>
+        <!--      Validation split ratio-->
+        <div class="field col-12 md:col-3">
+          <sm-label-tooltip [tooltip]="VALIDATION_SPLIT_RATIO">Validation split ratio</sm-label-tooltip>
+          <input pInputText id="valSetSize" formControlName="valSetSize" (beforeinput)="filterDouble($event)"/>
+          <small class="text-red-500" *ngIf="trainingForm().dirty && trainingForm().get('valSetSize')?.errors?.double">
+            Enter a positive number with up to 4 decimal places (e.g. 0.1234)</small>
+        </div>
+        <!--      Validation steps-->
+        <div class="field col-12 md:col-3">
+          <sm-label-tooltip [tooltip]="EVAL_STEPS">Validation steps</sm-label-tooltip>
+          <p-inputNumber [min]="1" id="evalSteps" formControlName="evalSteps"></p-inputNumber>
+        </div>
+        <!--      Logging steps-->
+        <div class="field col-12 md:col-3">
+          <sm-label-tooltip [tooltip]="LOGGING_STEPS">Logging steps</sm-label-tooltip>
+          <p-inputNumber [min]="1" id="loggingSteps" formControlName="loggingSteps"></p-inputNumber>
+        </div>
+        <!--      Zero level-->
+        <div class="field col-12 md:col-3">
+          <sm-label-tooltip [tooltip]="ZERO_LEVEL">Zero level</sm-label-tooltip>
+          <p-inputNumber [min]="1" [max]="3" id="zeroLevel" formControlName="zeroLevel"></p-inputNumber>
+        </div>
+
+        @if (advanced()) {
+          <!--      LR Scheduler-->
+          <div class="field col-12 md:col-4">
+            <sm-label-tooltip [tooltip]="LR_SCHEDULER">Learning rate scheduler</sm-label-tooltip>
+            <p-dropdown [options]="schedulers" id="lrScheduler" formControlName="lrScheduler"></p-dropdown>
+          </div>
+          <!--      Warmup ratio-->
+          <div class="field col-12 md:col-2">
+            <sm-label-tooltip [tooltip]="WARMUP_RATIO">Warmup ratio</sm-label-tooltip>
+            <input pInputText id="warmupRatio" formControlName="warmupRatio" (beforeinput)="filterDouble($event)"/>
+            <small class="text-red-500" *ngIf="trainingForm().dirty && trainingForm().get('warmupRatio')?.errors?.double">
+              Enter a positive number with up to 4 decimal places (e.g. 0.1234)</small>
+          </div>
+          <!--      Warmup steps-->
+          <div class="field col-12 md:col-2">
+            <sm-label-tooltip [tooltip]="WARMUP_STEPS">Warmup steps</sm-label-tooltip>
+            <p-inputNumber [min]="0" id="warmupSteps" formControlName="warmupSteps"></p-inputNumber>
+          </div>
+          <!--      Cooldown steps-->
+          <div class="field col-12 md:col-2">
+            <sm-label-tooltip [tooltip]="COOLDOWN_STEPS">Cooldown steps</sm-label-tooltip>
+            <p-inputNumber [min]="0" id="cooldownSteps" formControlName="cooldownSteps"></p-inputNumber>
+          </div>
+          <!--      Final LR fraction-->
+          <div class="field col-12 md:col-2">
+            <sm-label-tooltip [tooltip]="FINAL_LR_FRACTION">Final LR fraction</sm-label-tooltip>
+            <input pInputText id="finalLrFraction" formControlName="finalLrFraction" (beforeinput)="filterDouble($event)"/>
+            <small class="text-red-500" *ngIf="trainingForm().dirty && trainingForm().get('finalLrFraction')?.errors?.double">
+              Enter a positive number with up to 4 decimal places (e.g. 0.1234)</small>
+          </div>
+          <!--      Skip quant first layers-->
+          <div class="field col-12 md:col-2 flex align-items-center gap-2">
+            <sm-label-tooltip [tooltip]="SKIP_QUANT_FIRST_LAYERS">Skip quant first layers</sm-label-tooltip>
+            <p-inputNumber [min]="0" id="skipQuantFirstLayers" formControlName="skipQuantFirstLayers"></p-inputNumber>
+          </div>
+          <!--      Skip quant last layers-->
+          <div class="field col-12 md:col-2 flex align-items-center gap-2">
+            <sm-label-tooltip [tooltip]="SKIP_QUANT_LAST_LAYERS">Skip quant last layers</sm-label-tooltip>
+            <p-inputNumber [min]="0" id="skipQuantLastLayers" formControlName="skipQuantLastLayers"></p-inputNumber>
+          </div>
+          <!--      Gradient checkpointing-->
+          <div class="field col-12 md:col-2 flex align-items-center gap-2">
+            <sm-label-tooltip [tooltip]="GRADIENT_CHECKPOINTING">Gradient checkpointing</sm-label-tooltip>
+            <p-checkbox [binary]="true" id="gradientCheckpointing" formControlName="gradientCheckpointing"
+                        [class.ng-dirty]="trainingForm().dirty">
+            </p-checkbox>
+          </div>
+          <!--        Sample packing-->
+          <div class="field col-12 md:col-2 flex align-items-center gap-2">
+            <sm-label-tooltip [tooltip]="SAMPLE_PACKING">Sample packing</sm-label-tooltip>
+            <p-checkbox [binary]="true" id="samplePacking" formControlName="samplePacking"
+                        [class.ng-dirty]="trainingForm().dirty">
+            </p-checkbox>
+          </div>
+          <!--      Debug time breakdown-->
+          <div class="field col-12 md:col-2 flex align-items-center gap-2">
+            <sm-label-tooltip [tooltip]="DEBUG_TIME_BREAKDOWN">Debug time breakdown</sm-label-tooltip>
+            <p-checkbox [binary]="true" id="debugTimeBreakdown" formControlName="debugTimeBreakdown"
+                        [class.ng-dirty]="trainingForm().dirty">
+            </p-checkbox>
+          </div>
+          <!--      Debug memory breakdown-->
+          <div class="field col-12 md:col-2 flex align-items-center gap-2">
+            <sm-label-tooltip [tooltip]="DEBUG_MEMORY_BREAKDOWN">Debug memory breakdown</sm-label-tooltip>
+            <p-checkbox [binary]="true" id="debugMemoryBreakdown" formControlName="debugMemoryBreakdown"
+                        [class.ng-dirty]="trainingForm().dirty">
+            </p-checkbox>
+          </div>
+        }
+      </div>
+    </form>
+  </sm-card>
+</form>

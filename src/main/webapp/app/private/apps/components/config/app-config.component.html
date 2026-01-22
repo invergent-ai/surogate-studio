@@ -1,0 +1,208 @@
+<sm-page-loader [loading]="loading">
+  <ng-template>
+    <form [formGroup]="applicationForm" (ngSubmit)="saveApplication()" class="mt-1">
+
+      @if (application()?.mode === ApplicationMode.APPLICATION) {
+        <!-- Replicas -->
+        <div class="field grid">
+          <label for="replicas"
+                 class="col-4 mb-2 sm:col-2 lg:col-2 xl:col-1 md:mb-0 justify-content-start">Replicas:</label>
+          <div class="col-8 sm:col-6 lg:col-2">
+            <p-inputNumber formControlName="replicas" id="replicas" mode="decimal" inputId="replicas"
+                           class="justify-content-start p-button-sm" [class.ng-dirty]="applicationForm.dirty"
+                           [showButtons]="true" [min]="1" [max]="16"></p-inputNumber>
+          </div>
+        </div>
+      }
+
+      @if (application()?.mode === ApplicationMode.MODEL) {
+        <div>
+          <sm-model-settings [formControl]="$any(applicationForm.controls['modelSettings'])"></sm-model-settings>
+        </div>
+      }
+
+      <h5 class="text-base"
+        [smTranslate]="application().mode === ApplicationMode.MODEL ? 'appConfig.components' : 'appConfig.containers'"></h5>
+
+      <div class="grid">
+        @for (container of containers; track container.id; let idx = $index) {
+          <div class="col-12">
+            <div class="card surface-card mb-0 p-3 cursor-pointer"
+                 [ngClass]="{'border-bottom-none border-noround-bottom': currentContainerIndex === idx}"
+                 (click)="editContainer(container)">
+              <div class="flex align-items-center justify-content-between">
+                <div class="flex align-items-center gap-2">
+                  <i class="pi pi-box text-600"></i>
+                  <span class="font-medium text-900 select-none">{{ containerName(container) }}</span>
+                </div>
+
+                <div class="flex column-gap-2 align-items-center">
+                  @if (application()?.mode !== ApplicationMode.MODEL) {
+                    <button type="button" pButton pRipple icon="pi pi-trash"
+                            class="p-button-icon p-button-sm p-button-danger"
+                            (click)="removeContainer($event, container)">
+                    </button>
+                  }
+                  <i class="pi pi-caret-down transition-transform transition-duration-200 transition-ease-in"
+                     [ngClass]="{'rotate-180': currentContainerIndex !== idx}"></i>
+                </div>
+              </div>
+            </div>
+            @if (showContainerSettings && currentContainerIndex === idx) {
+              <div class="col-12 card border-1 border-300 border-top-none border-noround-top surface-50 fade-in" [@fadeIn]>
+                <sm-container-settings [applicationName]="application().internalName ?? application().name"
+                                       [publicIp]="application().project?.cluster?.publicIp"
+                                       [applicationId]="application().id"
+                                       [containerForm]="currentContainerForm"
+                                       [applicationForm]="applicationForm"
+                                       [hasExistingIngressPort]="hasExistingIngressPort(currentContainerIndex ?? containers.length)"
+                                       [resetTrigger]="resetTrigger"
+                                       [containerIndex]="currentContainerIndex ?? containers.length"
+                                       [mode]="application().mode"
+                                       [namespace]="application().deployedNamespace"
+                                       (portsUpdated)="onPortsUpdated($event)">
+                </sm-container-settings>
+
+                <div class="mt-3 flex justify-content-center column-gap-2">
+                  <button pButton pRipple type="button" size="small" class="p-button-outlined w-auto" (click)="cancelContainer()">
+                    Cancel
+                  </button>
+                  <button pButton pRipple type="button" size="small" class="p-button-primary w-auto"
+                          [disabled]="!currentContainerForm.valid || !volumesAreValid()" (click)="saveContainer()">Save
+                    container
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      @if (showContainerSettings && currentContainerIndex === null) {
+        <!-- no containers in app, show default container form -->
+        <div class="col-12 card border-1 border-300 surface-50 fade-in" [@fadeIn]>
+          <sm-container-settings [applicationName]="application().internalName ?? application().name"
+                                 [publicIp]="application().project?.cluster?.publicIp"
+                                 [applicationId]="application().id"
+                                 [containerForm]="currentContainerForm"
+                                 [applicationForm]="applicationForm"
+                                 [hasExistingIngressPort]="hasExistingIngressPort(currentContainerIndex ?? containers.length)"
+                                 [resetTrigger]="resetTrigger"
+                                 [containerIndex]="currentContainerIndex ?? containers.length"
+                                 (portsUpdated)="onPortsUpdated($event)">
+          </sm-container-settings>
+
+          <div class="flex justify-content-center column-gap-2 mt-4">
+            <button pButton pRipple type="button" size="small" class="p-button-outlined w-auto" (click)="cancelContainer()">Cancel
+            </button>
+            <button pButton pRipple type="button" size="small" class="p-button-primary w-auto"
+                    [disabled]="!currentContainerForm.valid || !volumesAreValid()" (click)="saveContainer()">Save
+              container
+            </button>
+          </div>
+        </div>
+      }
+
+      @if (application().mode !== ApplicationMode.MODEL && !showContainerSettings) {
+        <div class="grid">
+          <div class="col-12">
+            <div class="border-dashed border-1 border-300 surface-card border-round cursor-pointer hover:border-primary"
+                 (click)="addContainer()" *ngIf="containers.length < MAX_CONTAINER_NUM">
+              <div class="w-full px-4 py-2 flex align-items-center column-gap-4 cursor-pointer">
+                <div class="">
+                  <i class="pi pi-plus-circle text-xl" style="font-size: 1.5rem"></i>
+                </div>
+                <div class="">
+                  <p class="m-0 text-base font-bold">Add container</p>
+                  <small class="block mt-0">Create a new container</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <div class="mt-1" *ngIf="applicationForm.dirty && !hasRequiredContainers()">
+        <p-messages class="w-full" severity="error" [enableService]="false" [closable]="true">
+          <ng-template pTemplate>
+            <div class="block">
+              <p>At least one container must be configured</p>
+            </div>
+          </ng-template>
+        </p-messages>
+      </div>
+
+      @if (application().mode !== ApplicationMode.MODEL) {
+        <div class="grid mt-1">
+          <div class="col-12">
+            <div class="surface-card">
+              <p-accordion class="advanced-accordion">
+                <p-accordionTab header="Advanced Settings">
+                  <!-- Update Strategy -->
+                  <div class="field grid align-items-start pt-4">
+                    <label for="updateStrategy" class="col-12 mb-2 md:col-2 xl:col md:mb-0 md:justify-content-start font-normal">Update
+                      strategy:</label>
+                    <div class="col-12 md:col-10" id="updateStrategy">
+                      <div class="flex flex-column gap-3">
+                        <div>
+                          <p-radioButton class="w-auto" formControlName="updateStrategy" value="ROLLING"
+                                         inputId="rolling" id="rolling"></p-radioButton>
+                          <label for="rolling" class="ml-2">Rolling update (recommended)</label>
+                          <small class="block mt-2 text-color">Gradually replaces old replicas with new ones. The
+                            service is not interrupted during the update process.</small>
+                        </div>
+                        <div>
+                          <p-radioButton class="w-auto" formControlName="updateStrategy" value="SIMULTANEOUS"
+                                         inputId="simultaneous" id="simultaneous"></p-radioButton>
+                          <label for="simultaneous" class="ml-2">Simultaneous update</label>
+                          <small class="block mt-2 text-color">Deletes all existing replicas before creating new ones.
+                            The service is interrupted during the update process.</small>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <sm-annotations [applicationForm]="applicationForm"
+                                  (annotationsUpdated)="onAnnotationsUpdated($event)">
+                  </sm-annotations>
+                </p-accordionTab>
+              </p-accordion>
+            </div>
+
+          </div>
+        </div>
+      }
+
+      @if (application()?.mode === ApplicationMode.MODEL && showGpuMemoryWarning) {
+        <p-messages [enableService]="false" [value]="[GpuMemoryNotUpdated]" [closable]="false"></p-messages>
+      }
+
+      <div *ngIf="status() !== ApplicationStatus.DELETING" class="flex mt-3 column-gap-2">
+        <button pButton type="submit"
+                severity="primary" size="small"
+                [disabled]="!applicationForm.valid || !hasRequiredContainers() || isSaving || isPublishing"
+                [loading]="isSaving" label="Save"></button>
+
+        @if (status() === ApplicationStatus.CREATED) {
+          <button pButton
+                  type="button" (click)="saveApplication(true)"
+                  severity="success" size="small"
+                  [disabled]="!applicationForm.valid || !hasRequiredContainers() || isSaving || isPublishing"
+                  [loading]="isPublishing" label="Publish"></button>
+        }
+
+        @if (status() === ApplicationStatus.DEPLOYED
+              || status() === ApplicationStatus.INITIALIZED
+              || status() === ApplicationStatus.ERROR) {
+          <button pButton
+                  type="button" (click)="redeployApplication()"
+                  severity="success" size="small"
+                  [disabled]="!applicationForm.valid || !hasRequiredContainers() || isSaving || isPublishing"
+                  [loading]="isPublishing" label="Republish"></button>
+        }
+      </div>
+    </form>
+  </ng-template>
+</sm-page-loader>
+
+<p-confirmDialog />

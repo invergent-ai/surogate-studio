@@ -1,0 +1,188 @@
+<!-- zone.component.html -->
+<p-toast></p-toast>
+<p-confirmDialog [style]="{width: '25%'}"></p-confirmDialog>
+
+<div class="card">
+  <div class="flex justify-content-between align-items-center mb-3 flex-wrap">
+    <h2 class="text-xxl col-12 sm:col" id="page-heading" data-cy="ZoneHeading">
+      <span>Zones</span>
+    </h2>
+    <button pButton pRipple label="Refresh list" icon="pi pi-sync" class="col-6 xl:col-1 p-button sm:mr-2 xl:ml-auto w-auto" (click)="load()"
+            [disabled]="isLoading" [class]="layoutService.config.colorScheme === 'light' ? '' : 'p-button-text'"></button>
+    <button pButton pRipple label="Create a new zone" icon="pi pi-plus" class="col-6 xl:col-2 p-button w-auto"
+            (click)="openDialog()" [class]="layoutService.config.colorScheme === 'light' ? '' : 'p-button-text'"></button>
+  </div>
+
+
+  <!-- No Results Message -->
+  <div class="alert alert-warning" id="no-result"
+       *ngIf="!isLoading && (!zones || zones.length === 0)">
+    <span>No Zones found</span>
+  </div>
+
+  <p-table
+    [value]="zones"
+    [loading]="isLoading"
+    [sortField]="predicate"
+    [sortOrder]="ascending ? 1 : -1"
+    (onSort)="onSort($event)"
+    styleClass="p-datatable-sm"
+    [tableStyle]="{ 'min-width': '50rem' }"
+    dataKey="id"
+  >
+    <ng-template pTemplate="header">
+      <tr>
+        <th pSortableColumn="name">
+          <div class="flex align-items-center">
+            Name
+            <p-sortIcon field="name"></p-sortIcon>
+          </div>
+        </th>
+        <th pSortableColumn="zoneId">
+          <div class="flex align-items-center whitespace-nowrap">
+            Zone Id
+            <p-sortIcon field="zoneId"></p-sortIcon>
+          </div>
+        </th>
+        <th pSortableColumn="vpnApiKey">
+          <div class="flex align-items-center">
+            VPN API Key
+            <p-sortIcon field="vpnApiKey"></p-sortIcon>
+          </div>
+        </th>
+        <th pSortableColumn="iperfIp">
+          <div class="flex align-items-center">
+            IPerf IP
+            <p-sortIcon field="iperfIp"></p-sortIcon>
+          </div>
+        </th>
+        <th pSortableColumn="organization.name">
+          <div class="flex align-items-center">
+            Organization
+            <p-sortIcon field="organization.name"></p-sortIcon>
+          </div>
+        </th>
+        <th style="width: 8rem">
+          <div class="flex justify-content-center">
+            Actions
+          </div>
+        </th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-zone>
+      <tr>
+        <td>{{ zone.name }}</td>
+        <td>{{ zone.zoneId }}</td>
+        <td>{{ zone.vpnApiKey }}</td>
+        <td>{{ zone.iperfIp }}</td>
+        <td>
+          <div *ngIf="zone.organization">
+    <span [routerLink]="['/crud/organization', zone.organization.id, 'view']"
+          style="color: inherit; text-decoration: none; cursor: pointer;"
+          class="hover:text-primary transition-colors transition-duration-150">
+      {{ zone.organization.name }}
+    </span>
+          </div>
+        </td>
+        <td>
+          <div class="flex justify-content-center gap-2">
+            <button pButton pRipple
+                    icon="pi pi-eye"
+                    class="p-button-rounded p-button-text"
+                    (click)="openDialog(zone)"
+                    pTooltip="View/Edit">
+            </button>
+
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<!-- Zone Dialog -->
+<p-dialog
+  [(visible)]="dialogVisible"
+  [style]="{width: '50vw'}"
+  [modal]="true"
+  [header]="selectedZone?.id ? 'Edit Zone' : 'Create Zone'"
+>
+  <ng-template pTemplate="content">
+    <div class="grid p-fluid">
+      <div class="col-12">
+        <div class="field">
+          <label class="block text-sm text-500 mb-1">Name</label>
+          <input pInputText [(ngModel)]="selectedZone.name"/>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="field">
+          <label class="block text-sm text-500 mb-1">Zone ID</label>
+          <input pInputText [(ngModel)]="selectedZone.zoneId"/>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="field">
+          <label class="block text-sm text-500 mb-1">VPN API Key</label>
+          <input pInputText [(ngModel)]="selectedZone.vpnApiKey"/>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="field">
+          <label class="block text-sm text-500 mb-1">IPerf IP</label>
+          <input pInputText [(ngModel)]="selectedZone.iperfIp"/>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="field">
+          <label class="block text-sm text-500 mb-1">Organization</label>
+          <div class="field">
+            <p-dropdown
+              [(ngModel)]="selectedZone.organization"
+              [options]="organizations"
+              optionLabel="name"
+              [showClear]="true"
+              placeholder="Select an Organization"
+              [filter]="true"
+              filterBy="name"
+              [virtualScroll]="true"
+              [itemSize]="34"
+              appendTo="body"
+              [disabled]="isLoadingOrganizations"
+            >
+              <ng-template pTemplate="selectedItem" let-organization>
+                <div *ngIf="organization">
+                  {{ organization.name }}
+                </div>
+              </ng-template>
+            </p-dropdown>
+            <small *ngIf="isLoadingOrganizations" class="text-sm text-500">
+              Loading organizations...
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template pTemplate="footer">
+    <div class="flex justify-content-end gap-2">
+      <button pButton pRipple label="Cancel"
+              icon="pi pi-times"
+              class="p-button-text"
+              (click)="hideDialog()">
+      </button>
+      <button pButton pRipple label="Save"
+              icon="pi pi-check"
+              class="p-button-primary"
+              (click)="saveZone()"
+              [loading]="isSaving">
+      </button>
+    </div>
+  </ng-template>
+</p-dialog>

@@ -1,0 +1,77 @@
+# ===================================================================
+# Spring Boot configuration.
+#
+# This configuration is used for unit/integration tests with testcontainers database containers.
+#
+# To activate this configuration launch integration tests with the 'testcontainers' profile
+#
+# More information on database containers: https://www.testcontainers.org/modules/databases/
+# ===================================================================
+
+spring:
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:file:./data/sment:sment;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+    hikari:
+      poolName: Hikari
+      auto-commit: false
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+        implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
+    properties:
+      hibernate.id.new_generator_mappings: true
+      hibernate.connection.provider_disables_autocommit: true
+      hibernate.cache.use_second_level_cache: false
+      hibernate.cache.use_query_cache: false
+      hibernate.generate_statistics: false
+      #hibernate.hbm2ddl.auto: none #TODO: temp relief for integration tests, revisit required
+      hibernate.type.preferred_instant_jdbc_type: TIMESTAMP
+      hibernate.jdbc.time_zone: UTC
+      hibernate.timezone.default_storage: NORMALIZE
+      hibernate.query.fail_on_pagination_over_collection_fetch: true
+
+app:
+  client-url: https://localhost:4200
+  server-url: https://localhost:8080
+  node-reservation-duration: 60 # Minutes
+  check-node-resource-updates: false
+  rate-limiter:
+    rate-limit-tokens: 600 # Tokens per minute => 10 req / sec
+    smid-rate-limit-tokens: 2 # Tokens per 10 seconds => 2 req / 10 sec (must be at least two)
+  metrics:
+    logs-watch-timeout: 5 # Seconds
+    shell-watch-timeout: 5 # Seconds
+    metrics-poll-interval: 5 # Seconds
+    metrics-wait-timeout: 10 # Seconds
+    status-poll-interval: 5 # Seconds
+    status-wait-timeout: 600 # Seconds
+  pipeline:
+    cicd-pipeline-autopublish: true
+    cicd-pipeline-wait-timeout: 300 # Seconds
+  job:
+    delete-terminating-schedule: 0 0 0 * * ? # // Every day at midnight
+    update-node-status-schedule: 0 0/1 * * * ? # Every minute
+    terminating-pods-delete-finalizers: true
+  k8s-task:
+    resource-operation-poll-interval: 3 # Seconds
+    resource-operation-wait-timeout: 10 # Seconds
+    resource-operation-watch-timeout: 30 # Seconds - Deprecated
+    request-vs-limits-coefficient-cpu: 0.25
+    request-vs-limits-coefficient-memory: 0.75
+  storage:
+    sm-storage-bucket-url: https://noop.
+    sm-storage-access-key: noop
+    sm-storage-access-secret: noop
+  token:
+    ttl: 60 # Seconds
+  profile:
+    datacenters:
+      - noop
+  mail:
+    from: noreply@noop.net

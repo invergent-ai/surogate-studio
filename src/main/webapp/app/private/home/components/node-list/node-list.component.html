@@ -1,0 +1,25 @@
+<sm-page-loader>
+  <ng-template>
+    <div class="flex flex-column gap-3">
+      <ng-container *ngIf="nodes?.length > 0; else noNodes">
+        <div class="grid">
+          <div class="col-12 sm:col-12 lg:col-12 xl:col-6"  *ngFor="let node of nodes">
+            <sm-node-card [nodelist]="nodelist"
+                          [node]="node"
+                          [showGpus]="true"
+                          (click)="gotoNode(node)"
+                          class="my-3 cursor-pointer" >
+            </sm-node-card>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-template #noNodes>
+        <div class="flex flex-column align-items-center justify-content-center">
+          <p class="text-lg opacity-80 font-semibold">You don't own any nodes</p>
+          <p class="opacity-80 text-center">You can become an operator in a few steps to earn additional income.</p>
+        </div>
+      </ng-template>
+    </div>
+  </ng-template>
+</sm-page-loader>

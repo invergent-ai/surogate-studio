@@ -1,0 +1,18 @@
+<sm-page-loader>
+  <ng-template>
+    <div class="grid">
+      <ng-container *ngIf="resources?.length > 0; else noResources">
+        <div class="col-4" *ngFor="let res of resources">
+          <sm-resource-card [resource]="res"></sm-resource-card>
+        </div>
+      </ng-container>
+
+      <ng-template #noResources>
+        <div class="flex flex-column align-items-center justify-content-center mx-auto">
+          <p class="text-lg opacity-80 font-semibold" smTranslate="resourceList.noResources"></p>
+          <p class="opacity-80 text-center" smTranslate="resourceList.start"></p>
+        </div>
+      </ng-template>
+    </div>
+  </ng-template>
+</sm-page-loader>

@@ -1,0 +1,38 @@
+<sm-page-loader [loading]="!gpuMetrics">
+  <ng-template>
+    <div class="grid">
+      <div class="col-6">
+        <p-card>
+          <p class="font-semibold text-lg">Compute Usage (%) for GPU: {{gpuId()}}</p>
+          <div>
+            <p-chart type="line" height="200" [data]="gpuMetrics.usageData" [options]="lineOptionsWithMax100"></p-chart>
+          </div>
+        </p-card>
+      </div>
+      <div class="col-6">
+        <p-card>
+          <p class="font-semibold text-lg">Memory Usage (%) for GPU: {{gpuId()}}</p>
+          <div>
+            <p-chart type="line" height="200" [data]="gpuMetrics.memoryData" [options]="lineOptionsWithMax100"></p-chart>
+          </div>
+        </p-card>
+      </div>
+      <div class="col-6">
+        <p-card>
+          <p class="font-semibold text-lg">Temperature (°C) for GPU: {{gpuId()}}</p>
+          <div>
+            <p-chart type="line" height="200" [data]="gpuMetrics.temperatureData" [options]="lineOptionsWithMax100"></p-chart>
+          </div>
+        </p-card>
+      </div>
+      <div class="col-6">
+        <p-card>
+          <p class="mb-0 font-semibold text-lg">Power Consumption (W) for GPU: {{gpuId()}}</p>
+          <div>
+            <p-chart type="line" height="200" [data]="gpuMetrics.powerData" [options]="lineOptionsWithMax600"></p-chart>
+          </div>
+        </p-card>
+      </div>
+    </div>
+  </ng-template>
+</sm-page-loader>

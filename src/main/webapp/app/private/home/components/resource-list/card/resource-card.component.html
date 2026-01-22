@@ -1,0 +1,47 @@
+<p-card styleClass="cursor-pointer relative" [routerLink]="routerLink()" [queryParams]="{id: resource.resource.id}">
+  <ng-template pTemplate="content">
+    <div class="h-7rem">
+      <div class="mt-2 flex flex-wrap align-items-center justify-content-between">
+        <div class="text-lg font-bold">{{ resource.resource.name }}</div>
+      </div>
+      @if (resource.type === 'app' || resource.type === 'model') {
+        <div class="mt-2">
+          <div>
+            <p-tag styleClass="text-sm" [value]="app()?.status"
+                   [severity]="app()?.status === ApplicationStatus.ERROR ? 'danger' :
+                       app()?.status === ApplicationStatus.DEPLOYED ? 'success' : 'info'">
+            </p-tag>
+          </div>
+          <p class="mt-2 text-sm">{{resource.cpu}} vCPU, {{resource.memory}} GB RAM</p>
+        </div>
+      } @else if (resource.type === 'db') {
+        <div class="mt-2">
+          <div>
+            <p-tag styleClass="text-sm" [value]="db()?.status"
+                   [severity]="db()?.status === DatabaseStatus.ERROR ? 'danger' :
+                       db()?.status === DatabaseStatus.DEPLOYED ? 'success' :
+                       db()?.status === DatabaseStatus.DEPLOYING ? 'warning' : 'info'">
+            </p-tag>
+          </div>
+          <p class="mt-2 text-sm">{{db().cpuLimit}} vCPU, {{db().memLimit}} MB RAM</p>
+        </div>
+      } @else if (resource.type === 'vol') {
+        <div class="mt-2">
+          <p class="mt-2 text-sm">{{vol().type}}</p>
+          <p class="mt-2 text-sm font-semibold">{{vol().size}} GB</p>
+          <div *ngIf="vol().bucketUrl">
+            <p-tag styleClass="text-sm" value="S3" severity="success"></p-tag>
+          </div>
+        </div>
+      }
+
+      <div class="absolute right-0 bottom-0 pr-1 pb-4">
+        <lucide-angular
+          [img]="resourceIconComponent()"
+          class="text-primary-200"
+          [size]="64">
+        </lucide-angular>
+      </div>
+    </div>
+  </ng-template>
+</p-card>

@@ -1,0 +1,18 @@
+<p-button
+  (click)="repoPanel.toggle($event)"
+  icon="pi pi-file"
+  size="small"
+  [disabled]="!canSelect()"
+  [label]="selectedLabel()"/>
+
+<p-overlayPanel #repoPanel [dismissable]="true" [showCloseIcon]="false">
+  <sm-file-navigator
+    [type]="type()"
+    [showItemActions]="false"
+    [selectable]="true"
+    [objects]="objects()"
+    [repository]="fakeRepository()"
+    (onSelectFile)="onSelectFile($event)"
+    (onSelectFolder)="onSelectFolder($event)">
+  </sm-file-navigator>
+</p-overlayPanel>

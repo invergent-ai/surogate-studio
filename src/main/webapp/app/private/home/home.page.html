@@ -1,0 +1,34 @@
+<sm-page>
+  <div class="flex flex-column row-gap-5">
+    <div class="flex align-items-center justify-content-between">
+      <div>
+        <h1 class="page-title">Resources</h1>
+        <p class="page-subtitle">Overview of current cloud resources and their provisioning status</p>
+      </div>
+      <div class="flex align-items-center gap-2">
+        <button pButton severity="secondary" size="small" outlined="true" routerLink="/apps/deploy">
+          <div class="flex gap-2">
+            <i-lucide [img]="SquarePlus" class="w-1rem h-1rem"></i-lucide>
+            <p class="font-bold">Application</p>
+          </div>
+        </button>
+        <button pButton severity="secondary" size="small" outlined="true" routerLink="/volumes/create">
+          <div class="flex gap-2">
+            <i-lucide [img]="SquarePlus" class="w-1rem h-1rem"></i-lucide>
+            <p class="font-bold">Volume</p>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <sm-resource-list [user]="user"></sm-resource-list>
+
+    <div class="flex align-items-center justify-content-between">
+      <div>
+        <h1 class="page-title">Cloud Nodes</h1>
+        <p class="page-subtitle">Summary of of registered appliances</p>
+      </div>
+    </div>
+    <sm-node-list [user]="user"></sm-node-list>
+  </div>
+</sm-page>

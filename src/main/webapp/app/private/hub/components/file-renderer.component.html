@@ -1,0 +1,30 @@
+@switch (fileType()) {
+  @case (FileType.TEXT) {
+    <sm-lazy-text-viewer
+      [repository]="repository()"
+      [ref]="ref()"
+      [object]="object()">
+    </sm-lazy-text-viewer>
+  }
+  @case (FileType.DATA) {
+    <sm-duckdb-renderer [repoId]="repository()?.id" [refId]="ref()" [object]="object()"></sm-duckdb-renderer>
+  }
+  @case (FileType.PDF) {
+    <sm-pdf-renderer [repoId]="repository()?.id" [refId]="ref()" [path]="object()?.path"></sm-pdf-renderer>
+  }
+  @case (FileType.MARKDOWN) {
+      <sm-markdown-renderer [repoId]="repository()?.id" [refId]="ref()" [text]="objectTextData()"></sm-markdown-renderer>
+  }
+  @case (FileType.IPYNB) {
+    <sm-ipynb-renderer  [text]="objectTextData()"></sm-ipynb-renderer>
+  }
+  @case (FileType.IMAGE) {
+    <sm-image-renderer [repoId]="repository()?.id" [refId]="ref()" [path]="object()?.path"></sm-image-renderer>
+  }
+  @case (FileType.TOO_LARGE) {
+    <sm-toolarge-renderer [message]="'File Size is too large'"></sm-toolarge-renderer>
+  }
+  @default {
+    <sm-unsupported-renderer [message]="'FileType is not recognized'"></sm-unsupported-renderer>
+  }
+}

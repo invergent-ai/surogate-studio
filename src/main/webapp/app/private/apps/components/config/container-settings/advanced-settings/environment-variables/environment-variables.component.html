@@ -1,0 +1,79 @@
+<div class="card">
+  <div class="flex align-items-baseline">
+    <div>
+      <p class="font-bold mb-1">Environment variables</p>
+      <small class="block text-color">Add environment variables to the container.</small>
+    </div>
+
+    <div class="action-buttons flex">
+      <button pButton *ngIf="envVars.length" type="button"
+              icon="pi pi-download"
+              class="p-button-sm"
+              (click)="exportVariables($event)"
+              tooltipPosition="left"
+              pTooltip="Export variables to CSV">
+      </button>
+      <button pButton type="button"
+              icon="pi pi-upload"
+              class="p-button-sm ml-1"
+              (click)="fileInput.click()"
+              tooltipPosition="left"
+              pTooltip="Import variables from CSV">
+      </button>
+      <div class="hidden-file-input">
+        <input #fileInput type="file" [uploader]="uploader" ng2FileSelect [accept]="['.csv']"
+               (onFileSelected)="fileSelected($event)"
+               aria-label="Import variables from CSV"/>
+      </div>
+    </div>
+  </div>
+
+  <div class="env-var-table mt-3" [formGroup]="containerForm">
+    <div formArrayName="envVars" class="w-full">
+      <div *ngFor="let envVar of envVars.controls; let i = index"
+           [formGroupName]="i"
+           class="env-var-entry mb-2">
+        <div class="grid g-0 align-items-start" style="justify-content: space-between;">
+          <div class="col-5 px-2">
+            <input pInputText
+                   formControlName="key"
+                   placeholder="Key"
+                   class="w-full dark-input"/>
+            <small class="p-error" *ngIf="envVar.get('key')?.errors?.required && envVar.get('key')?.touched">
+              Key is required
+            </small>
+          </div>
+
+          <div class="col-6 px-2">
+            <input pInputText
+                   formControlName="value"
+                   placeholder="Value"
+                   class="w-full dark-input"/>
+            <small class="p-error" *ngIf="envVar.get('value')?.errors?.required && envVar.get('value')?.touched">
+              Value is required
+            </small>
+          </div>
+
+          <div class="col-1 flex justify-content-center">
+            <button pButton
+                    type="button"
+                    icon="pi pi-trash"
+                    class="p-button-text p-button-danger p-button-sm"
+                    (click)="removeEnvironmentVariable(i)">
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex mt-4" style="gap: 0.5vw;">
+      <button pButton size="small"
+              type="button"
+              label="Add variable"
+              (click)="addEnvironmentVariable()"
+              style="width: auto;"
+              [class]="layoutService.config.colorScheme === 'light' ? '' : 'p-button-outlined'">
+      </button>
+    </div>
+  </div>
+</div>

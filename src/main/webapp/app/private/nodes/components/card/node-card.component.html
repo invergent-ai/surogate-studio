@@ -1,0 +1,117 @@
+<p-card *ngIf="node()" class="h-full flex flex-column" styleClass="hover:shadow-2">
+  <ng-template pTemplate="header">
+    <header class="p-4 flex align-items-start justify-content-between gap-4">
+      <div class="flex align-items-start gap-3">
+        <div class="flex w-3rem h-3rem align-items-center justify-content-center border-round-xl bg-black-alpha-90 text-white shadow-md">
+          <i-lucide [img]="Server" class="w-2rem h-2rem text-white"></i-lucide>
+        </div>
+        <div>
+          <div class="flex align-items-center gap-2">
+            <p class="text-lg font-semibold">{{ node().name }}</p>
+            <span class="text-xs p-disabled">({{node().internalName}})</span>
+          </div>
+          <div class="mt-1 flex flex-wrap align-items-center gap-4 text-sm text-slate-600">
+            <div class="inline-flex align-items-center gap-2">
+              <i-lucide [img]="Cpu" class="w-1rem h-1rem"></i-lucide>
+              <span><span class="font-medium">{{ node()?.resource?.capacityCpu }}</span> CPU</span>
+            </div>
+            <div class="inline-flex align-items-center gap-2">
+              <i-lucide [img]="HardDrive" class="w-1rem h-1rem"></i-lucide>
+              <span><span class="font-medium text-slate-800">{{ node()?.resource?.capacityMemory | filesize: {base: 2} }}</span> GiB Memory</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex align-items-center gap-2 text-sm text-500">
+        <p-tag severity="success" value="GPU Node"></p-tag>
+      </div>
+    </header>
+  </ng-template>
+
+  <!-- Stats row -->
+  <section class="grid gap-3 mx-0">
+    <div class="col card surface-50 border-1 border-300 border-round-xl">
+      <div class="flex align-items-center justify-content-between text-sm text-500">
+        <span>Active apps</span>
+        <i-lucide [img]="Activity" class="w-1.5rem h-1.5rem"></i-lucide>
+      </div>
+      <div class="mt-1 text-3xl font-semibold">
+        <i *ngIf="statusLoading" class="pi pi-spin pi-spinner"></i>{{ status ? status.activeApps : '' }}
+      </div>
+    </div>
+
+    <div class="col card surface-50 border-1 border-300 border-round-xl">
+      <div class="flex align-items-center justify-content-between text-sm text-500">
+        <span>Served apps</span>
+        <i-lucide [img]="Layers" class="w-1.5rem h-1.5rem"></i-lucide>
+      </div>
+      <div class="mt-1 text-3xl font-semibold">
+        <i *ngIf="statusLoading" class="pi pi-spin pi-spinner"></i>{{ status ? status.totalApps : '' }}
+      </div>
+    </div>
+
+    <div class="col card surface-50 border-1 border-300 border-round-xl">
+      <div class="flex align-items-center justify-content-between text-sm text-500">
+        <span>Uplink</span>
+        <i-lucide [img]="ArrowUp" class="w-1.5rem h-1.5rem"></i-lucide>
+      </div>
+      <div class="mt-1 text-3xl font-semibold">
+        <i *ngIf="statusLoading" class="pi pi-spin pi-spinner"></i>{{ status ? status.txMbps : '' }}
+        <span class="text-base font-normal text-500">KBps</span>
+      </div>
+    </div>
+
+    <div class="col card surface-50 border-1 border-300 border-round-xl">
+      <div class="flex align-items-center justify-content-between text-sm text-500">
+        <span>Downlink</span>
+        <i-lucide [img]="ArrowDown" class="w-1.5rem h-1.5rem"></i-lucide>
+      </div>
+      <div class="mt-1 text-3xl font-semibold">
+        <i *ngIf="statusLoading" class="pi pi-spin pi-spinner"></i>{{ status ? status.rxMbps : '' }}
+        <span class="text-base font-normal text-500">KBps</span>
+      </div>
+    </div>
+  </section>
+
+  <div *ngIf="!statusLoading">
+    <!--        Error message for stopped node-->
+    <p class="font-bold text-orange-400 mt-3"
+       *ngIf="status?.status === NodeStatus.NOT_REACHABLE || status?.status === NodeStatus.KUBELET_NOT_HEALTHY">
+      <i-lucide [img]="TriangleAlert" class="w-1rem h-1rem"></i-lucide>
+      We're having trouble communicating with the node.
+    </p>
+    <!--        Message for starting node-->
+    <p class="font-bold text-green-600"
+       *ngIf="status?.status === NodeStatus.PENDING">
+      <i-lucide [img]="Info" class="w-1rem h-1rem"></i-lucide>
+      Your node is starting...
+    </p>
+  </div>
+
+  @if (showGpus) {
+    <div class="mt-3">
+      <i *ngIf="statusLoading" class="pi pi-spin pi-spinner"></i>
+      <sm-gpu-cards [nodeStats]="status" (onGpuClicked)="this.onGpuClicked.emit($event)"
+                    [compact]="true"
+                    [clickable]="true"
+                    [selectable]="false" class="block"></sm-gpu-cards>
+    </div>
+  }
+
+  <ng-template pTemplate="footer">
+    <footer class="flex flex-wrap align-items-center justify-content-between pt-3">
+      <div class="inline-flex align-items-center gap-2">
+        <i-lucide [img]="Clock" class="w-1rem h-1rem"></i-lucide>
+        <span class="text-600">Uptime:</span>
+        <span *ngIf="status?.status === NodeStatus.READY" class="font-medium text-800">
+          <span>{{ status?.uptime  | duration: 'second'}}</span>
+        </span>
+      </div>
+      <div class="inline-flex align-items-center gap-2">
+        <i-lucide [img]="Shield" class="w-1rem h-1rem"></i-lucide>
+        <span class="text-500">Last updated just now</span>
+      </div>
+    </footer>
+  </ng-template>
+</p-card>

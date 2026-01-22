@@ -1,0 +1,63 @@
+<div class="layout-topbar">
+  <div class="topbar-start">
+    <button #menubutton type="button" class="topbar-menubutton p-link p-trigger" (click)="onMenuButtonClick()">
+      @if (sidebarOpen) {
+        <i-lucide [img]="PanelLeftClose" class="w-1.5rem h-1.5rem text-800"></i-lucide>
+      } @else {
+        <i-lucide [img]="PanelLeftOpen" class="w-1.5rem h-1.5rem text-800"></i-lucide>
+      }
+    </button>
+    <sm-help></sm-help>
+  </div>
+  <div class="layout-topbar-menu-section">
+    <sm-sidebar></sm-sidebar>
+  </div>
+  <div class="mr-5">
+    <ul class="topbar-menu">
+      <li>
+        <button pButton class="p-button-text p-button-sm" (click)="op.toggle($event)">
+          <i-lucide [img]="Bell" class="w-1.5rem h-1.5rem text-800"></i-lucide>
+        </button>
+
+        <p-overlayPanel #op
+                        [showTransitionOptions]="'0.2s'"
+                        [hideTransitionOptions]="'0.1s'"
+                        styleClass="surface-card notification-overlay"
+                        [style]="{width: '400px', padding: 0, maxHeight: '80vh'}">
+          <sm-notification-list
+            #notificationList
+            (unreadCountChange)="onUnreadCountChange($event)"
+            (notificationSelected)="selectedNotification = $event; dialogVisible = true">
+          </sm-notification-list>
+        </p-overlayPanel>
+      </li>
+      <li>
+        @if (colorScheme === 'light') {
+          <button pButton class="p-button-text p-button-sm" (click)="colorScheme = 'dark'">
+            <i-lucide [img]="Moon" class="w-1.5rem h-1.5rem text-800"></i-lucide>
+          </button>
+        } @else {
+          <button pButton class="p-button-text p-button-sm" (click)="colorScheme = 'light'">
+            <i-lucide [img]="Sun" class="w-1.5rem h-1.5rem text-800"></i-lucide>
+          </button>
+        }
+      </li>
+      <li>
+        <button pButton class="p-button-text p-button-sm" (click)="incrementScale()">
+          <i-lucide [img]="Expand" class="w-1.5rem h-1.5rem text-800"></i-lucide>
+        </button>
+      </li>
+      <li>
+        <button pButton class="p-button-text p-button-sm" (click)="decrementScale()">
+          <i-lucide [img]="Shrink" class="w-1.5rem h-1.5rem text-800"></i-lucide>
+        </button>
+      </li>
+    </ul>
+  </div>
+</div>
+<sm-notification-dialog
+  [(visible)]="dialogVisible"
+  [notification]="selectedNotification"
+  (hide)="onDialogHide()"
+  (markAsRead)="onMarkAsRead($event)">
+</sm-notification-dialog>

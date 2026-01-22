@@ -1,0 +1,152 @@
+<p-toast></p-toast>
+<div class="card surface-0" *ngIf="!loading">
+  <div class="port-settings">
+    <p class="font-bold mb-1">Network</p>
+    <small class="block font-normal p-disabled">Ports used for accessing the container.</small>
+
+    <div class="mt-3" [formGroup]="containerForm">
+      <div formArrayName="ports" class="w-full flex flex-column gap-2">
+        <div *ngFor="let portForm of portForms; let i = index" [formGroupName]="i" class="card surface-ground border-1 border-300">
+          <p *ngIf="portForm.get('servicePort').value && serviceNameForPort(applicationName, portForm.get('name').value, namespace)"
+             class="block text-color text-xs ">
+            <span class="font-semibold">Service Name:</span>
+            <p-tag severity="secondary" styleClass="cursor-pointer" [value]="serviceNameForPort(applicationName, portForm.get('name').value, namespace)"
+                   [cdkCopyToClipboard]="serviceNameForPort(applicationName, portForm.get('name').value, namespace)"
+                   pTooltip="Click to Copy" tooltipPosition="top"
+            />
+          </p>
+
+          <div class="flex gap-2 mt-2">
+            <!--            Protocol -->
+            <div class="md:col-2 sm:col-12 flex flex-column gap-2 px-2">
+              <small class="white-space-nowrap">Protocol</small>
+              <div class="">
+                <p-dropdown formControlName="protocol"
+                            [options]="protocols"
+                            placeholder="Protocol"
+                            optionLabel="label" appendTo="body"
+                            [optionValue]="'value'"
+                            [readonly]="mode === ApplicationMode.MODEL"
+                            class="w-full">
+                </p-dropdown>
+                <small class="p-error"
+                       *ngIf="portForm.get('protocol')?.errors?.required && portForm.get('protocol')?.touched">
+                  Protocol is required
+                </small>
+              </div>
+            </div>
+
+            <!--            Port name -->
+            <div class="md:col-2 sm:col-12 flex flex-column gap-2 px-2">
+              <small class="white-space-nowrap">Port Name</small>
+              <div class="">
+                <input pInputText
+                       formControlName="name"
+                       placeholder="Name"
+                       maxlength="15"
+                       [readonly]="mode === ApplicationMode.MODEL"
+                       class="w-full"/>
+                <small class="p-error" *ngIf="portForm.get('name')?.errors">
+                  <span class="text-color" [class.imp-error]="portForm.get('name')?.errors.required">Name is required</span>
+                  <span class="text-color" [class.imp-error]="portForm.get('name')?.errors.maxlength">, max length 15</span>
+                </small>
+              </div>
+            </div>
+
+            <!--            Container port-->
+            <div class="md:col-2 sm:col-12 flex flex-column gap-2 px-2">
+              <small class="white-space-nowrap">Container Port</small>
+              <div class="">
+                <p-inputNumber formControlName="containerPort"
+                               [min]="1" [max]="65535" [maxlength]="5"
+                               placeholder="Port"
+                               [showButtons]="false"
+                               [useGrouping]="false"
+                               [class.ng-dirty]="containerForm.dirty"
+                               [readonly]="mode === ApplicationMode.MODEL"
+                               pTooltip="The port inside the container">
+                </p-inputNumber>
+                <small class="p-error"
+                       *ngIf="portForm.get('containerPort')?.errors?.required && portForm.get('containerPort')?.touched">
+                  Container port is required
+                </small>
+              </div>
+            </div>
+
+            <!--            Service port-->
+            <div class="md:col-2 sm:col-12 flex flex-column gap-2 px-2">
+              <small class="white-space-nowrap">Service Port</small>
+              <div class="">
+                <p-inputNumber formControlName="servicePort"
+                               [min]="1" [max]="65535" [maxlength]="5"
+                               placeholder="Port"
+                               [showButtons]="false"
+                               [useGrouping]="false"
+                               [ngClass]="{'ng-invalid ng-dirty': portForm.get('servicePort')?.errors}"
+                               [readonly]="mode === ApplicationMode.MODEL"
+                               pTooltip="The port exposed to other containers">
+                </p-inputNumber>
+                <small class="p-error"
+                       *ngIf="portForm.get('servicePort')?.errors?.required && portForm.get('servicePort')?.touched">
+                  Service port is required
+                </small>
+              </div>
+            </div>
+
+            <!--            Ingress-->
+            <div class="md:col-1 sm:col-12 flex flex-column gap-2 px-2">
+              <small class="white-space-nowrap">Enable Ingress</small>
+              <div class="flex-grow-1 flex">
+                <p-checkbox
+                  formControlName="ingressPort"
+                  [binary]="true"
+                  (onChange)="onIngressPortChange(i)"
+                  pTooltip="Expose to the outside world">
+                </p-checkbox>
+              </div>
+            </div>
+
+            <!--            Delete-->
+            <div class="md:col-1 sm:col-12 flex flex-column gap-2 justify-content-end">
+              <button pButton
+                      type="button"
+                      icon="pi pi-trash"
+                      class="p-button-text p-button-danger justify-content-center"
+                      (click)="removePort(i)">
+              </button>
+            </div>
+          </div>
+
+          <!--            Ingress host-->
+          <div class="md:col-3 sm:col-12 max-w-30rem mt-2" *ngIf="portForm.get('ingressPort')?.value && publicIp">
+            <input pInputText
+                   formControlName="ingressHost"
+                   placeholder="Public hostname (Optional)"
+                   class="w-full dark-input"/>
+            <small class="p-error">
+              <span class="text-color">You must point your domain registrar's DNS towards <span class="imp-error">{{ publicIp }}</span></span>
+            </small>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex mt-4 gap-2 flex-wrap sm:flex-nowrap">
+        <button pButton size="small"
+                type="button"
+                label="Add port"
+                (click)="addPort()"
+                [class]="layoutService.config.colorScheme === 'light' ? '' : 'p-button-outlined'">
+        </button>
+        <button pButton *ngIf="_defaultPorts" class="p-button-outlined"
+                type="button" size="small"
+                label="Use default ports of image"
+                (click)="useDefaultPorts()"
+                [disabled]="!selectedImage || !selectedTag || !_defaultPorts?.length"
+                pTooltip="Please select an image and tag first"
+                [tooltipDisabled]="!(!selectedImage || !selectedTag)"
+                [class]="layoutService.config.colorScheme === 'light' ? '' : 'p-button-outlined'">
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

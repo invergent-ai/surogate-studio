@@ -1,0 +1,38 @@
+<sm-page>
+  <sm-page-loader [loading]="loading">
+    <ng-template>
+      <div>
+        <h1 class="page-title">Create a new Project</h1>
+        <p class="page-subtitle">Projects are a way of grouping cloud resources together</p>
+      </div>
+
+      <p-card styleClass="mt-5">
+        <form ngForm class="p-fluid" [formGroup]="projectForm">
+          <!-- Name -->
+          <div class="field">
+            <label for="name">Name:</label>
+            <input type="text" pInputText id="name" formControlName="name" [class.ng-dirty]="projectForm.dirty"
+                   placeholder="Project name"/>
+
+            <small [class.text-red-500]="projectForm.dirty && projectForm.get('name')?.errors?.required">
+              The name is required</small>
+            <small [class.text-red-500]="projectForm.dirty &&
+                 (projectForm.get('name')?.errors?.minlength || projectForm.get('name')?.errors?.maxlength)">
+              and must be at least 3 and at most 50 characters.</small>
+          </div>
+
+          <!-- Description -->
+          <div class="field">
+            <label for="description">Description:</label>
+            <textarea type="text" pInputTextarea rows="5" id="description" formControlName="description"
+                      placeholder="The description can contain any characters and the maximum length is 250 characters."></textarea>
+          </div>
+
+          <div>
+            <button pButton type="button" class="w-8rem" size="small" label="Save" [disabled]="!projectForm.valid" (click)="saveProject()"></button>
+          </div>
+        </form>
+      </p-card>
+    </ng-template>
+  </sm-page-loader>
+</sm-page>

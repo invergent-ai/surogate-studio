@@ -1,0 +1,62 @@
+<div class="docker-hub-search">
+  <!-- Search Header -->
+  <div class="search-container p-3 border-bottom-1 surface-border">
+    <button pButton type="button" class="p-button-text mb-2" *ngIf="registry?.value !== 'docker'" (click)="switchToDockerHub()">
+      <i class="pi pi-arrow-left"></i>
+      <span class="ml-2">Back to Docker Hub</span>
+    </button>
+    <div class="p-inputgroup">
+      <input pInputText class="w-full" #searchInput
+             [placeholder]="registry?.value === 'docker' ? 'Search for Docker images...' : 'Search private repository...'"
+             [formControl]="searchControl"
+             (keyup)="onSearch($event)"/>
+      <span class="p-inputgroup-addon">
+        <i class="pi pi-search"></i>
+      </span>
+    </div>
+  </div>
+
+  <!-- Images List -->
+  <div class="images-list" style="min-height:100px; max-height: 400px;">
+    <sm-page-loader [loading]="isLoading">
+      <ng-template>
+        <p-scroller [items]="images" [itemSize]="50" scrollHeight="400px">
+        <ng-template pTemplate="item" let-image>
+          <div class="image-item px-3 py-2 cursor-pointer" (click)="selectImage(image)">
+            <div class="flex align-items-center gap-3">
+              <!-- Image Logo -->
+              <div class="image-logo">
+                <ng-container *ngIf="image.logo_url; else defaultLogo">
+                  <img [src]="image.logo_url"
+                       alt="Docker image logo"
+                       class="logo-image"/>
+                </ng-container>
+                <ng-template #defaultLogo>
+                  <img src="../../../../../../assets/layout/images/default-docker.svg" class="logo-image" alt=""/>
+                </ng-template>
+              </div>
+
+              <!-- Left side content -->
+              <div class="flex-grow-1">
+                <div class="font-semibold text-900">
+                  {{ image.name }}
+                  <i *ngIf="image.official"
+                     class="fas fa-check-circle text-primary ml-2"
+                     style="font-size: 0.875rem;"></i>
+                </div>
+                <div class="text-sm text-500 line-clamp-1">{{ image.description }}</div>
+              </div>
+
+              <!-- Right side - Star count -->
+              <div class="stars flex align-items-center gap-1">
+                <span class="text-sm font-medium">{{ image.stars | number }}</span>
+                <i class="fas fa-star" [class.starred]="image.stars > 0" style="font-size: 0.875rem;"></i>
+              </div>
+            </div>
+          </div>
+        </ng-template>
+      </p-scroller>
+      </ng-template>
+    </sm-page-loader>
+  </div>
+</div>

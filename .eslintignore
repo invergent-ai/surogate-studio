@@ -1,0 +1,11 @@
+node_modules/
+src/main/docker/
+jest.conf.js
+webpack/
+target/
+build/
+node/
+coverage/
+postcss.config.js
+target/classes/static/
+src/main/webapp/polyfills.js

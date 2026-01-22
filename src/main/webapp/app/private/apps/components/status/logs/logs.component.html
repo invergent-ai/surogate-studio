@@ -1,0 +1,210 @@
+<div class="grid">
+  <div class="col-12">
+    <div class="grid">
+      <!-- Controls -->
+      <div class="col-12 grid align-items-center">
+        <!-- Pause control -->
+        <div class="col-12 md:col-2">
+          <div>
+            <label class="text-sm font-medium mb-2 block">
+              {{ paused ? 'Resume' : 'Pause' }} Updates
+              <span *ngIf="paused && bufferedMessageCount > 0" class="buffer-pill">{{ bufferedMessageCount }}</span>
+            </label>
+            <p-inputSwitch [ngModel]="paused" (ngModelChange)="togglePause()"></p-inputSwitch>
+          </div>
+        </div>
+
+        <!-- Server-side filters -->
+        <div class="col-12 md:col">
+          <div class="flex gap-2 align-items-start">
+            <!-- Time Range -->
+            <div class="">
+              <label class="text-sm font-medium mb-2 block">Filter logs</label>
+              <p-dropdown [options]="timeRangeOptions"
+                          [(ngModel)]="selectedTimeRange"
+                          (onChange)="fetchLogsFromTimeAgo($event.value)"
+                          placeholder="Select time range"
+                          [style]="{'width':'100%'}"
+                          optionLabel="label"
+                          optionValue="value" appendTo="body">
+              </p-dropdown>
+            </div>
+
+            <!-- Log limit -->
+            <div class="">
+              <label class="text-sm font-medium mb-2 block">&nbsp;</label>
+              <div class="p-inputgroup">
+                <span class="p-inputgroup-addon">Limit</span>
+                <input type="text"
+                       pInputText
+                       [(ngModel)]="maxLogEntriesInput"
+                       (change)="validateLogLimit()"
+                       (keyup.enter)="validateLogLimit()"
+                       [pTooltip]="'Number of logs to keep (' + minLogEntries + '-' + maxAllowedLogs + ')'"
+                       class="p-inputtext-sm text-right"/>
+              </div>
+            </div>
+
+            <div class="flex flex-column">
+              <label class="text-sm font-medium mb-2">&nbsp;</label>
+              <div class="flex gap-2">
+                <!-- From Calendar -->
+                <div class="">
+                  <p-calendar [(ngModel)]="startDate"
+                              [showTime]="true"
+                              [showSeconds]="true"
+                              [stepHour]="1"
+                              [stepMinute]="1"
+                              [stepSecond]="1"
+                              [hourFormat]="String(24)"
+                              placeholder="Start Date/Time"
+                              (onSelect)="onDateFilterChange()"
+                              (onClear)="onDateFilterClear('start')"
+                              (ngModelChange)="onCalendarModelChange('start')"
+                              [showClear]="true"
+                              [showIcon]="true"
+                              [showButtonBar]="true"
+                              styleClass="w-full"
+                              [inputStyleClass]="'p-inputtext-sm'"
+                              [baseZIndex]="1100">
+                  </p-calendar>
+                </div>
+
+                <!-- Until Calendar -->
+                <div class="">
+                  <p-calendar [(ngModel)]="endDate"
+                              [showTime]="true"
+                              [showSeconds]="true"
+                              [stepHour]="1"
+                              [stepMinute]="1"
+                              [stepSecond]="1"
+                              [hourFormat]="String(24)"
+                              placeholder="End Date/Time"
+                              (onSelect)="onDateFilterChange()"
+                              (onClear)="onDateFilterClear('end')"
+                              (ngModelChange)="onCalendarModelChange('end')"
+                              [showClear]="true"
+                              [showIcon]="true"
+                              [showButtonBar]="true"
+                              styleClass="w-full"
+                              [inputStyleClass]="'p-inputtext-sm'"
+                              [baseZIndex]="1100"
+                              [minDate]="startDate"
+                              appendTo="body">
+                  </p-calendar>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="col-12 md:col-2">
+          <div class="flex flex-column align-items-end">
+            <label class="text-sm font-medium mb-2">Actions</label>
+            <div class="flex align-items-end gap-2 justify-content-end">
+              <button pButton size="small" severity="danger" icon="pi pi-trash"
+                      (click)="clearLogs()"
+                      tooltipPosition="left"
+                      pTooltip="Clear all logs">
+              </button>
+
+              <button pButton size="small" icon="pi pi-download"
+                      (click)="downloadLogs()"
+                      tooltipPosition="left"
+                      [pTooltip]="paused ? 'Download all logs including buffered' : 'Download current logs'">
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search Box -->
+  <div class="col-12">
+    <div class="p-inputgroup">
+    <span class="p-inputgroup-addon">
+      <i class="pi pi-search"></i>
+    </span>
+      <input type="text"
+             pInputText
+             [(ngModel)]="criteria.searchTerm"
+             (ngModelChange)="onSearchChange($event)"
+             placeholder="Search messages..."
+             class="w-full"/>
+    </div>
+  </div>
+
+  <!-- Logs Table -->
+  <div class="col-12">
+    <p-table
+      #logTable
+      [value]="logs"
+      [scrollable]="true"
+      [scrollHeight]="'400px'"
+      [style]="{width:'100%'}"
+      [tableStyle]="{'min-width': '100%', 'min-height': '140px'}"
+      [loading]="loading">
+
+      <ng-template pTemplate="colgroup">
+        <colgroup>
+          <col [ngClass]="{'col-timestamp': timestampColumn, 'col-timestamp-hidden': !timestampColumn}">
+          <col>
+        </colgroup>
+      </ng-template>
+
+      <ng-template pTemplate="header">
+        <tr>
+          <th>
+            <i *ngIf="!timestampColumn" class="pi pi-calendar cursor-pointer"
+               pTooltip="Show timestamp" (click)="timestampColumn = true"></i>
+            <span *ngIf="timestampColumn">
+              Timestamp
+              <i class="pi pi-eye-slash cursor-pointer"
+                 pTooltip="Hide timestamp" (click)="timestampColumn = false"></i>
+            </span>
+          </th>
+          <th>Message</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-log>
+        <tr>
+          <td class="p-0">
+            <span *ngIf="timestampColumn" class="text-sm mono">
+              {{ log.timestamp | date:'dd/MM HH:mm:ss.SSS' }}
+            </span>
+          </td>
+          <td class="p-0">
+<!--            <div class="text-sm mono" style="word-break: break-all">{{ log.message }}</div>-->
+            <code [highlight]="log.message" [language]="'vim'" class="hljs text-sm mono"
+                  style="white-space: pre-wrap; word-break: break-all; padding: 0"></code>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="2" class="text-center p-4">
+            <div class="flex flex-column align-items-center gap-2">
+              <ng-container>
+                <i class="pi pi-inbox text-500" style="font-size: 2rem"></i>
+                <span class="text-500">No logs found</span>
+              </ng-container>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="loadingbody">
+        <tr>
+          <td colspan="2" class="text-center p-4">
+            Loading logs...
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>

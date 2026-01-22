@@ -1,0 +1,48 @@
+<sm-page>
+  <sm-page-loader>
+    <ng-template>
+      <div class="mb-5">
+        <div class="flex">
+          <h1 class="page-title">{{ pageTitle() }} Jobs</h1>
+          @if (enterprise()) {
+            <p-tag severity="warning" class="ml-1">Enterprise</p-tag>
+          }
+        </div>
+        <p class="page-subtitle">View and manage running and past jobs for this task. Use filters below or start a new run.</p>
+      </div>
+
+      <div class="flex flex-column gap-4">
+        <sm-job-list [executor]="executorType()"
+                     [type]="jobTypes()"
+                     [snapshotTime]="jobSnapshotTime()"
+                     [editRoute]="editRoute()">
+          <ng-template pTemplate="createButton">
+            <button pButton size="small" class="w-auto" (click)="createJob($event)" [disabled]="enterprise()">
+              <div class="flex gap-2 align-items-center">
+                <i-lucide [img]="Plus" class="w-1rem h-1rem"></i-lucide>
+                <span>Create Job</span>
+              </div>
+            </button>
+          </ng-template>
+          <ng-template pTemplate="detail" let-job>
+            @if (type() === 'fine-tuning') {
+              <sm-training-metrics [rayJob]="job"></sm-training-metrics>
+            } @else if (type() === 'evaluation' && job.provisioningStatus === 'COMPLETED') {
+              <sm-evaluation-results [taskRunId]="job.id"></sm-evaluation-results>
+            } @else {
+              <p class="p-3 text-500">There is no information for {{ job.name }}</p>
+            }
+          </ng-template>
+          @if (type() === 'fine-tuning') {
+            <ng-template pTemplate="chat" let-job>
+              <sm-test-chat [rayJob]="job"></sm-test-chat>
+            </ng-template>
+          }
+          <ng-template pTemplate="progress" let-progress let-job="job">
+            <p-progressBar mode="indeterminate" [style]="{ height: '6px' }"></p-progressBar>
+          </ng-template>
+        </sm-job-list>
+      </div>
+    </ng-template>
+  </sm-page-loader>
+</sm-page>

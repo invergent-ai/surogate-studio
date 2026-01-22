@@ -1,0 +1,61 @@
+<sm-page>
+  <sm-page-loader>
+    <ng-template>
+      <div class="mb-3 flex justify-content-between">
+        <h1 class="page-title text-xl flex gap-3">
+          <span class="font-medium"><a [routerLink]="['/hub']"
+                                       [queryParams]="{type: repositoryType()}">Data Hub</a> / {{ getRepoName() }}</span>
+          <p-tag severity="info">
+            <div class="flex gap-1 align-items-center px-1">
+              <i-lucide [img]="Bot" class="w-1rem h-1rem"></i-lucide>
+              <p>{{ repositoryType() }}</p>
+            </div>
+          </p-tag>
+        </h1>
+        <div>
+          <button pButton outlined severity="danger" size="small" label="Delete Repository..."
+                  (click)="deleteRepoVisible.set(true)"></button>
+        </div>
+      </div>
+
+      <p-tabMenu [model]="menu" [activeItem]="menu[0]">
+        <ng-template pTemplate="item" let-item>
+          <a [routerLink]="item.route" class="p-menuitem-link">
+            <span [class]="item.icon"></span>
+            <span class="ml-2">{{ item.label }}</span>
+          </a>
+        </ng-template>
+      </p-tabMenu>
+
+      <div class="mt-3">
+        <sm-hub-objects *ngIf="repository()" [repository]="repository()" [refId]="ref()"
+                        [refType]="refType()"></sm-hub-objects>
+      </div>
+    </ng-template>
+  </sm-page-loader>
+</sm-page>
+<p-dialog [modal]="true" [style]="{ width: '30vw' }" header="Delete Repository" [closable]="true"
+          [closeOnEscape]="true"
+          [draggable]="false" [resizable]="false" [(visible)]="deleteRepoVisible">
+  <div class="text-sm pt-3 flex flex-column gap-2">
+    <p>Are you sure you wish to delete repository <span
+      class="font-bold">{{getRepoName()}}</span>
+      ?</p>
+    <p class="mt-3">This action <span class="font-bold">cannot be undone</span> and will delete the following:</p>
+    <ul class="m-0" style="padding-inline-start: 1.5rem;">
+      <li>All commits</li>
+      <li>All branches</li>
+      <li>All tags</li>
+    </ul>
+    <p class="mt-3">Please type <span class="font-bold">{{getRepoName()}}</span> to confirm:</p>
+    <div class="p-fluid">
+      <input pInputText placeholder="Enter repository name to confirm..." [(ngModel)]="confirmRepoId"/>
+    </div>
+  </div>
+  <div class="flex gap-2 justify-content-end mt-3">
+    <button pButton type="button" outlined size="small" label="Cancel" (click)="deleteRepoVisible.set(false)"></button>
+    <button pButton type="submit" severity="danger" size="small" label="Delete this repository"
+            [disabled]="confirmRepoId() !== getRepoName()" [loading]="deleteRepoLoading()"
+            (click)="deleteRepository()"></button>
+  </div>
+</p-dialog>

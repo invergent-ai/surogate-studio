@@ -1,0 +1,97 @@
+<sm-page>
+  <sm-page-loader>
+    <ng-template>
+      <div class="mb-5">
+        <h1 class="page-title">System Configuration</h1>
+        <p class="page-subtitle">Projects are a way of grouping cloud resources together</p>
+      </div>
+
+      <p-card>
+        <!-- No Results Message -->
+        <div class="alert alert-warning" id="no-result"
+             *ngIf="!isLoading && (!systemConfigurations || systemConfigurations.length === 0)">
+          <span>No System Configurations found</span>
+        </div>
+
+        <p-table
+          [value]="systemConfigurations"
+          [loading]="isLoading"
+          [sortField]="predicate"
+          [sortOrder]="ascending ? 1 : -1"
+          styleClass="p-datatable-sm"
+          [tableStyle]="{ 'min-width': '50rem' }"
+          dataKey="id"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th pSortableColumn="webDomain">
+                <div class="flex align-items-center whitespace-nowrap">
+                  Web Domain
+                  <p-sortIcon field="webDomain"></p-sortIcon>
+                </div>
+              </th>
+              <th style="width: 8rem">
+                <div class="flex justify-content-center">
+                  Actions
+                </div>
+              </th>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="body" let-config>
+            <tr>
+              <td>{{ config.webDomain }}</td>
+              <td>
+                <div class="flex justify-content-center gap-2">
+                  <button pButton pRipple
+                          icon="pi pi-eye"
+                          class="p-button-rounded p-button-text"
+                          (click)="openDialog(config)"
+                          pTooltip="Edit">
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </p-card>
+    </ng-template>
+  </sm-page-loader>
+</sm-page>
+
+<!-- Configuration Dialog -->
+<p-dialog
+  [(visible)]="dialogVisible"
+  [style]="{width: '50%'}"
+  [modal]="true"
+  [header]="selectedConfig?.id ? 'Edit Configuration' : 'Create Configuration'"
+>
+  <ng-template pTemplate="content">
+    <form [formGroup]="editForm" class="grid p-fluid">
+      <div class="col-12">
+        <div class="field">
+          <label class="block text-sm text-500 mb-1">Web Domain</label>
+          <input pInputText formControlName="webDomain" />
+        </div>
+      </div>
+    </form>
+  </ng-template>
+
+  <ng-template pTemplate="footer">
+    <div class="flex justify-content-end gap-2">
+      <button pButton pRipple label="Cancel"
+              icon="pi pi-times"
+              class="p-button-text"
+              (click)="hideDialog()">
+      </button>
+      <button pButton pRipple label="Save"
+              icon="pi pi-check"
+              class="p-button-primary"
+              (click)="save()"
+              [loading]="isSaving">
+      </button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<p-toast></p-toast>

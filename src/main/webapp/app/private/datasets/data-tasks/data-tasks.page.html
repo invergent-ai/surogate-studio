@@ -1,0 +1,48 @@
+<sm-page>
+  <sm-page-loader>
+    <ng-template>
+      <div class="mb-5">
+        <h1 class="page-title">{{ pageTitle() }} Tasks</h1>
+        <p class="page-subtitle">View and manage active and past data tasks.</p>
+      </div>
+
+      <div class="flex flex-column gap-4">
+        <div class="flex flex-column gap-4">
+          <sm-card [padContent]="false">
+            <div class="grid">
+              <div class="col-4">
+                <div class="formgrid p-fluid text-sm">
+                  <div class="field m-0">
+                    <label>Search</label>
+                    <input pInputText placeholder="Dataset..."/>
+                  </div>
+                </div>
+              </div>
+              <div class="col flex align-items-end">
+                <button pButton size="small" class="w-auto" [routerLink]="['/data/factual']">
+                  <div class="flex gap-2 align-items-center">
+                    <i-lucide [img]="Plus" class="w-1rem h-1rem"></i-lucide>
+                    <span>Create Dataset</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </sm-card>
+
+          <sm-card [padContent]="false">
+            <p-table [tableStyle]="{'table-layout': 'auto', 'width': '100%'}" styleClass="text-sm">
+              <ng-template pTemplate="header">
+                <tr>
+                  <th class="text-500 min-col">Dataset</th>
+                  <th class="text-500 min-col">Created on</th>
+                  <th class="text-500">Actions</th>
+                </tr>
+              </ng-template>
+            </p-table>
+          </sm-card>
+        </div>
+      </div>
+    </ng-template>
+  </sm-page-loader>
+</sm-page>
+

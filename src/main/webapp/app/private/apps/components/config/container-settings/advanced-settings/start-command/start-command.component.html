@@ -1,0 +1,21 @@
+<div class="card">
+  <p class="font-bold mb-1">Start command</p>
+  <small class="block text-color">Customize the command run by the container upon startup. By default, the container runs the default image command.</small>
+
+  <div class="mt-3 p-fluid">
+    <p-inputSwitch [(ngModel)]="showForm"></p-inputSwitch>
+
+    <div class="mt-3" [formGroup]="containerForm" *ngIf="showForm">
+      <div class="field">
+        <label for="startCommand">Start command</label>
+        <textarea pInputTextarea id="startCommand" rows="3" formControlName="startCommand"
+                  placeholder="Startup command of the container. e.g.: /bin/sh"></textarea>
+      </div>
+      <div class="field">
+        <label for="params">Parameters</label>
+        <textarea pInputTextarea id="params" rows="3" formControlName="startParameters"
+                  placeholder="Parameters of the startup command. Use commas to separate multiple parameters. e.g.: -c, tail -f > /dev/null"></textarea>
+      </div>
+    </div>
+  </div>
+</div>

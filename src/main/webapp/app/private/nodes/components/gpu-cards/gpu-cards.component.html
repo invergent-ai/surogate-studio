@@ -1,0 +1,61 @@
+<div class="gap-3 flex flex-wrap">
+  @if (clickable && !selectable) {
+    @for (gpu of gpuCards(); track gpu.id) {
+      <ng-container [ngTemplateOutlet]="gpuCard" [ngTemplateOutletContext]="{gpu: gpu}"></ng-container>
+    }
+  } @else if (selectable && multiselect) {
+    @for (gpu of gpuCards(); track gpu.id) {
+      <div class="flex align-items-center gap-4 w-full">
+        <p-checkbox
+          [(ngModel)]="selectedGpuCards"
+          (ngModelChange)="emitGpuSelection()"
+          name="gpu"
+          [value]="gpu.id" />
+        <ng-container [ngTemplateOutlet]="gpuCard" [ngTemplateOutletContext]="{gpu: gpu}"></ng-container>
+      </div>
+
+    }
+  } @else if (selectable && !multiselect) {
+    <div class="flex flex-column gap-3 w-full">
+    @for (gpu of gpuCards(); track gpu.id) {
+      <div class="flex align-items-center gap-4">
+        <p-radioButton
+          [inputId]="gpu.id.toString()"
+          name="gpu"
+          [value]="gpu.id"
+          [(ngModel)]="selectedGpuCards" />
+
+        <ng-container [ngTemplateOutlet]="gpuCard" [ngTemplateOutletContext]="{gpu: gpu}"></ng-container>
+      </div>
+    }
+    </div>
+  }
+
+  <ng-template #gpuCard let-gpu="gpu">
+    <div class="col card border-1 border-round-xl border-300 surface-50" [class.cursor-pointer]="clickable" (click)="selectGpu(gpu.id)">
+      <div class="flex items-start gap-4">
+
+        <div class="flex-grow-1 flex flex-column gap-2">
+          <div class="flex justify-content-between">
+            <div class="font-semibold text-black-50 text-sm white-space-nowrap">
+              <div class="inline-flex gap-1 align-items-baseline">GPU {{gpu.id}}</div>
+              @if (compact) {
+                <i-lucide [img]="Info" class="w-1rem h-1rem" [escape]="false" [pTooltip]="toFriendlyModel(gpu.model)"></i-lucide>
+              } @else {
+                <span>- {{toFriendlyModel(gpu.model)}}</span>
+              }
+            </div>
+            <p class="text-500 text-sm text-right">{{ gpu.gpuMemory }} GB</p>
+          </div>
+          <div>
+            <p-progressBar [value]="memBarHeight(gpu)" [showValue]="compact" />
+            <div *ngIf="!compact" class="mt-1 flex justify-content-between">
+              <p>Used: <span class="font-semibold text-black-50">{{ roundUpTo(gpu.gpuMemoryUsage / 1024, 1) }} G</span></p>
+              <p>{{memBarHeight(gpu)}}%</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-template>
+</div>

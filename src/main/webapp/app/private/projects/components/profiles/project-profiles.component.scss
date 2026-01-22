@@ -1,0 +1,34 @@
+.d-flex {
+  display: flex;
+}
+
+.disabled {
+  border-color: var(--surface-border) !important;
+  cursor: default !important;
+  opacity:.6;
+  &:hover{
+    border-color: var(--surface-border) !important;
+  }
+}
+
+.font-med {
+  font-size: 18px;
+}
+
+.font-sm {
+  font-size: 16px;
+}
+
+:host ::ng-deep {
+  .card {
+    //background: var(--surface-card);
+    border: 1px solid var(--surface-border);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border-radius: 6px;
+  }
+}
+ul li{
+  font-size:14px;
+  line-height:18px;
+}

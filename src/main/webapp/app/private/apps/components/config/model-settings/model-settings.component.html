@@ -1,0 +1,238 @@
+<div [formGroup]="form">
+  <p-card styleClass="p-3">
+    <div class="field grid">
+      <label class="col-12 mb-2 md:col-3 md:mb-0">Model:</label>
+      <div class="col-12 flex md:col-9">
+        <p class="font-semibold">
+          {{
+            form.value['source'] === 'hf' ?
+              form.value['hfModelName'] :
+              form.value['branchToDeployDisplayName'] ?? form.value['modelName']
+          }}
+        </p>
+        @if (form.value['source'] === 'hf') {
+          <p-tag severity="warning" class="ml-2">
+            HuggingFace
+          </p-tag>
+        }
+        @if (form.value['loraSourceModel']) {
+          <p-tag severity="info" class="ml-2">
+            LoRA adapter
+          </p-tag>
+        }
+      </div>
+    </div>
+
+    <div class="field grid">
+      <label class="col-12 mb-2 md:col-3 md:mb-0 align-items-start flex-column">
+        <p>Max. Context Size (tokens):</p>
+        <small class="block mt-1 font-normal p-disabled">
+          Maximum number of tokens the model can handle in a single request. Affects GPU memory usage.
+        </small>
+      </label>
+      <div class="col-12 md:col-9">
+        <p-inputNumber formControlName="maxContextSize" (onBlur)="onTouched()"
+                       mode="decimal" [min]="1000" [max]="200000" [step]="1000"></p-inputNumber>
+      </div>
+    </div>
+
+    <div class="field grid">
+      <label class="col-12 mb-2 md:col-3 md:mb-0 align-items-start flex-column">
+        <p [class]="maxPartitions > 1 ? 'text-normal' : 'p-disabled'">Enable partitioning:</p>
+        <small class="block mt-1 font-normal p-disabled">
+          Breaks model layers across GPUs to fit larger models, at the cost of some inter-GPU communication overhead.
+        </small>
+      </label>
+      <div class="col-12 md:col-9">
+        <p-checkbox formControlName="enablePartitioning" binary="true" (onBlur)="onTouched()" [readonly]="maxPartitions < 2"></p-checkbox>
+        @if (form.get('enablePartitioning')?.value) {
+          <div class="card p-3 mt-3">
+            <div class="field grid pt-3">
+              <label class="col-12 mb-2">Number of GPUs: <span class="ml-2">{{ form.get('partitions')?.value }}</span></label>
+              <div class="col-12 mx-2">
+                <p-slider formControlName="partitions" (blur)="onTouched()" [min]="2" [max]="maxPartitions" [step]="1"></p-slider>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="field grid">
+      <label class="col-12 mb-2 md:col-3 md:mb-0 align-items-start flex-column">
+        <p>Enable replication:</p>
+        <small class="block mt-1 font-normal p-disabled">
+          Create independent replicas of the model where each replica serves different requests.
+        </small>
+      </label>
+      <div class="col-12 md:col-9">
+        <p-checkbox formControlName="enableReplication" [binary]="true" (onBlur)="onTouched()"></p-checkbox>
+
+        @if (form.get('enableReplication')?.value) {
+          <div class="card p-3 mt-3">
+            <div class="field grid pt-3">
+              <label class="col-12 ">Model replicas: <span class="ml-2">{{ form.get('replicas')?.value }}</span></label>
+              <div class="col-12 mx-2">
+                <p-slider formControlName="replicas" [min]="2" [max]="8" [step]="1" (blur)="onTouched()"></p-slider>
+              </div>
+            </div>
+
+            <div class="field grid pt-3">
+              <label class="col-12">Routing Strategy:</label>
+              <div class="col-12">
+                <p-dropdown formControlName="routingStrategy" [options]="routingStrategies" (onBlur)="onTouched()"
+                            optionLabel="label" optionValue="value" class="w-full"></p-dropdown>
+              </div>
+            </div>
+
+            <div class="field grid pt-3">
+              <label class="col-12">Session key:</label>
+              <div class="col-12">
+                <input pInputText formControlName="routerSessionKey" (blur)="onTouched()"
+                       placeholder="x-user-id" class="w-full">
+                <small class="block mt-1 text-color">
+                  Only for Session Routing Strategy
+                </small>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="field grid">
+      <label class="col-12 mb-2 md:col-3 md:mb-0 align-items-start flex-column">
+        <p>Router replicas:</p>
+        <small class="block mt-1 font-normal p-disabled">
+          Create independent replicas of the router to handle a larger number of concurrent requests.
+        </small>
+      </label>
+      <div class="col-12 md:col-9">
+        <p-inputNumber formControlName="routerReplicas" (onBlur)="onTouched()"
+                       mode="decimal" [min]="1" [step]="1" [max]="8"></p-inputNumber>
+      </div>
+    </div>
+
+    <!-- hide for now -->
+    <div class="field grid" *ngIf="false">
+      <label class="col-12 mb-2 md:col-3 md:mb-0">Deployment mode:</label>
+      <div class="col-12 md:col-9 mb-4">
+        <p-dropdown formControlName="deploymentMode" [options]="deploymentModes" (onBlur)="onTouched()"
+                    optionLabel="label" optionValue="value" class="w-full" [readonly]="true"></p-dropdown>
+        <small class="block mt-1 text-color" *ngIf="form.get('partitions')?.value === 1">
+          Disabled when GPUs=1. Always defaults to Aggregated.
+        </small>
+        <small class="block mt-1 text-color" *ngIf="form.get('partitions')?.value > 1">
+          Choose between Aggregated (default) or Disaggregated deployment.
+        </small>
+      </div>
+    </div>
+
+    <div class="field grid">
+      <label class="col-12 mb-2 md:col-3 md:mb-0 align-self-start">Caching Strategy:</label>
+      <div class="col-12 md:col-9">
+        <div class="grid">
+          <div class="col-12 lg:col-6 pr-2">
+            <div class="p-3 border-1 border-round surface-border mb-3 h-full">
+              <div class="flex align-items-center gap-2 mb-3">
+                <p-checkbox [binary]="true" formControlName="l1Cache" (onBlur)="onTouched()"></p-checkbox>
+                <label class="font-medium">L1: System Memory</label>
+              </div>
+
+              <div class="flex align-items-center gap-2 mb-3" style="min-height: 2.5rem;">
+                <label class="white-space-nowrap">Max memory (GB):</label>
+                <p-inputNumber formControlName="l1CacheSize" (onBlur)="onTouched()"
+                               mode="decimal" [min]="1" [max]="100" suffix=" GB"
+                               [style]="{'width': '100px'}" class="ml-auto"></p-inputNumber>
+              </div>
+
+              <small class="block text-color line-height-3">
+                Enabled fast CPU&lt;&gt;GPU KV Cache transfer. If L2 is enabled, it also acts as a "hot" cache keeping
+                recently accessed subset of KV caches from the L2 cache.
+              </small>
+            </div>
+          </div>
+
+          <div class="col-12 lg:col-6 pl-2">
+            <div class="p-3 border-1 border-round surface-border mb-3 h-full">
+              <div class="flex align-items-center gap-2 mb-3">
+                <p-checkbox [binary]="true" formControlName="l2Cache" (onBlur)="onTouched()"></p-checkbox>
+                <label class="font-medium">L2: Disk</label>
+              </div>
+
+              <div class="flex align-items-center gap-2 mb-3" style="min-height: 2.5rem;">
+                <label class="white-space-nowrap">Max size (GB):</label>
+                <p-inputNumber formControlName="l2CacheSize" (onBlur)="onTouched()"
+                               mode="decimal" [min]="1" [max]="1000" suffix=" GB"
+                               [style]="{'width': '100px'}" class="ml-auto"></p-inputNumber>
+              </div>
+
+              <small class="block text-color line-height-3">
+                Useful if the KV cache doesn't fit entirely in memory. Enable if you want to survive restarts, faster
+                warm-ups, but can tolerate a small amount of staleness. If the cache is full, older entries are evicted
+                (LRU strategy)
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="field grid">
+      <label class="col-12 mb-2 md:col-3 md:mb-0 align-items-start flex-column">
+        <p>Estimated model performance:</p>
+        <small class="block mt-1 font-normal p-disabled">Approximate number of users simultaneously running inference; used to estimate model performance.</small>
+      </label>
+      <div class="col-12 md:col-9">
+        <div class="grid surface-card shadow-2 m-0 py-3 align-items-center" style="border-radius: 10px">
+          @if (modelPerformance) {
+            <div class="col-12 grid">
+              <div class="col-12 md:col-4 px-5 py-5 text-center">
+                <i class="pi pi-microchip text-4xl text-blue-600"></i>
+                <div class="text-900 font-bold text-4xl line-height-3">{{modelPerformanceReport()[0]}} GB</div>
+                <p class="text-700 m-0">Recommended GPU memory for each GPU</p>
+              </div>
+              <div class="col-12 md:col-4 px-5 py-5 text-center">
+                <i class="pi pi-bolt text-4xl text-cyan-600"></i>
+                <div class="text-900 font-bold text-4xl line-height-3">~{{modelPerformanceReport()[1]}} tok/sec</div>
+                <p class="text-700 m-0">Estimated throughput</p>
+              </div>
+              <div class="col-12 md:col-4 px-5 py-5 text-center">
+                <i class="pi pi-clock text-4xl text-purple-500"></i>
+                <div class="text-900 font-bold text-4xl line-height-3">~{{modelPerformanceReport()[2]}} sec</div>
+                <p class="text-700 m-0">Approx. time for 512 tokens</p>
+              </div>
+            </div>
+          } @else {
+            <div class="col-12 text-center">
+              <i class="pi pi-spin pi-spinner text-4xl text-blue-600"></i>
+              <div class="text-900 font-bold text-2xl line-height-3 mt-3">Estimating performance...</div>
+              <p class="text-700 m-0">Please wait</p>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="field grid">
+      <label class="col-12 mb-2 md:col-3 md:mb-0 align-items-start flex-column">
+        <p>Max. memory allocation:</p>
+        <small class="block mt-1 font-normal p-disabled">
+          Limit how much GPU memory is pre‑allocated for the model.
+        </small>
+      </label>
+      <div class="col-12 md:col-9">
+        <p-inputGroup>
+          <p-inputNumber formControlName="gpuMemory" (onBlur)="onTouched()"
+                       mode="decimal" [min]="512" [step]="256"></p-inputNumber>
+          <button type="button" pButton label="Set recommended value" (click)="setRecommendedMemoryValue()" [disabled]="!this.modelPerformance"></button>
+        </p-inputGroup>
+        <div>
+        <sm-gpu-cards [nodeStats]="nodeStats[0]" class="block w-full mt-3"></sm-gpu-cards>
+        @if (!hasEnoughMemory()) {
+          <p-messages [enableService]="false" [value]="[NotEnoughMemoryWarning]" [closable]="false"></p-messages>
+        }
+      </div>
+    </div>
+  </div>
+</p-card>

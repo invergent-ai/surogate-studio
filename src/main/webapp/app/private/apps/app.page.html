@@ -1,0 +1,54 @@
+<sm-page>
+  <sm-page-loader [loading]="loading">
+    <ng-template>
+      <div class="mb-5">
+        <h1 class="page-title">{{application.name}}</h1>
+        <p class="page-subtitle">Application management</p>
+      </div>
+
+      <sm-app-header-card [application]="application" [appStatus]="appStatus" [ingressHostName]="ingressHostName"></sm-app-header-card>
+
+      @if (appStatus?.status === ApplicationStatus.CREATED) {
+        <div class="m-2">
+          <p-messages [(value)]="publishWarn" [enableService]="false" />
+        </div>
+      }
+
+      <!--      Status & Configuration & Monitoring-->
+      <p-tabView styleClass="mt-3 px-2" [(activeIndex)]="activeTab" *ngIf="application">
+        <p-tabPanel header="Configuration"
+                    [disabled]="appStatus?.status === ApplicationStatus.DEPLOYING ||
+                        appStatus?.status === ApplicationStatus.BUILDING || ciCdError(application)">
+          <ng-template pTemplate="content">
+            <sm-app-config (publishing)="publishing($event)"
+                           [application]="application"></sm-app-config>
+          </ng-template>
+        </p-tabPanel>
+        <p-tabPanel header="Status" [disabled]="statusTabDisabled()">
+          <ng-template pTemplate="content">
+            <sm-app-status #status
+                           (logsTimeout)="handleTimeout()"
+                           (logsDisconnect)="handleDisconnect($event)"
+                           (terminalTimeout)="handleTimeout()"
+                           (terminalDisconnect)="handleDisconnect($event)"
+                           [application]="application"></sm-app-status>
+
+          </ng-template>
+        </p-tabPanel>
+        <p-tabPanel header="Monitoring" [disabled]="statusTabDisabled()">
+          <ng-template pTemplate="content">
+            <sm-metrics *ngIf="activeTab == 2" #metrics
+                        [application]="application"
+                        (metricsTimeout)="handleTimeout()"></sm-metrics>
+          </ng-template>
+        </p-tabPanel>
+      </p-tabView>
+    </ng-template>
+  </sm-page-loader>
+</sm-page>
+
+<i *ngIf="timeoutOccurred"
+   class="pi pi-exclamation-triangle pulsating-warning centered-warning"
+   pTooltip="Connection timed out. Click to reconnect."
+   (click)="refreshConnection()">
+</i>

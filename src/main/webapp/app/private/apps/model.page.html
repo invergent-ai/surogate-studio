@@ -1,0 +1,242 @@
+<sm-page>
+  <sm-page-loader [loading]="loading">
+    <ng-template>
+      <div class="mb-5">
+        <h1 class="page-title">{{application.name}}</h1>
+        <p class="page-subtitle">Configure model serving</p>
+      </div>
+
+      <sm-app-header-card [application]="application"
+                          [ingressHostName]="ingressHostName"
+                          [internalEndpoint]="internalRouterEndpoint()"
+                          [showStatus]="false"
+                          [showControls]="false"></sm-app-header-card>
+
+      @if (modelStatusCreated()) {
+        <div class="m-2">
+          <p-messages [(value)]="publishWarn" [enableService]="false" />
+        </div>
+      }
+
+      <div class="grid gap-2 mt-1">
+<!--        Router-->
+        <div class="col" *ngIf="modelStatus?.status !== ApplicationStatus.CREATED">
+          <p-card>
+            <!--      Provisioning Status -->
+            <ng-template pTemplate="header">
+              <div class="px-4 pt-3 flex flex-wrap justify-content-between align-items-center">
+                <p class="flex-grow-1 text-lg font-semibold">Router</p>
+                <div class="flex align-items-center gap-2">
+                  <div>
+                    <div>
+                      <div *ngIf="modelStatus?.router; else statusLoading">
+                        <p-tag [value]="modelStatus.router.status"
+                               [severity]="modelStatus.router.status === ApplicationStatus.ERROR ? 'danger' :
+                         modelStatus.router.status === ApplicationStatus.DEPLOYED ? 'success' : 'secondary'"
+                               class="select-none"></p-tag>
+                      </div>
+                    </div>
+                    <ng-template #statusLoading>
+                      <i class="pi pi-spinner pi-spin" style="font-size: 1rem"></i>
+                    </ng-template>
+                  </div>
+                  <div class="mx-1 h-6 w-1rem"></div>
+                  <sm-app-control [application]="application" component="Router"></sm-app-control>
+                </div>
+              </div>
+            </ng-template>
+            <!--      Running status -->
+            <div class="flex align-items-center gap-2">
+              <div class="flex align-items-center gap-2">
+                <i-lucide [img]="Activity" class="w-1rem h-1rem"></i-lucide>
+              </div>
+              <div>
+                <div *ngIf="modelStatus?.router?.resourceStatus?.length; else runningStatusLoading">
+                  <div class="flex align-items-center flex-wrap justify-content-start">
+                    @for (rs of modelStatus.router.resourceStatus; track rs.podName; let idx = $index) {
+                      <p-tag [value]="rs.stage"
+                             class="select-none m-1"
+                             [pTooltip]="replicaStatusMessage(rs, idx)"
+                             tooltipPosition="top"></p-tag>
+                    }
+                  </div>
+                </div>
+              </div>
+              <ng-template #runningStatusLoading>
+                <i class="pi pi-spinner pi-spin" style="font-size: 1rem"></i>
+              </ng-template>
+            </div>
+          </p-card>
+        </div>
+<!--        Worker-->
+        <div class="col" *ngIf="modelStatus?.status !== ApplicationStatus.CREATED">
+          <p-card>
+            <!--      Provisioning Status -->
+            <ng-template pTemplate="header">
+              <div class="px-4 pt-3 flex flex-wrap justify-content-between align-items-center">
+                <p class="flex-grow-1 text-lg font-semibold">Worker</p>
+                <div class="flex align-items-center gap-2">
+                  <div>
+                    <div>
+                      <div *ngIf="modelStatus?.worker; else statusLoading">
+                        <p-tag [value]="modelStatus.worker.status"
+                               [severity]="modelStatus.worker.status === ApplicationStatus.ERROR ? 'danger' :
+                         modelStatus.worker.status === ApplicationStatus.DEPLOYED ? 'success' : 'secondary'"
+                               class="select-none"></p-tag>
+                      </div>
+                    </div>
+                    <ng-template #statusLoading>
+                      <i class="pi pi-spinner pi-spin" style="font-size: 1rem"></i>
+                    </ng-template>
+                  </div>
+                  <div class="mx-1 h-6 w-1rem"></div>
+                  <sm-app-control [application]="application" component="Worker"></sm-app-control>
+                </div>
+              </div>
+            </ng-template>
+            <!--      Running status -->
+            <div class="flex align-items-center gap-2">
+              <div class="flex align-items-center gap-2">
+                <i-lucide [img]="Activity" class="w-1rem h-1rem"></i-lucide>
+              </div>
+              <div>
+                <div *ngIf="modelStatus?.worker?.resourceStatus?.length; else runningStatusLoading">
+                  <div class="flex align-items-center flex-wrap justify-content-start">
+                    @for (rs of modelStatus.worker.resourceStatus; track rs.podName; let idx = $index) {
+                      <p-tag [value]="rs.stage"
+                             class="select-none m-1"
+                             [pTooltip]="replicaStatusMessage(rs, idx)"
+                             tooltipPosition="top"></p-tag>
+                    }
+                  </div>
+                </div>
+              </div>
+              <ng-template #runningStatusLoading>
+                <i class="pi pi-spinner pi-spin" style="font-size: 1rem"></i>
+              </ng-template>
+            </div>
+          </p-card>
+        </div>
+<!--        Cache-->
+        <div class="col" *ngIf="modelStatus?.status !== ApplicationStatus.CREATED">
+          <p-card styleClass="">
+            <!--      Provisioning Status -->
+            <ng-template pTemplate="header">
+              <div class="px-4 pt-3 flex flex-wrap justify-content-between align-items-center">
+                <p class="flex-grow-1 text-lg font-semibold">Cache</p>
+                <div class="flex align-items-center gap-2">
+                  <div>
+                    <div>
+                      <div *ngIf="modelStatus?.cache; else statusLoading">
+                        <p-tag [value]="modelStatus.cache.status"
+                               [severity]="modelStatus.cache.status === ApplicationStatus.ERROR ? 'danger' :
+                         modelStatus.cache.status === ApplicationStatus.DEPLOYED ? 'success' : 'secondary'"
+                               class="select-none"></p-tag>
+                      </div>
+                    </div>
+                    <ng-template #statusLoading>
+                      <i class="pi pi-spinner pi-spin" style="font-size: 1rem"></i>
+                    </ng-template>
+                  </div>
+                  <div class="mx-1 h-6 w-1rem"></div>
+                  <sm-app-control [application]="application" component="Cache"></sm-app-control>
+                </div>
+              </div>
+            </ng-template>
+            <!--      Running status -->
+            <div class="flex align-items-center gap-2">
+              <div class="flex align-items-center gap-2">
+                <i-lucide [img]="Activity" class="w-1rem h-1rem"></i-lucide>
+              </div>
+              <div>
+                <div *ngIf="modelStatus?.cache?.resourceStatus?.length; else runningStatusLoading">
+                  <div class="flex align-items-center flex-wrap justify-content-start">
+                    @for (rs of modelStatus.cache.resourceStatus; track rs.podName; let idx = $index) {
+                      <p-tag [value]="rs.stage"
+                             class="select-none m-1"
+                             [pTooltip]="replicaStatusMessage(rs, idx)"
+                             tooltipPosition="top"></p-tag>
+                    }
+                  </div>
+                </div>
+              </div>
+              <ng-template #runningStatusLoading>
+                <i class="pi pi-spinner pi-spin" style="font-size: 1rem"></i>
+              </ng-template>
+            </div>
+          </p-card>
+        </div>
+      </div>
+
+      <!--      Status & Configuration & Monitoring-->
+      <p-tabView styleClass="mt-3 px-2" [(activeIndex)]="activeTab" *ngIf="application">
+        <p-tabPanel header="Configuration" [disabled]="modelStatusDeployingOrBuilding() || ciCdError(application)">
+          <ng-template pTemplate="content">
+            <sm-app-config (publishing)="publishing($event)"
+                           [application]="application"></sm-app-config>
+          </ng-template>
+        </p-tabPanel>
+        <p-tabPanel header="Router Status" [disabled]="statusTabDisabled('Router')">
+          <ng-template pTemplate="content">
+            <sm-app-status #status
+                           (logsTimeout)="handleTimeout()"
+                           (logsDisconnect)="handleDisconnect($event)"
+                           (terminalTimeout)="handleTimeout()"
+                           (terminalDisconnect)="handleDisconnect($event)"
+                           [application]="application"
+                           component="Router"></sm-app-status>
+
+          </ng-template>
+        </p-tabPanel>
+        <p-tabPanel header="Router Metrics" [disabled]="statusTabDisabled('Router')">
+          <ng-template pTemplate="content">
+            <sm-router-metrics
+              [application]="application"
+              (metricsTimeout)="handleTimeout()"
+              (error)="handleModelMetricsError($event)">
+            </sm-router-metrics>
+          </ng-template>
+        </p-tabPanel>
+        <p-tabPanel header="Worker Status" [disabled]="statusTabDisabled('Worker')">
+          <ng-template pTemplate="content">
+            <sm-app-status #status
+                           (logsTimeout)="handleTimeout()"
+                           (logsDisconnect)="handleDisconnect($event)"
+                           (terminalTimeout)="handleTimeout()"
+                           (terminalDisconnect)="handleDisconnect($event)"
+                           [application]="application"
+                           component="Worker"></sm-app-status>
+
+          </ng-template>
+        </p-tabPanel>
+        <p-tabPanel header="Worker Metrics" [disabled]="statusTabDisabled('Worker')">
+          <ng-template pTemplate="content">
+            <sm-worker-metrics
+              [application]="application"
+              (metricsTimeout)="handleTimeout()"
+              (error)="handleModelMetricsError($event)">
+            </sm-worker-metrics>
+          </ng-template>
+        </p-tabPanel>
+        <p-tabPanel header="Cache Status" [disabled]="statusTabDisabled('Cache')">
+          <ng-template pTemplate="content">
+            <sm-app-status #status
+                           (logsTimeout)="handleTimeout()"
+                           (logsDisconnect)="handleDisconnect($event)"
+                           (terminalTimeout)="handleTimeout()"
+                           (terminalDisconnect)="handleDisconnect($event)"
+                           [application]="application"
+                           component="Cache"></sm-app-status>
+
+          </ng-template>
+        </p-tabPanel>
+      </p-tabView>
+    </ng-template>
+  </sm-page-loader>
+</sm-page>
+
+<i *ngIf="timeoutOccurred"
+   class="pi pi-exclamation-triangle pulsating-warning centered-warning"
+   pTooltip="Connection timed out. Click to reconnect."
+   (click)="refreshConnection()">
+</i>

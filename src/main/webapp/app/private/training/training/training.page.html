@@ -1,0 +1,287 @@
+<sm-page>
+  <sm-page-loader>
+    <ng-template>
+      <div class="mb-5">
+        <h1 class="page-title">{{ title() }}</h1>
+        <p class="page-subtitle">{{ subtitle() }}</p>
+      </div>
+
+      <div *ngIf="jobForm" class="grid gap-3">
+        <form [formGroup]="jobForm" (ngSubmit)="save()" class="col-12 flex flex-column gap-4">
+          <sm-card header="Run basics" [icon]="Flame" iconClass="text-orange-500">
+            <div class="formgrid grid text-sm p-fluid">
+              <div class="field col-12 md:col-6">
+                <label>Run name</label>
+                <input pInputText type="text" class="" id="name" formControlName="name"
+                       [class.ng-dirty]="jobForm.dirty">
+                <small *ngIf="jobForm.dirty" [class.text-red-500]="jobForm.dirty && jobForm.get('name')?.errors?.required">
+                  Name is required</small>
+                <small *ngIf="jobForm.dirty" [class.text-red-500]="jobForm.dirty &&
+                  (jobForm.get('name')?.errors?.minlength || jobForm.get('name')?.errors?.maxlength)">
+                  and must be at least 3 and at most 50 characters.</small>
+              </div>
+              <div class="field col-12 md:col-6">
+                <sm-label-tooltip [tooltip]="BASE_MODEL_REPOSITORY">Base model repository</sm-label-tooltip>
+                <div class="flex gap-3 grid-nogutter pr-3">
+                  <sm-repo-selector class="col-6" [repoType]="'model'" formControlName="baseModelRepo" [maxDisplayLength]="20"></sm-repo-selector>
+                  <sm-ref-selector class="col-6"
+                                   type="branch"
+                                   [repoId]="jobForm.get('baseModelRepo').value"
+                                   [buttonSize]="'small'"
+                                   [canSelect]="!!jobForm.get('baseModelRepo').value"
+                                   [onlyTrainable]="true"
+                                   formControlName="baseModelBranch"
+                  ></sm-ref-selector>
+                </div>
+              </div>
+              <div class="field col-12 md:col-6">
+                <label>New Branch</label>
+                <input pInputText type="text" id="branch" formControlName="branch"
+                       [class.ng-dirty]="jobForm.dirty" class="">
+                <small class="text-red-500" *ngIf="jobForm.dirty && jobForm.get('branch')?.errors?.required">
+                  Branch is required</small>
+              </div>
+              <div *ngIf="jobForm.get('fromCheckpoint').value" class="field col-12 md:col-6">
+                <label>Base checkpoint</label>
+                <div class="flex grid-nogutter pr-3">
+                  <sm-object-selector class="col-6"
+                                      type="file"
+                                      [repoId]="jobForm.get('baseModelRepo').value"
+                                      [refId]="jobForm.get('baseModelBranch').value?.id"
+                                      [canSelect]="!!jobForm.get('baseModelBranch').value?.id"
+                                      [maxDisplayLength]="20"
+                  ></sm-object-selector>
+                </div>
+              </div>
+              <div class="field col-12 md:col-6">
+                <label>Description</label>
+                <textarea pInputTextarea type="text" id="description" formControlName="description" class="" rows="3"></textarea>
+              </div>
+            </div>
+          </sm-card>
+
+          <p-tabView>
+            <p-tabPanel header="Training datasets">
+              <ng-container formArrayName="datasets">
+                <sm-dataset-table-chooser [task]="dsType()" [formArray]="datasets" [multiple]="true" title="Training datasets"></sm-dataset-table-chooser>
+              </ng-container>
+            </p-tabPanel>
+            <p-tabPanel header="Validation datasets">
+              <ng-container formArrayName="testDatasets">
+                <sm-dataset-table-chooser [task]="dsType()" [formArray]="testDatasets" [multiple]="true" title="Validation datasets"></sm-dataset-table-chooser>
+              </ng-container>
+            </p-tabPanel>
+          </p-tabView>
+
+          <sm-training-recipe [trainingForm]="trainingForm"></sm-training-recipe>
+
+<!--          LoRA / QLoRA-->
+          <sm-card header="LoRA" [icon]="Plug" [padContent]="false" iconClass="text-purple-500">
+            <ng-template pTemplate="toolbar">
+              <div class="flex gap-2">
+                <p-tag severity="secondary" rounded>
+                  <div class="p-fluid p-1 font-normal text-sm">
+                    <p-checkbox [binary]="true" id="lora" formControlName="lora" label="Enable"></p-checkbox>
+                  </div>
+                </p-tag>
+              </div>
+            </ng-template>
+            <p-messages severity="info">
+              <ng-template pTemplate="content">
+                <div class="flex flex-column text-sm">
+                  <div class="flex gap-2">
+                    <i-lucide [img]="InfoIcon" class="w-1rem h-1rem"></i-lucide>
+                    <div class="text-sm" [innerHTML]="LORA"></div>
+                  </div>
+                </div>
+              </ng-template>
+            </p-messages>
+
+            <div *ngIf="jobForm.get('lora').value" class="formgrid grid text-sm p-fluid">
+              <div class="field col-12 md:col-4">
+                <sm-label-tooltip [tooltip]="LORA_RANK">Rank (r)</sm-label-tooltip>
+                <p-inputNumber id="loraR" formControlName="loraR" [min]="1"
+                               [class.ng-dirty]="jobForm.dirty"></p-inputNumber>
+                <small class="text-red-500" *ngIf="jobForm.dirty && jobForm.get('loraR')?.errors?.required">
+                  LoRA Rank is required</small>
+              </div>
+              <div class="field col-12 md:col-4">
+                <sm-label-tooltip [tooltip]="LORA_ALPHA">Alpha</sm-label-tooltip>
+                <p-inputNumber id="loraAlpha" formControlName="loraAlpha" [min]="1"
+                               [class.ng-dirty]="jobForm.dirty"></p-inputNumber>
+                <small class="text-red-500" *ngIf="jobForm.dirty && jobForm.get('loraAlpha')?.errors?.required">
+                  LoRA Alpha is required</small>
+              </div>
+              <div class="field col-12 md:col-4">
+                <sm-label-tooltip [tooltip]="LORA_DROPOUT">Dropout</sm-label-tooltip>
+                <input pInputText id="loraDropout" formControlName="loraDropout"
+                       (beforeinput)="filterDouble($event)" [class.ng-dirty]="jobForm.dirty" />
+                <small class="text-red-500" *ngIf="jobForm.dirty && jobForm.get('loraDropout')?.errors?.required">
+                  LoRA Dropout is required</small>
+                <small class="text-red-500" *ngIf="jobForm.dirty && jobForm.get('loraDropout')?.errors?.double">
+                  Enter a positive number with up to 4 decimal places (e.g. 0.1234)</small>
+              </div>
+
+              <div class="field col-12 md:col-12">
+                <sm-label-tooltip [tooltip]="LORA_TARGET_MODULES">Target Modules</sm-label-tooltip>
+                <div class="flex gap-4 mt-2">
+                  <div class="flex align-items-center">
+                    <p-checkbox [binary]="true" id="qProj" formControlName="qProj" label="q_proj" />
+                  </div>
+                  <div class="flex align-items-center">
+                    <p-checkbox [binary]="true" id="kProj" formControlName="kProj" label="k_proj" />
+                  </div>
+                  <div class="flex align-items-center">
+                    <p-checkbox [binary]="true" id="vProj" formControlName="vProj" label="v_proj" />
+                  </div>
+                  <div class="flex align-items-center">
+                    <p-checkbox [binary]="true" id="oProj" formControlName="oProj" label="o_proj" />
+                  </div>
+                  <div class="flex align-items-center">
+                    <p-checkbox [binary]="true" id="upProj" formControlName="upProj" label="up_proj" />
+                  </div>
+                  <div class="flex align-items-center">
+                    <p-checkbox [binary]="true" id="downProj" formControlName="downProj" label="down_proj" />
+                  </div>
+                  <div class="flex align-items-center">
+                    <p-checkbox [binary]="true" id="gateProj" formControlName="gateProj" label="gate_proj" />
+                  </div>
+                </div>
+              </div>
+              <!--        QLoRA FP8-->
+              <div class="field col-12 md:col-2 flex align-items-center gap-2">
+                <sm-label-tooltip [tooltip]="QLORA_FP8">QLoRA FP8</sm-label-tooltip>
+                <p-checkbox [binary]="true" id="qloraFp8" formControlName="qloraFp8"
+                            [class.ng-dirty]="jobForm.dirty">
+                </p-checkbox>
+              </div>
+              <!--        QLoRA FP4-->
+              <div class="field col-12 md:col-2 flex align-items-center gap-2">
+                <sm-label-tooltip [tooltip]="QLORA_FP4">QLoRA FP4</sm-label-tooltip>
+                <p-checkbox [binary]="true" id="qloraFp4" formControlName="qloraFp4"
+                            [class.ng-dirty]="jobForm.dirty">
+                </p-checkbox>
+              </div>
+              <!--        QLoRA BNB-->
+              <div class="field col-12 md:col-2 flex align-items-center gap-2">
+                <sm-label-tooltip [tooltip]="QLORA_BNB">QLoRA BNB</sm-label-tooltip>
+                <p-checkbox [binary]="true" id="qloraBnb" formControlName="qloraBnb"
+                            [class.ng-dirty]="jobForm.dirty">
+                </p-checkbox>
+              </div>
+              <!--        Recompute LoRA-->
+              <div class="field col-12 md:col-2 flex align-items-center gap-2">
+                <sm-label-tooltip [tooltip]="RECOMPUTE_LORA">Recompute LoRA</sm-label-tooltip>
+                <p-checkbox [binary]="true" id="recomputeLora" formControlName="recomputeLora"
+                            [class.ng-dirty]="jobForm.dirty">
+                </p-checkbox>
+              </div>
+              <!--        Merge Adapter-->
+              <div class="field col-12 md:col-2 flex align-items-center gap-2">
+                <sm-label-tooltip [tooltip]="MERGE_LORA">Merge Adapter</sm-label-tooltip>
+                <p-checkbox [binary]="true" id="mergeLora" formControlName="mergeLora"
+                            [class.ng-dirty]="jobForm.dirty">
+                </p-checkbox>
+              </div>
+              <!--        Merge iteratively-->
+              <div class="field col-12 md:col-2 flex align-items-center gap-2" *ngIf="mergeLora">
+                <sm-label-tooltip [tooltip]="LORA_MERGE_ITERATIVELY">Merge Adapters iteratively</sm-label-tooltip>
+                <p-checkbox [binary]="true" id="mergeIteratively" formControlName="mergeIteratively"
+                            [class.ng-dirty]="jobForm.dirty">
+                </p-checkbox>
+              </div>
+            </div>
+          </sm-card>
+
+<!--          Ray cluster shape-->
+          <sm-card header="Ray cluster shape" [icon]="Cpu" [padContent]="false">
+            <ng-template pTemplate="toolbar">
+              <div class="flex align-items-center gap-2">
+                <button pButton size="small" type="button" severity="secondary" (click)="advanced.set(!advanced())">
+                  <div class="flex gap-2 align-items-center">
+                    <i-lucide [img]="SlidersHorizontal" class="w-1rem h-1rem"></i-lucide>
+                    <span>Advanced</span>
+                  </div>
+                </button>
+              </div>
+            </ng-template>
+            <p-messages severity="info">
+              <ng-template pTemplate="content">
+                <div class="flex flex-column text-sm">
+                  <div class="flex gap-2">
+                    <i-lucide [img]="InfoIcon" class="w-1rem h-1rem"></i-lucide>
+                    <div class="text-sm" [innerHTML]="RAY_CLUSTER_SHAPE"></div>
+                  </div>
+                </div>
+              </ng-template>
+            </p-messages>
+
+            <div class="formgrid grid text-sm p-fluid">
+              <!--              Number of nodes-->
+              <div class="field col-12 md:col-2">
+                <sm-label-tooltip [tooltip]="NUM_NODES">Number of nodes</sm-label-tooltip>
+                <p-inputNumber id="numNodes" formControlName="numNodes" [min]="1"
+                               [class.ng-dirty]="jobForm.dirty"></p-inputNumber>
+                <small class="text-red-500" *ngIf="jobForm.dirty && jobForm.get('numNodes')?.errors?.required">
+                  Number of nodes is required</small>
+              </div>
+              <!--              GPUs per worker-->
+              <div class="field col-12 md:col-2">
+                <sm-label-tooltip [tooltip]="GPUS_PER_WORKER">GPUs per worker</sm-label-tooltip>
+                <p-inputNumber id="gpusPerWorker" formControlName="gpusPerWorker" [min]="1"
+                               [class.ng-dirty]="jobForm.dirty"></p-inputNumber>
+                <small class="text-red-500" *ngIf="jobForm.dirty && jobForm.get('gpusPerWorker')?.errors?.required">
+                  GPUs per worker is required</small>
+              </div>
+              <div class="field col-12 md:col-8"></div>
+              @if (advanced()) {
+                <!--              Head GPUs-->
+                <div class="field col-12 md:col-2">
+                  <sm-label-tooltip [tooltip]="HEAD_GPUS">Head GPUs</sm-label-tooltip>
+                  <p-inputNumber id="headGpus" formControlName="headGpus" [min]="0"
+                                 [class.ng-dirty]="jobForm.dirty"></p-inputNumber>
+                  <small class="text-red-500" *ngIf="jobForm.dirty && jobForm.get('headGpus')?.errors?.required">
+                    Head GPUs is required</small>
+                </div>
+                <!--              Test vLLM TP-->
+                <div class="field col-12 md:col-2">
+                  <sm-label-tooltip [tooltip]="TEST_VLLM_TP">Test vLLM TP</sm-label-tooltip>
+                  <p-inputNumber id="testVllmTp" formControlName="testVllmTp" [min]="1"
+                                 [class.ng-dirty]="jobForm.dirty"></p-inputNumber>
+                  <small class="text-red-500" *ngIf="jobForm.dirty && jobForm.get('testVllmTp')?.errors?.required">
+                    Test vLLM TP is required</small>
+                </div>
+                <!--              Use head as worker-->
+                <div class="field col-12 md:col-2 flex align-items-center gap-2">
+                  <sm-label-tooltip [tooltip]="USE_HEAD_AS_WORKER">Use head as worker</sm-label-tooltip>
+                  <p-checkbox [binary]="true" id="useHeadAsWorker" formControlName="useHeadAsWorker"
+                              [class.ng-dirty]="jobForm.dirty">
+                  </p-checkbox>
+                </div>
+              }
+            </div>
+          </sm-card>
+
+<!--          Action buttons-->
+          <div class="flex justify-content-between align-items-center">
+            <p class="text-500">Config is saved as a draft until launch.</p>
+            <div class="flex gap-2">
+              <button pButton size="small" type="submit" outlined class="flex gap-1"
+                      [disabled]="!jobForm.valid || isSaving || isLaunching"
+                      [loading]="isSaving">
+                <i-lucide [img]="Save" class="w-1rem h-1rem"></i-lucide>
+                Save Draft
+              </button>
+              <button pButton size="small" type="button" class="flex gap-1" (click)="save(true)"
+                      [disabled]="!jobForm.valid || isSaving || isLaunching"
+                      [loading]="isLaunching">
+                <i-lucide [img]="ArrowRight" class="w-1rem h-1rem"></i-lucide>
+                {{ mustRelaunch() ? 'Relaunch' : 'Launch' }}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </ng-template>
+  </sm-page-loader>
+</sm-page>

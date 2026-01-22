@@ -1,0 +1,13 @@
+@import "primeng/resources/themes/aura-light-blue/theme.css";
+
+:root {
+  --text-color: var(--surface-800);
+}
+
+.layout-sidebar {
+  border-right: 1px solid #e5e7eb;
+}
+
+.overlayMenu:hover {
+  background-color: var(--primary-50) !important;
+}

@@ -1,0 +1,83 @@
+<sm-page>
+  <sm-page-loader>
+    <ng-template>
+      <div class="mb-3">
+        <h1 class="page-title text-xl flex gap-3">
+          <span class="font-medium">{{ repository().metadata?.displayName  ? repository().metadata?.displayName: repository().id }}</span>
+          <p-tag severity="info">
+            <div class="flex gap-1 align-items-center px-1">
+              <i-lucide [img]="Bot" class="w-1rem h-1rem"></i-lucide>
+              <p>Model</p>
+            </div>
+          </p-tag>
+        </h1>
+      </div>
+
+      <p-tabMenu [model]="menu" [activeItem]="menu[4]">
+        <ng-template pTemplate="item" let-item>
+          <a [routerLink]="item.route" [queryParams]="item.queryParams" class="p-menuitem-link">
+            <span [class]="item.icon"></span>
+            <span class="ml-2">{{ item.label }}</span>
+          </a>
+        </ng-template>
+      </p-tabMenu>
+
+      <div class="mt-3">
+        <p-card>
+          <ng-template pTemplate="header">
+            <div class="p-3 surface-50 flex justify-content-between align-items-center">
+              <p class="font-semibold">Repository Users</p>
+              <div class="flex gap-2 align-items-center justify-content-end">
+                <button pButton size="small" (click)="showAddUserDialog()">
+                  <i-lucide [img]="Plus" class="w-1rem h-1rem"></i-lucide> &nbsp; Add user
+                </button>
+              </div>
+            </div>
+          </ng-template>
+          <p-table [value]="groupMembers()" [tableStyle]="{'table-layout': 'auto', 'width': '100%'}">
+            <ng-template pTemplate="body" let-data>
+              <tr>
+                <td>
+                  {{ data.id }}
+                </td>
+                <td>
+                  <div class="flex justify-content-end">
+                    <button pButton size="small" severity="danger" (click)="deleteUser($event, data)">
+                      <i-lucide [img]="Trash" class="w-1rem h-1rem"></i-lucide>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </p-card>
+
+        <p-dialog header="Add User"
+                  [(visible)]="addUserDialogVisible"
+                  [modal]="true"
+                  [style]="{ width: '25vw' }"
+                  [closable]="true"
+                  [draggable]="false">
+          <form [formGroup]="addUserForm">
+            <div class="field p-fluid">
+              <label for="userId">Username:</label>
+              <input id="userId" pInputText formControlName="userId" placeholder="Username"/>
+            </div>
+          </form>
+
+          <div class="flex gap-2 justify-content-end mt-4">
+            <button pButton label="Cancel" outlined size="small"
+                    (click)="addUserDialogVisible.set(false)"></button>
+            <button pButton label="Add User" size="small"
+                    [disabled]="!addUserForm.valid" (click)="createUser()"></button>
+          </div>
+        </p-dialog>
+        <p-confirmDialog></p-confirmDialog>
+      </div>
+
+
+    </ng-template>
+
+  </sm-page-loader>
+</sm-page>
+

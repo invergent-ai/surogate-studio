@@ -1,0 +1,311 @@
+<sm-page-loader [loading]="loading">
+  <ng-template>
+    <h2 class="page-title" >Deploy a new application</h2>
+    <p class="page-subtitle">Spin up a new service from a template or start from scratch. Tailored for AI/ML, web services, and more.</p>
+
+    <div *ngIf="withCustomApp" class="grid gap-3 m-0 mt-5" routerLink="/apps/deploy-step-2" [queryParams]="{id: defaultTemplateApp.id, mode: ApplicationMode.APPLICATION}">
+      <div class="col-4 card surface-card border-1 border-round-xl border-200 flex gap-3 hover:border-blue-400">
+        <div class="flex w-3rem h-3rem align-items-center justify-content-center border-round-xl bg-black-alpha-90 text-white shadow-md">
+          <i-lucide [img]="CodeXml" class="w-2rem h-2rem text-white"></i-lucide>
+        </div>
+        <div class="flex-grow-1 flex flex-column justify-content-center gap-1">
+          <p class="font-bold text-lg">{{ defaultTemplateApp.name }}</p>
+          <p class="text-sm">{{ truncate(defaultTemplateApp.description, 130) }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid flex pt-6">
+      <div class="col-12 md:col-2 flex flex-column gap-2">
+        <div class="card surface-card border-1 border-round-xl border-200">
+          <div class="flex justify-content-between align-items-center">
+            <p class="font-bold">Filters</p>
+            <div><button pButton severity="secondary" label="Clear" size="small"
+                         (click)="filterByCategory('All')"></button></div>
+          </div>
+<!--          Category-->
+          <p class="uppercase text-500 mt-2 text-sm">Category</p>
+          <div class="grid flex-wrap mt-3 gap-2 m-0">
+            <div *ngFor="let category of categories" class="col p-0 cursor-pointer"
+                 (click)="filterByCategory(category.name)">
+              <button pButton [outlined]="true" size="small" severity="secondary" [label]="category.name"
+                      class="block w-full text-800 text-xs white-space-nowrap"
+              [class.border-blue-500]="currentSelectedCategory === category.name"></button>
+            </div>
+          </div>
+        </div>
+        <div class="card surface-card border-1 border-round-xl border-200">
+          <p class="font-bold">Need a hand ?</p>
+          <p class="mt-3 text-sm line-height-2">Check our quickstart guides and examples, or chat with support.</p>
+        </div>
+      </div>
+      <div class="col-12 md:col-10 flex flex-column gap-2">
+<!--        Search bar-->
+        <div class="flex gap-3">
+<!--          Filter-->
+          <div style="min-width: 30rem;" class="flex gap-2 pl-2">
+            <p-iconField iconPosition="left" class="block w-full">
+              <p-inputIcon styleClass="pi pi-search"/>
+              <input type="text" pInputText #searchBar placeholder="Filter by text" class="w-full" (keyup)="search($event)"/>
+            </p-iconField>
+            <button pButton size="small" icon="pi pi-plus" (click)="showCreateEditDialog()"></button>
+          </div>
+<!--          Sort-->
+          <div>
+            <p-dropdown
+              [options]="sortOptions"
+              [(ngModel)]="selectedSortBy"
+              placeholder="Sort by"
+              optionLabel="label"
+              optionValue="value"
+              [showClear]="true"
+              class="w-full"
+              [style]="{'width': '100%'}"
+              (onChange)="onSortChange()">
+            </p-dropdown>
+          </div>
+        </div>
+<!--        Template grid-->
+        <div class="grid m-0 mt-2">
+          <div *ngFor="let tpl of displayTemplates" class="col-12 md:col-4">
+            <div class="card surface-card border-1 border-round-xl border-200 relative"
+                 [class.h-19rem]="!isAdmin" [class.h-22rem]="isAdmin">
+<!--              Logo / Provider-->
+              <div class="flex justify-content-between align-items-center">
+                <!-- Logo -->
+                <div>
+                  @if (tpl.icon) {
+                    <img [src]="tpl.icon" style="height:3rem" alt="model"/>
+                  } @else if (tpl.category === 'Models') {
+                    <div class="flex w-2.5rem h-2.5rem align-items-center justify-content-center border-round-xl bg-black-alpha-90 text-white shadow-md">
+                      <i-lucide [img]="CodeXml" class="w-2rem h-2rem text-white"></i-lucide>
+                    </div>
+                  } @else {
+                    <div class="flex w-3rem h-3rem align-items-center justify-content-center border-round-xl bg-black-alpha-90 text-white shadow-md">
+                      <i-lucide [img]="CodeXml" class="w-2rem h-2rem text-white"></i-lucide>
+                    </div>
+                  }
+                </div>
+                <!-- Use Case -->
+                <p-tag class="uppercase" severity="secondary" [value]="tpl.provider?.name || 'community'"></p-tag>
+              </div>
+<!--              Name-->
+              <p class="font-bold text-lg mt-2">{{ tpl.name }}</p>
+<!--              Description-->
+              <p class="text-sm text-600 line-height-3 m-0 my-2">
+                {{ truncate(tpl.description, 120) }}
+              </p>
+<!--              HashTags / Category-->
+              <div class="flex align-items-center gap-2 flex-wrap">
+<!--                HashTags-->
+                <ng-container *ngIf="getHashtagsArray(tpl.hashtags).length > 0">
+                  <p-tag *ngFor="let tag of getHashtagsArray(tpl.hashtags); let i = index" severity="success" [value]="tag" [class.hidden]="i >= 3"></p-tag>
+                  <p-tag *ngIf="getHashtagsArray(tpl.hashtags).length > 3" severity="success" value="+{{ getHashtagsArray(tpl.hashtags).length - 3 }}"></p-tag>
+                </ng-container>
+<!--                Category-->
+                <ng-container *ngIf="tpl.category">
+                  <p-tag severity="warning" [value]="tpl.category"></p-tag>
+                </ng-container>
+              </div>
+              <!-- Action buttons -->
+              <div class="absolute flex flex-column gap-2" style="bottom: 1rem">
+                <div class="flex gap-2">
+<!--                  Deploy-->
+                  <button pButton severity="primary" size="small" (click)="deployTemplate($event, tpl)">
+                    <div class="flex gap-2">
+                      <i-lucide [img]="Rocket" class="w-1rem h-1rem"></i-lucide>
+                      <p class="font-semibold">Deploy</p>
+                    </div>
+                  </button>
+<!--                  Details-->
+                  <button pButton severity="secondary" [outlined]="true" size="small" [routerLink]="['/', 'apps' , 'template', tpl.id]">
+                    <div class="flex gap-2 text-900">
+                      <i-lucide [img]="BookOpen" class="w-1rem h-1rem"></i-lucide>
+                      <p class="font-bold">Details</p>
+                    </div>
+                  </button>
+                </div>
+<!--                Admin buttons-->
+                <div class="flex gap-2">
+<!--                  Edit-->
+                  <button *ngIf="isAdmin" pButton class="w-full" size="small" icon="pi pi-pencil"
+                          pTooltip="Edit" outlined (click)="showCreateEditDialog(tpl)"></button>
+<!--                  Clone-->
+                  <button *ngIf="isAdmin" pButton class="w-full" size="small" icon="pi pi-copy"
+                          pTooltip="Clone" outlined (click)="cloneTemplate(tpl)"></button>
+<!--                  Delete-->
+                  <button *ngIf="isAdmin" pButton class="w-full" size="small" icon="pi pi-trash" severity="danger"
+                          pTooltip="Delete" outlined (click)="confirmDelete(tpl)"></button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </ng-template>
+</sm-page-loader>
+
+<p-dialog [(visible)]="displayCreateDialog" [style]="{width: '75%'}"
+          header="Create App Template"
+          [modal]="true">
+  <form [formGroup]="templateForm" (ngSubmit)="saveTemplate()">
+    <div class="grid p-fluid">
+<!--      Name-->
+      <div class="col-12 mb-3">
+          <span class="p-float-label">
+            <input pInputText id="name" formControlName="name"/>
+            <label for="name">Name</label>
+          </span>
+        <small class="p-error" *ngIf="templateForm.get('name')?.hasError('required') &&
+                templateForm.get('name')?.touched">
+          Name is required
+        </small>
+      </div>
+<!--      Description-->
+      <div class="col-12 mb-3">
+          <span class="p-float-label">
+            <textarea rows="3" pInputTextarea id="description" formControlName="description"></textarea>
+            <label for="description">Description</label>
+          </span>
+        <small class="p-error" *ngIf="templateForm.get('description')?.hasError('required') &&
+                templateForm.get('description')?.touched">
+          Description is required
+        </small>
+      </div>
+<!--      Long description-->
+      <div class="col-12 mb-3">
+          <span class="p-float-label">
+            <textarea rows="20" pInputTextarea id="longDescription" formControlName="longDescription"></textarea>
+            <label for="longDescription">Long Description</label>
+          </span>
+        <small class="p-error" *ngIf="templateForm.get('longDescription')?.hasError('required') &&
+                templateForm.get('longDescription')?.touched">
+          Long Description is required
+        </small>
+      </div>
+<!--      Category-->
+      <div class="col-12 mb-3">
+          <span class="p-float-label">
+            <input pInputText id="category" formControlName="category"/>
+            <label for="category">Category</label>
+          </span>
+        <small class="p-error" *ngIf="templateForm.get('category')?.hasError('required') &&
+                templateForm.get('category')?.touched">
+          Category is required
+        </small>
+      </div>
+<!--      HashTags-->
+      <div class="col-12 mb-3">
+          <span class="p-float-label">
+            <input pInputText id="hashtags" formControlName="hashtags"
+                   placeholder="e.g., #angular #typescript #web"/>
+            <label for="hashtags">Hashtags</label>
+          </span>
+        <small class="form-text text-muted">
+          Separate multiple hashtags with spaces (e.g., #angular #typescript #web)
+        </small>
+      </div>
+<!--      Icon-->
+      <div class="col-12 mb-3">
+          <span class="p-float-label">
+            <input pInputText id="icon" formControlName="icon"/>
+            <label for="icon">Icon URL</label>
+          </span>
+      </div>
+<!--      Template-->
+      <div class="col-12 mb-3">
+          <span class="p-float-label">
+            <textarea pInputTextarea id="template" [rows]="20" formControlName="template"
+                      (blur)="formatJson('template')">
+            </textarea>
+            <label for="template">Template</label>
+            <small *ngIf="templateForm.controls.template.errors?.invalidJson" class="p-error">
+              Invalid JSON format
+            </small>
+          </span>
+      </div>
+<!--      Extra config for template-->
+      <div class="col-12 mb-3">
+          <span class="p-float-label">
+            <textarea pInputTextarea id="extraConfig" [rows]="10" formControlName="extraConfig"
+                      (blur)="formatJson('extraConfig')">
+            </textarea>
+            <label for="template">Template extra config</label>
+            <small *ngIf="templateForm.controls.extraConfig.errors?.invalidJson" class="p-error">
+              Invalid JSON format
+            </small>
+          </span>
+      </div>
+<!--      Order-->
+      <div class="col-12 mb-3">
+          <span class="p-float-label">
+            <p-inputNumber id="zorder" mode="decimal" inputId="zorder"
+                           [step]="1" [min]="0" [max]="1000"
+                           formControlName="zorder" [showButtons]="true"></p-inputNumber>
+            <label for="zorder">Order</label>
+          </span>
+      </div>
+    </div>
+<!--    Action buttons-->
+    <div class="flex justify-content-end mt-4">
+      <button pButton type="button" label="Close"
+              class="p-button-secondary mr-2" (click)="hideCreateDialog()"></button>
+
+      <button pButton type="submit" label="Save"
+              [disabled]="!templateForm.valid"></button>
+    </div>
+  </form>
+</p-dialog>
+<p-confirmDialog></p-confirmDialog>
+
+<p-overlayPanel #deploy [showCloseIcon]="true">
+  <div class="flex mt-4 card border-1 border-300 surface-50">
+    <div>
+      <p-radioButton class="w-auto" [(ngModel)]="selectedSource"
+                     value="hf" inputId="hf" id="hf">
+      </p-radioButton>
+      <label for="hf" class="ml-2 font-medium">HuggingFace</label>
+    </div>
+    <div class="ml-4">
+      <p-radioButton class="w-auto" [(ngModel)]="selectedSource"
+                     value="hub" inputId="hub" id="hub">
+      </p-radioButton>
+      <label for="hub" class="ml-2 font-medium">Data Hub</label>
+    </div>
+  </div>
+  <div class="flex grid-nogutter mt-4" *ngIf="selectedSource === 'hf'">
+    <div class="field w-full">
+      <label class="block text-sm text-500 mb-1">HF Token</label>
+      <input pInputText class="w-full" [(ngModel)]="selectedHfToken" />
+    </div>
+  </div>
+  <div class="flex grid-nogutter mt-4" *ngIf="selectedSource === 'hub' && repoExists">
+    <sm-repo-selector class="col-6" [repoType]="'model'" [maxDisplayLength]="20"
+                      [canSelect]="false" [ngModel]="selectedRepository"></sm-repo-selector>
+    <sm-ref-selector class="col-6 ml-2" type="branch" [repoId]="selectedRepository"
+                     [canSelect]="true" [(ngModel)]="selectedRef"
+                     [buttonSize]="'small'" [onlyDeployable]="true"></sm-ref-selector>
+  </div>
+  <div class="mt-4" *ngIf="selectedSource === 'hub' && !repoExists">
+    <p-messages [enableService]="false" [closable]="false" [escape]="false"
+                [value]="[
+                {
+                  severity: 'warn',
+                  detail: 'Repository ' + selectedRepository + ' does not exist in Data Hub. You can import it from HuggingFace: ' +
+                   '<br><br>Go to <strong>Data Hub</strong> > hit <strong>Import...</strong> button > Enter <strong>' + selectedHfModelName
+                   + '</strong> in the search field > hit <strong>Start sync</strong> button.'
+                }]">
+    </p-messages>
+  </div>
+  <div class="mt-2">
+    <button pButton severity="primary" size="small" (click)="doDeploy($event)">
+      <div class="flex gap-2">
+        <i-lucide [img]="Rocket" class="w-1rem h-1rem"></i-lucide>
+        <p class="font-semibold">Deploy</p>
+      </div>
+    </button>
+  </div>
+</p-overlayPanel>

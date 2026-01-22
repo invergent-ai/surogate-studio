@@ -1,0 +1,47 @@
+:host ::ng-deep {
+  .volume-table {
+    .p-dropdown, .p-inputtext {
+      .p-inputtext {
+        background-color: var(--surface-ground);
+        border-radius: 6px;
+        border: 1px solid var(--surface-border);
+        padding: 0.5rem;
+
+        &:focus {
+          box-shadow: none;
+          border-color: var(--primary-color);
+        }
+      }
+    }
+
+    .p-dropdown {
+      background-color: var(--surface-ground);
+      border-radius: 6px;
+
+      &:not(.p-disabled).p-focus {
+        box-shadow: none;
+        border-color: var(--primary-color);
+      }
+    }
+
+    .p-button-danger {
+      &.p-button-text {
+        color: var(--red-500);
+        background: transparent;
+
+        &:hover {
+          background: transparent;
+
+          .p-button-icon {
+            color: var(--red-200); // or any lighter red color you prefer
+            transition: color 0.2s;
+          }
+        }
+
+        &:focus {
+          box-shadow: none;
+        }
+      }
+    }
+  }
+}

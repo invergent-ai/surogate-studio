@@ -1,0 +1,6 @@
+export enum RoutingStrategy {
+  KV_BASED = 'KV_BASED',
+  PREFIX_BASED = 'PREFIX_BASED',
+  ROUND_ROBIN = 'ROUND_ROBIN',
+  SESSION = 'SESSION'
+}

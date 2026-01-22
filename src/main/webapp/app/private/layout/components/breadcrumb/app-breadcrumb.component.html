@@ -1,0 +1,11 @@
+<div class="layout-breadcrumb  flex align-items-center relative ">
+    <nav>
+        <ol class="relative z-2">
+            <ng-template ngFor let-item let-last="last" [ngForOf]="breadcrumbs$ | async">
+                <li class="text-gray-600">{{item.label}}</li>
+                <li *ngIf="!last" class="layout-breadcrumb-chevron"> / </li>
+            </ng-template>
+        </ol>
+    </nav>
+</div>
+

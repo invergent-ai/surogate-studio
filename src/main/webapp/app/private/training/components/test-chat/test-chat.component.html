@@ -1,0 +1,52 @@
+<sm-page-loader [loading]="loading" [message]="'Starting fast model serving...'">
+  <ng-template>
+    <div *ngIf="!errorMessage">
+      <p-card styleClass="mx-auto w-full md:w-9 lg:w-7">
+        <p-scrollPanel #scrollPanel styleClass="h-24rem surface-50 border-1 border-200 border-round p-3">
+          <div *ngFor="let m of messages()"
+               class="flex align-items-start gap-3 mb-3"
+               [ngClass]="{'justify-content-end': m.role === 'user'}">
+
+            <p-avatar *ngIf="m.role !== 'user'" icon="pi pi-android" shape="circle"></p-avatar>
+            <div class="surface-card border-1 border-200 p-3 border-round whitespace-pre-wrap"
+                 [ngClass]="{'bg-blue-50': m.role === 'user', 'bg-green-50': m.role === 'system'}">
+              <small class="text-600 uppercase">{{ m.role }}</small>
+<!--              <div>{{ m.content }}</div>-->
+              <p></p>
+              <code [highlight]="m.content" [language]="'vim'" class="hljs text-sm mono"
+                    style="white-space: pre-wrap; padding: 0"></code>
+            </div>
+            <p-avatar *ngIf="m.role === 'user'" icon="pi pi-user" shape="circle"></p-avatar>
+          </div>
+
+          <div *ngIf="streaming()" class="flex align-items-start gap-3">
+            <p-avatar icon="pi pi-android" shape="circle"></p-avatar>
+            <div class="surface-card border-1 border-200 p-3 border-round" style="max-width: 90%">
+              <small class="text-600 uppercase">system</small>
+<!--              <div>{{ live() }}<span class="opacity-60">▍</span></div>-->
+              <p></p>
+              <code [highlight]="live()" [language]="'vim'" class="hljs text-sm mono"
+                    style="white-space: pre-wrap; padding: 0"></code>
+            </div>
+          </div>
+        </p-scrollPanel>
+
+        <p-divider></p-divider>
+
+        <div class="flex gap-2">
+          <textarea pInputTextarea rows="3" [(ngModel)]="draft"
+                    [autoResize]="true" class="flex-1"
+                    placeholder="Ask something..."
+                    (keydown)="onComposerKeydown($event)"
+                    [disabled]="streaming()"></textarea>
+          <div class="flex flex-column gap-2">
+            <button pButton label="Send" icon="pi pi-send"
+                    (click)="sendMessage()"
+                    [disabled]="streaming() || !draft?.trim()"></button>
+          </div>
+        </div>
+      </p-card>
+    </div>
+    <div class="text-center mt-5 mb-5" *ngIf="errorMessage">{{ errorMessage }}</div>
+  </ng-template>
+</sm-page-loader>

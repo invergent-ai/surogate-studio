@@ -1,0 +1,67 @@
+<div [class]="'login-body flex min-h-screen ' + (layoutService.config.colorScheme === 'light' ? 'layout-light':'layout-dark')">
+  <div class="login-panel w-full" style="background: var(--surface-ground)">
+    <div class="p-fluid min-h-screen flex align-items-center justify-content-center" style="background: var(--surface-ground)">
+      <div class="form-container" style="max-width: 400px;"> <!-- Added max-width here -->
+        <!-- Card Content -->
+        <div class="card p-4 border-round shadow-2">
+          <!-- Logo -->
+          <div class="flex justify-content-center mb-5">
+            <img [src]="'assets/layout/images/inv-logo-horiz-'+
+            (layoutService.config.colorScheme === 'light' ? 'black' : 'white') + '.svg'"
+                 class="login-logo" style="width: 150px;"  alt=""/> <!-- Reduced logo width -->
+          </div>
+
+          <!-- Loading State -->
+          <div *ngIf="loading" class="flex justify-content-center p-4">
+            <p-progressSpinner styleClass="w-4rem h-4rem"></p-progressSpinner>
+          </div>
+
+          <!-- Error State -->
+          <div *ngIf="error && !loading" class="flex flex-column align-items-center">
+            <div class="text-900 text-xl font-medium mb-4 text-center">Activation Failed</div>
+
+            <div class="text-600 mb-4 text-center">
+              Your user could not be activated. Please use the registration form to sign up.
+            </div>
+
+            <button pButton
+                    label="Register"
+                    [routerLink]="['/register']"
+                    class="p-button-primary w-full">
+            </button>
+          </div>
+
+          <!-- Success State -->
+          <div *ngIf="success && !loading" class="flex flex-column align-items-center">
+            <div class="text-900 text-xl font-medium mb-4 text-center">Activation Successful</div>
+
+            <div class="text-600 mb-4 text-center">
+              Your user has been activated. You can now sign in.
+            </div>
+
+            <button pButton
+                    label="Sign In"
+                    [routerLink]="['/login']"
+                    class="p-button-primary w-full">
+            </button>
+          </div>
+
+          <p-messages></p-messages>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex align-items-center gap-2 justify-content-center mt-4 text-sm flex-wrap">
+          <span class="text-color-secondary">Copyright © 2024 StateMesh</span>
+          <span class="text-color-secondary">|</span>
+          <a class="text-color-secondary hover:text-primary cursor-pointer no-underline"
+             href="https://www.statemesh.net/privacy-policy"
+             target="_blank">Privacy Policy</a>
+          <span class="text-color-secondary">|</span>
+          <a class="text-color-secondary hover:text-primary cursor-pointer no-underline"
+             href="https://www.statemesh.net/terms-of-use"
+             target="_blank">Terms of Use</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

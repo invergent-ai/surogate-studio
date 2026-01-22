@@ -1,0 +1,14 @@
+$breakpoint:992px !default;
+$scale:14px !default;
+
+.layout-light {
+    --sidebar-shadow: 0px 4px 50px #D9DDFC;
+    --sidebar-border: 1px solid transparent;
+    --card-shadow: 0px 4px 30px rgba(221, 224, 255, 0.54);
+    //--body-image:  url("/assets/layout/images/effect-onlight.png");
+    --root-menu-item-hover-bg:rgba(68, 72, 109, 0.03);
+    //--exception-pages-image: url('/assets/layout/images/exception-onlight.png');
+}
+
+
+

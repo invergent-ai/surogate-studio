@@ -1,0 +1,15 @@
+::ng-deep .notification-overlay {
+  .p-overlaypanel-content {
+    padding: 0 !important;
+    background: var(--surface-ground);
+  }
+
+  &.p-overlaypanel {
+    background: var(--surface-overlay);
+    border: 1px solid var(--surface-border);
+
+    &::before, &::after {
+      border: none !important; // Remove the arrow if you don't want it
+    }
+  }
+}

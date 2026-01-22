@@ -1,0 +1,158 @@
+/* Styles extracted from documents.component.scss for upload */
+:host ::ng-deep {
+  // Improve mobile responsiveness
+  @media screen and (max-width: 576px) {
+    .upload-dropzone {
+      padding: 1.5rem !important;
+    }
+  }
+}
+
+.upload-dropzone {
+  border: 2px dashed var(--primary-color);
+  border-radius: 8px;
+  background-color: var(--surface-ground);
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+
+  &:hover {
+    background-color: var(--surface-hover);
+  }
+
+  &.upload-dropzone-drag {
+    background-color: var(--primary-50);
+    border-color: var(--primary-500);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    transform: scale(1.01);
+  }
+
+  // Improve accessibility for keyboard navigation
+  &:focus, &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+}
+
+.hidden-file-input {
+  opacity: 0;
+  position: absolute;
+  z-index: -1;
+  width: 0.1px;
+  height: 0.1px;
+  overflow: hidden;
+
+  input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+  }
+}
+
+.upload-queue {
+  max-height: 200px; // Limit queue height
+  overflow-y: auto;
+  margin-bottom: 1rem;
+}
+
+.file-item {
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: 3px;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: var(--surface-hover);
+  }
+
+  .p-progressbar {
+    height: 6px;
+  }
+
+  .file-name {
+    word-break: break-word;
+    max-width: 300px;
+    display: inline-block;
+    vertical-align: middle;
+
+    @media screen and (max-width: 576px) {
+      max-width: 180px;
+    }
+  }
+}
+
+.file-size {
+  color: var(--text-color-secondary);
+  font-size: 0.8rem;
+}
+
+// General utilities that might be needed
+.cursor-pointer {
+  cursor: pointer;
+}
+.text-center { text-align: center; }
+.text-4xl { font-size: 2.25rem; }
+.text-muted { color: var(--text-color-secondary); }
+.text-sm { font-size: 0.875rem; }
+.mb-3 { margin-bottom: 1rem; }
+.p-3 { padding: 1rem; }
+.p-5 { padding: 3rem; }
+.mt-1 { margin-top: 0.25rem; }
+.mt-2 { margin-top: 0.5rem; }
+.ml-2 { margin-left: 0.5rem; }
+.mr-2 { margin-right: 0.5rem; }
+.pl-3 { padding-left: 1rem; }
+.font-medium { font-weight: 500; }
+.border { border: 1px solid var(--surface-border); }
+.rounded { border-radius: var(--border-radius); }
+.flex { display: flex; }
+.justify-content-between { justify-content: space-between; }
+.align-items-center { align-items: center; }
+.p-error { color: var(--red-500); }
+
+
+:host ::ng-deep {
+  .p-progressbar {
+    height: 0.75rem;
+    margin: 0 1rem 0 1rem;
+  }
+
+  .p-scrollpanel {
+    .p-scrollpanel-content {
+      padding: 0;
+      min-height: 150px;
+      max-height: 200px;
+      overflow-x: hidden;
+    }
+
+    .p-scrollpanel-bar {
+      background-color: var(--primary-200);
+      opacity: 0.5;
+
+      &:hover {
+        background-color: var(--primary-300);
+        opacity: 0.7;
+      }
+    }
+  }
+
+  // Ensure validation styles are consistent
+  .p-invalid,
+  .ng-invalid.ng-touched {
+    border-color: var(--red-500);
+  }
+
+  // Loading state styles
+  .p-dropdown-loading-icon,
+  .p-multiselect-loading-icon {
+    font-size: 1rem;
+    right: 0.5rem;
+  }
+}

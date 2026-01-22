@@ -1,0 +1,58 @@
+<!doctype html>
+<html class="no-js" lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8"/>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+  <title>Surogate Studio</title>
+  <meta name="description" content="Surogate Studio"/>
+  <meta name="google" content="notranslate"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
+  <meta name="theme-color" content="#000000"/>
+  <base href="/"/>
+  <link rel="icon" href="favicon.ico"/>
+  <link rel="manifest" href="manifest.webapp"/>
+
+  <link crossOrigin="" rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link crossOrigin="" href="https://fonts.googleapis.com/css2?family=Anek+Latin:wght@100..800&display=swap" rel="stylesheet">
+
+  <script src="content/js/fp.min.js"></script>
+
+  <link rel="stylesheet" type="text/css" href="assets/layout/styles/layout/preloading.css">
+  <link id="theme-link" rel="stylesheet" type="text/css"  href="theme-light.css">
+</head>
+<body>
+<!--[if lt IE 9]>
+<p class="browserupgrade">
+  You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a>
+  to improve
+  your experience.
+</p>
+<![endif]-->
+
+<sm-main>
+  <div class="layout-preloader-container">
+    <div class="layout-preloader">
+      <span></span>
+    </div>
+  </div>
+</sm-main>
+
+<noscript>
+  <h1>You must enable JavaScript to view this page.</h1>
+</noscript>
+<script type="text/javascript">
+  // show an error message if the app loading takes more than 4 sec
+  window.onload = function () {
+    setTimeout(showError, 4000);
+  };
+
+  function showError() {
+    var errorElm = document.getElementById('sm-error');
+    if (errorElm?.style) {
+      errorElm.style.display = 'block';
+    }
+  }
+</script>
+</body>
+</html>

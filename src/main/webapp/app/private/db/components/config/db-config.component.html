@@ -1,0 +1,118 @@
+<sm-page-loader [loading]="loading">
+  <ng-template>
+    <p-card>
+      <!-- Header -->
+      <header class="mb-4">
+        <div class="flex align-items-center gap-3">
+          <div class="flex justify-content-center align-items-center w-3rem h-3rem border-round-xl bg-blue-500 text-white shadow-1">
+            <span class="text-sm font-semibold">DB</span>
+          </div>
+          <div>
+            <h2 class="text-2xl font-semibold m-0">Database Configuration</h2>
+            <p class="text-sm text-600 mt-1">Configure resources, storage, and network settings</p>
+          </div>
+        </div>
+      </header>
+
+      <form [formGroup]="databaseForm" (ngSubmit)="saveDatabase()" class="p-fluid">
+        <!-- Basic Settings Card -->
+        <div class="p-3 mb-4 border-round border-1 surface-border">
+          <div class="flex align-items-center gap-2 mb-3">
+            <i class="pi pi-cog text-xl text-primary"></i>
+            <h3 class="text-lg font-semibold m-0">Basic Settings</h3>
+          </div>
+
+          <!-- Replicas -->
+          <div class="field mb-3">
+            <label for="replicas" class="font-semibold text-900 mb-2 block">
+              <i class="pi pi-server mr-2"></i>Replicas
+            </label>
+            <p-inputNumber
+              formControlName="replicas"
+              id="replicas"
+              mode="decimal"
+              inputId="replicas"
+              [class.ng-dirty]="databaseForm.dirty"
+              [showButtons]="true"
+              [min]="1"
+              [max]="16"
+              [readonly]="true"
+              styleClass="w-full sm:w-10rem">
+            </p-inputNumber>
+            <small class="text-500 block mt-1">Number of database instances to run</small>
+          </div>
+
+          <!-- Expose Publicly -->
+          <div class="field">
+            <div class="flex align-items-center gap-2">
+              <p-checkbox
+                formControlName="hasIngress"
+                [binary]="true"
+                inputId="hasIngress">
+              </p-checkbox>
+              <label for="hasIngress" class="font-semibold text-900 m-0 cursor-pointer">
+                <i class="pi pi-globe mr-2"></i>Expose publicly
+              </label>
+            </div>
+            <small class="text-500 block mt-1 ml-4">Allow external connections to this database</small>
+          </div>
+        </div>
+
+        <!-- Storage Settings -->
+        <div class="mb-4">
+          <sm-db-settings
+            [databaseId]="_database.id"
+            [databaseForm]="databaseForm"
+            [resetTrigger]="resetTrigger">
+          </sm-db-settings>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex gap-2 pt-4 border-top-1 border-200">
+          <button
+            pButton
+            type="submit"
+            label="Save"
+            size="small"
+            class="w-auto"
+            [disabled]="!databaseForm.valid || isSaving || isPublishing"
+            [loading]="isSaving">
+          </button>
+
+          <button
+            *ngIf="_database?.status === DatabaseStatus.CREATED"
+            pButton
+            type="button"
+            (click)="saveDatabase(true)"
+            label="Publish"
+            severity="success"
+            size="small"
+            class="w-auto"
+            [disabled]="!databaseForm.valid || isSaving || isPublishing"
+            [loading]="isPublishing">
+          </button>
+
+          <button
+            *ngIf="_database?.status === DatabaseStatus.DEPLOYED || _database?.status === DatabaseStatus.ERROR"
+            pButton
+            type="button"
+            (click)="redeployDatabase()"
+            label="Republish"
+            severity="success"
+            size="small"
+            class="w-auto"
+            [disabled]="!databaseForm.valid || isSaving || isPublishing"
+            [loading]="isPublishing">
+          </button>
+        </div>
+      </form>
+    </p-card>
+  </ng-template>
+</sm-page-loader>
+
+<!-- Loading Overlay -->
+<div class="fixed top-0 left-0 w-full h-full flex flex-column align-items-center justify-content-center bg-black-alpha-70 z-5" *ngIf="lockScreen">
+  <p-progressSpinner strokeWidth="4" styleClass="w-4rem h-4rem"></p-progressSpinner>
+  <p class="mt-3 text-xl font-semibold text-white">Deploying Database</p>
+  <p class="text-white-alpha-80 mt-2" *ngIf="moreSeconds">Just a few more seconds...</p>
+</div>

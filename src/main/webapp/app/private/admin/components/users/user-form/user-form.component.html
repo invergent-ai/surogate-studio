@@ -1,0 +1,86 @@
+<sm-page>
+  <div class="mb-5">
+    <h1 class="page-title">{{ isEditMode ? "Edit user" : "Add user" }}</h1>
+    <p class="page-subtitle">
+      {{ isEditMode ? "Edit user within the system." : "Add user within the system." }}
+    </p>
+  </div>
+  <sm-page-loader>
+    <ng-template>
+      <p-card>
+        <form [formGroup]="registerForm">
+          <div class="formgrid grid">
+            <div class="field col-12 md:col-6 mt-2">
+              <label for="login">E-mail</label>
+              <input type="email"
+                     id="login"
+                     name="login"
+                     data-cy="login"
+                     formControlName="login"
+                     #login
+                     pInputText
+                     autocomplete="off"
+                     class="w-full"
+                     placeholder="E-mail"
+                     [readonly]="isEditMode"
+              >
+              <small
+                class="form-text text-red-400"
+                *ngIf="registerForm.get('login')?.errors?.required &&
+                (registerForm.get('login')?.dirty || registerForm.get('login')?.touched)"
+              >
+                E-mail is required
+              </small>
+              <small
+                class="form-text text-red-400"
+                *ngIf="registerForm.get('login')?.errors?.email"
+              >
+                Invalid e-mail format
+              </small>
+            </div>
+            <div class="field col-12 md:col-6 mt-2">
+
+              <label for="authorities">Authorities</label>
+              <p-multiSelect
+                id="authorities"
+                formControlName="authorities"
+                [options]="authorityOptions"
+                optionLabel="label"
+                optionValue="value"
+                display="chip"
+                styleClass="w-full"
+                placeholder="Authorities"
+              ></p-multiSelect>
+
+              <small
+                class="form-text text-red-400"
+                *ngIf="registerForm.get('authorities')?.invalid && (registerForm.get('authorities')?.dirty || registerForm.get('authorities')?.touched)"
+              >
+                At least one role is required
+              </small>
+            </div>
+          </div>
+
+          <p-messages></p-messages>
+          <!-- Buttons -->
+          <div class="flex justify-content-end gap-2 mt-4">
+            <button pButton size="small" severity="secondary" type="button" class="w-8rem" label="Cancel"
+                    (click)="router.navigate(['/admin/users'])"></button>
+            <button pButton type="button" size="small" class="w-8rem" label="Save" [disabled]="!registerForm.valid"
+                    (click)="register()"></button>
+          </div>
+        </form>
+      </p-card>
+      <div class="mt-4">
+        <button
+          pButton
+          type="button"
+          icon="pi pi-arrow-left"
+          label="Back"
+          class="p-button-text"
+          (click)="goBack()"
+        ></button>
+      </div>
+    </ng-template>
+  </sm-page-loader>
+</sm-page>

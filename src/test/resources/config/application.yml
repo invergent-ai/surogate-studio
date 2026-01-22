@@ -1,0 +1,162 @@
+# ===================================================================
+# Spring Boot configuration.
+#
+# This configuration is used for unit/integration tests.
+#
+# More information on profiles: https://www.jhipster.tech/profiles/
+# More information on configuration properties: https://www.jhipster.tech/common-application-properties/
+# ===================================================================
+
+# ===================================================================
+# Standard Spring Boot properties.
+# Full reference is available at:
+# http://docs.spring.io/spring-boot/docs/current/reference/html/common-application-properties.html
+# ===================================================================
+
+spring:
+  application:
+    name: Surogate Studio
+  sql:
+    init:
+      mode: always
+      continue-on-error: true
+      data-locations: optional:classpath*:data-appliance.sql
+  jpa:
+    defer-datasource-initialization: true
+  jackson:
+    serialization:
+      write-durations-as-timestamps: false
+  mail:
+    host: localhost
+  main:
+    allow-bean-definition-overriding: true
+  messages:
+    basename: i18n/messages
+  thymeleaf:
+    mode: HTML
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: noop
+            client-secret: noop
+            redirect-uri: ${app.server-url}/login/oauth2/code/google
+            scope:
+              - openid
+              - email
+              - profile
+          github:
+            client-id: noop
+            client-secret: noop
+            redirect-uri: ${app.server-url}/login/oauth2/code/github
+
+server:
+  port: 10344
+  address: localhost
+
+# ===================================================================
+# JHipster specific properties
+#
+# Full reference is available at: https://www.jhipster.tech/common-application-properties/
+# ===================================================================
+jhipster:
+  clientApp:
+    name: 'stateMeshApp'
+  mail:
+    from: stateMesh@localhost.com
+    base-url: http://127.0.0.1:8080
+  logging:
+    # To test json console appender
+    use-json-format: false
+    logstash:
+      enabled: false
+      host: localhost
+      port: 5000
+      ring-buffer-size: 512
+  security:
+    authentication:
+      jwt:
+        # This token must be encoded using Base64 (you can type `echo 'secret-key'|base64` on your command line)
+        base64-secret: YjJhZGYyNjE4NTBhZjE3ZmMzY2JmMDNhNzlmNDk4OGM2MmVkMjk3Y2Y0NDk5YTE1NjUwYmNlNWFjNDBkNDA4Yzg4ZWEwYmE2N2MxM2M5ZDlmYTVkZTI1ZjBlOTQ4Zjk5MTExNTNiODdkNmQ2MDJlNDI2ZGYwNDMwZTNlNzQwMWI=
+        # Token is valid 24 hours
+        token-validity-in-seconds: 86400
+        token-validity-in-seconds-for-remember-me: 86400
+
+# ===================================================================
+# Application specific properties
+# Add your own application properties here, see the ApplicationProperties class
+# to have type-safe configuration, like in the JHipsterProperties above
+#
+# More documentation is available at:
+# https://www.jhipster.tech/common-application-properties/
+# ===================================================================
+
+# application:
+management:
+  health:
+    mail:
+      enabled: false
+
+app:
+  node-reservation-duration: 3600 # Seconds
+  check-node-resource-updates: false
+  rate-limiter:
+    rate-limit-tokens: 600 # Tokens per minute => 10 req / sec
+    smid-rate-limit-tokens: 2 # Tokens per 10 seconds => 2 req / 10 sec (must be at least two)
+  opencost:
+    cron: "0 0 */1 * * *" # Runs every hour
+    allocation:
+      window-minutes: 60 # 1 hour
+  free-tier:
+    max-free-cpu-hours: 720
+    max-free-ram-bytes-hours: 2949120
+    max-free-cpu: 1
+    max-free-ram: 4096
+  metrics:
+    logs-watch-timeout: 60 # Seconds
+    shell-watch-timeout: 120 # Seconds
+    metrics-poll-interval: 10 # Seconds
+    metrics-wait-timeout: 120 # Seconds
+    status-poll-interval: 5 # Seconds
+    status-wait-timeout: 600 # Seconds
+  pipeline:
+    cicd-pipeline-autopublish: true
+    cicd-pipeline-wait-timeout: 300 # Seconds
+  job:
+    delete-terminating-schedule: 0 0 0 * * ? # // Every day at midnight
+    unpaying-apps-deletion-schedule: 0 0 0 * * ? # Every day
+    unpaying-apps-unlock-schedule: 0 0/10 * * * ? # Every 10 minutes
+    cordon-unpaying-nodes-schedule: 0 0 */1 * * * # Every hour
+    uncordon-unpaying-nodes-schedule: 0 0/10 * * * ? # Every 10 minutes
+    update-node-status-schedule: 0 0/1 * * * ? # Every minute
+    terminating-pods-delete-finalizers: true
+  k8s-task:
+    resource-operation-poll-interval: 3 # Seconds
+    resource-operation-wait-timeout: 10 # Seconds
+    resource-operation-watch-timeout: 30 # Seconds - Deprecated
+    request-vs-limits-coefficient-cpu: 0.25
+    request-vs-limits-coefficient-memory: 0.75
+  storage:
+    sm-storage-bucket-url: https://noop.
+    sm-storage-access-key: noop
+    sm-storage-access-secret: noop
+  token:
+    ttl: 60 # Seconds
+  profile:
+    datacenters:
+      - default
+    rayClusters:
+      - name: raycluster-kuberay
+        cid: densemax
+        url: http://localhost:8265
+        aimUrl: http://localhost:43800
+  mail:
+    from: noreply@noop.net
+  lake-fs:
+    key: AKIAJ3ASUQUROUFTNOUQ
+    secret: 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
+    endpoint: https://lakefs.densemax.local
+    s3Endpoint: https://lakefs-s3.densemax.local
+    master-key: 3c2iMoO05OQqCHOkF42aV2v1k5zldbJt  # same as statemesh-installer/appliance-master/lakefs.yml:authEncryptSecretKey
+

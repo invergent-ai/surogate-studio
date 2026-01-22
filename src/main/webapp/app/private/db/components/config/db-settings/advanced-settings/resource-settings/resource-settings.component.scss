@@ -1,0 +1,51 @@
+.container-wrapper {
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  border-radius: 6px;
+}
+
+:host ::ng-deep .p-dropdown {
+  width: 100%;
+}
+
+:host ::ng-deep .p-accordion {
+  .p-accordion-header a {
+    padding: 0;
+    border: none;
+    background: transparent;
+  }
+
+  .p-accordion-content {
+    border: none;
+    background: transparent;
+  }
+
+  .p-accordion-header:not(.p-disabled) {
+    &.p-highlight a {
+      background: transparent;
+      border: none;
+    }
+
+    &:not(.p-highlight):not(.p-disabled):hover a {
+      background: transparent;
+      border: none;
+    }
+  }
+}
+
+.resource-icon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+
+.field {
+  margin-bottom: 1.5rem;
+}
+
+label {
+  font-weight: 500;
+}

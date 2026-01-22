@@ -1,0 +1,84 @@
+<p-toast position="top-right" styleClass="login-toast-container"></p-toast>
+<div [class]="'login-body flex min-h-screen  '+(layoutService.config.colorScheme === 'light' ? 'layout-light':'layout-dark')">
+  <div class="w-full">
+    <div class="h-full min-h-screen bg-auto md:bg-contain bg-no-repeat text-center w-full flex flex-column align-items-center justify-content-center flex-column bg-auto md:bg-contain bg-no-repeat"
+         style="background:var(--exception-pages-image)">
+      <!-- Card wrapper -->
+      <div class="surface-card p-6 shadow-2 border-round-xl mt-auto">
+        <div class="flex flex-column" style="min-width: 20rem;">
+          <!-- Logo -->
+          <div class="flex flex-column align-items-center justify-content-center mb-3">
+            <img [src]="'assets/layout/images/inv-logo-horiz-' +
+                  (layoutService.config.colorScheme === 'light' ? 'black' : 'white') + '.svg'" class="login-logo" style="width: 125px;"  alt=""/>
+            <p class="mt-1 text-2xl font-bold">Surogate Studio</p>
+
+            @if (colorScheme === 'light') {
+              <button pButton class="p-button-text p-button-sm" (click)="colorScheme = 'dark'">
+                <i-lucide [img]="Moon" class="w-1.5rem h-1.5rem text-800"></i-lucide>
+              </button>
+            } @else {
+              <button pButton class="p-button-text p-button-sm" (click)="colorScheme = 'light'">
+                <i-lucide [img]="Sun" class="w-1.5rem h-1.5rem text-800"></i-lucide>
+              </button>
+            }
+          </div>
+          <!-- Login form -->
+          <form *ngIf="!returnToCli" class="p-fluid" [formGroup]="loginForm" (ngSubmit)="login()">
+            <!-- Fields -->
+            <div class="form-container">
+              <span class="p-input-icon-left">
+                  <i class="pi pi-envelope"></i>
+                  <input type="text" pInputText class="block mb-3 hover:shadow-md transition-shadow duration-200"
+                         #username
+                         autocomplete="off"
+                         data-cy="username"
+                         id="username"
+                         name="username"
+                         formControlName="username"
+                         placeholder="Email">
+              </span>
+              <span class="p-input-icon-left">
+                  <i class="pi pi-key"></i>
+                  <input type="password" pInputText class="block mb-3 hover:shadow-md transition-shadow duration-200"
+                         autocomplete="off"
+                         data-cy="password"
+                         id="password"
+                         name="password"
+                         formControlName="password"
+                         placeholder="Password">
+              </span>
+            </div>
+            <div class="mt-5">
+              <!-- Login button -->
+              <button pButton label="Login"
+                      class="block hover:shadow-lg transition-shadow duration-200"
+                      type="submit"
+                      [disabled]="!loginForm.valid"
+                      [loading]="loading"
+                      loadingIcon="pi pi-spin pi-spinner"></button>
+            </div>
+          </form>
+
+          @if (returnToCli) {
+            <div>
+              <span>You can now close this tab and return to your terminal.</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Login page footer -->
+      <div class="login-footer flex align-items-center mt-auto" >
+        <p class="mb-1 text-color-secondary text-sm">Version: {{environment.VERSION}}</p>
+      </div>
+
+      <div class="login-footer flex align-items-center mb-6" >
+        <span class="text-sm text-color-secondary mr-3" smTranslate="app.copyright"></span>
+
+        <a href="https://invergent.ai/densemax-privacy" target="_blank"><span class="text-sm text-color-secondary mx-3 hover:text-primary transition-colors duration-200 cursor-pointer">Privacy Policy</span></a>
+        |
+        <a href="https://invergent.ai/densemax-terms" target="_blank"><span class="text-sm text-color-secondary mx-3 hover:text-primary transition-colors duration-200 cursor-pointer">Terms & Conditions</span></a>
+      </div>
+    </div>
+  </div>
+</div>

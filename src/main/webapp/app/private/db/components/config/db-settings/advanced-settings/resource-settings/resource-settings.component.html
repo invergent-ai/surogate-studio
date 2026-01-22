@@ -1,0 +1,61 @@
+<div class="p-3 border-round border-1 surface-border" [formGroup]="databaseForm">
+  <div class="flex align-items-center gap-2 mb-3">
+    <i class="pi pi-chart-bar text-xl text-primary"></i>
+    <h3 class="text-lg font-semibold m-0">Resource Allocation</h3>
+  </div>
+
+  <small class="block text-600 mb-4">Set custom resource limits for CPU and memory</small>
+
+  <div class="grid">
+    <!-- CPU Section -->
+    <div class="col-12 md:col-6">
+      <div class="field">
+        <label class="font-semibold text-900 mb-2 flex align-items-center gap-2">
+          <img src="../../../../../../assets/layout/images/cpu-container.svg" class="w-1rem h-1rem" alt="CPU"/>
+          <span>CPU Limit</span>
+        </label>
+        <div class="p-inputgroup">
+          <p-inputNumber
+            id="cpuLimit"
+            mode="decimal"
+            inputId="cpuLimit"
+            [minFractionDigits]="2"
+            [maxFractionDigits]="3"
+            [step]="0.01"
+            formControlName="cpuLimit"
+            [showButtons]="true"
+            [min]="0.001"
+            [max]="100"
+            styleClass="w-full">
+          </p-inputNumber>
+          <span class="p-inputgroup-addon">cores</span>
+        </div>
+        <small class="text-500 block mt-1">Minimum: 0.001, Maximum: 100 cores</small>
+      </div>
+    </div>
+
+    <!-- Memory Section -->
+    <div class="col-12 md:col-6">
+      <div class="field">
+        <label class="font-semibold text-900 mb-2 flex align-items-center gap-2">
+          <img src="../../../../../../assets/layout/images/memory-container.svg" class="w-1rem h-1rem" alt="Memory"/>
+          <span>Memory Limit</span>
+        </label>
+        <div class="p-inputgroup">
+          <p-inputNumber
+            id="memLimit"
+            mode="decimal"
+            inputId="memLimit"
+            formControlName="memLimit"
+            [showButtons]="true"
+            [min]="256"
+            [max]="262144"
+            styleClass="w-full">
+          </p-inputNumber>
+          <span class="p-inputgroup-addon">MB</span>
+        </div>
+        <small class="text-500 block mt-1">Minimum: 256 MB, Maximum: 256 GB</small>
+      </div>
+    </div>
+  </div>
+</div>

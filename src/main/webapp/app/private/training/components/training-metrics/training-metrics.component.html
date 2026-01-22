@@ -1,0 +1,35 @@
+<sm-page-loader [loading]="loading">
+  <ng-template>
+    <div *ngIf="metrics">
+      <div class="grid w-full mx-auto">
+        <div class="col-12 lg:col-6">
+          <p-card styleClass="text-center">
+            <ng-template pTemplate="title">
+              <span>Loss</span> / <span style="color: #95c5d6;">Eval loss</span>
+            </ng-template>
+            <p-chart type="line" style="height: 200px;" [data]="metrics.lossData" [options]="lineOptions"></p-chart>
+          </p-card>
+        </div>
+        <div class="col-12 lg:col-6">
+          <p-card header="Gradient normalization" styleClass="text-center">
+            <p-chart type="line" style="height: 200px;" [data]="metrics.gradNormData" [options]="lineOptions"></p-chart>
+          </p-card>
+        </div>
+        <div class="col-12 lg:col-6">
+          <p-card header="Learning rate" styleClass="text-center">
+            <p-chart type="line" style="height: 200px;" [data]="metrics.learningRateData" [options]="lineOptions"></p-chart>
+          </p-card>
+        </div>
+        <div class="col-12 lg:col-6">
+          <p-card header="Tokens per second per GPU" styleClass="text-center">
+            <p-chart type="line" style="height: 200px;" [data]="metrics.tokensPerSecondPerGpuData" [options]="lineOptions"></p-chart>
+          </p-card>
+        </div>
+      </div>
+    </div>
+
+    <div class="p-2 flex justify-content-center" *ngIf="!metrics">
+      <p class="font-sm ">No metrics available</p>
+    </div>
+  </ng-template>
+</sm-page-loader>

@@ -1,0 +1,180 @@
+<div class="card">
+  <p-toast></p-toast>
+  <p-confirmDialog></p-confirmDialog>
+  <div class="flex justify-content-between align-items-center mb-3 flex-wrap">
+    <h2 class="text-xxl col-12 sm:col" id="page-heading" data-cy="ClusterHeading">
+      <span>Clusters</span>
+    </h2>
+    <button pButton pRipple label="Refresh list" icon="pi pi-sync" class="col-6 xl:col-1 p-button sm:mr-2 xl:ml-auto w-auto"
+            (click)="loadClusters()"
+            [disabled]="isLoading" [class]="layoutService.config.colorScheme === 'light' ? '' : 'p-button-text'"></button>
+    <button pButton pRipple label="Create a new cluster" icon="pi pi-plus" class="col-6 xl:col-2 p-button w-auto"
+            (click)="showDialog()" [class]="layoutService.config.colorScheme === 'light' ? '' : 'p-button-text'"></button>
+  </div>
+  <p-table [value]="clusters" [rows]="10" [paginator]="true"
+           [globalFilterFields]="['name','cid','description']"
+           [tableStyle]="{'min-width': '75rem'}"
+           [loading]="isLoading"
+           [sortField]="predicate"
+           [sortOrder]="ascending ? 1 : -1"
+           (onSort)="onSort($event)">
+
+    <ng-template pTemplate="header">
+      <tr>
+        <th pSortableColumn="name">Name <p-sortIcon field="name"></p-sortIcon></th>
+        <th pSortableColumn="cid">CID <p-sortIcon field="cid"></p-sortIcon></th>
+        <th pSortableColumn="description">Description <p-sortIcon field="description"></p-sortIcon></th>
+        <th pSortableColumn="zone.name">Zone <p-sortIcon field="zone.name"></p-sortIcon></th>
+        <th>Actions</th>
+      </tr>
+    </ng-template>
+
+
+    <ng-template pTemplate="body" let-cluster>
+      <tr>
+        <td>{{ cluster.name }}</td>
+        <td>{{ cluster.cid }}</td>
+        <td>{{ cluster.description }}</td>
+        <td>{{ cluster.zone?.name }}</td>
+        <td>
+          <button pButton pRipple
+                  icon="pi pi-eye"
+                  class="p-button-rounded p-button-text"
+                  (click)="showDialog(cluster)"
+                  pTooltip="View/Edit">
+          </button>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="6">No clusters found.</td>
+      </tr>
+    </ng-template>
+  </p-table>
+
+  <!-- View/Edit Dialog -->
+  <p-dialog [(visible)]="displayDialog" [style]="{width: '75%'}"
+            [header]="isNewCluster ? 'Create Cluster' : 'View Cluster'"
+            [modal]="true">
+    <form [formGroup]="clusterForm" (ngSubmit)="save()">
+      <div class="grid p-fluid">
+        <div class="col-12 mb-3">
+          <span class="p-float-label">
+            <input pInputText id="name" formControlName="name"/>
+            <label for="name">Name</label>
+          </span>
+          <small class="p-error" *ngIf="clusterForm.get('name')?.hasError('required') &&
+                clusterForm.get('name')?.touched">
+            Name is required
+          </small>
+        </div>
+
+        <div class="col-12 mb-3">
+          <span class="p-float-label">
+            <input pInputText id="cid" formControlName="cid"/>
+            <label for="cid">CID</label>
+          </span>
+          <small class="p-error" *ngIf="clusterForm.get('cid')?.hasError('required') &&
+                clusterForm.get('cid')?.touched">
+            CID is required
+          </small>
+        </div>
+
+        <div class="col-12 mb-3">
+          <span class="p-float-label">
+            <textarea pInputTextarea id="kubeConfig" [rows]="20" formControlName="kubeConfig">
+            </textarea>
+            <label for="kubeConfig">Kube Config</label>
+          </span>
+        </div>
+
+        <div class="col-12 mb-3">
+          <span class="p-float-label">
+            <input pInputText id="openCostUrl" formControlName="openCostUrl"/>
+            <label for="openCostUrl">OpenCost URL</label>
+          </span>
+        </div>
+
+        <div class="col-12 mb-3">
+          <span class="p-float-label">
+            <input pInputText id="prometheusUrl" formControlName="prometheusUrl"/>
+            <label for="prometheusUrl">Prometheus URL</label>
+          </span>
+        </div>
+
+        <div class="col-12 mb-3">
+          <span class="p-float-label">
+            <input pInputText id="redisUrl" formControlName="redisUrl"/>
+            <label for="redisUrl">Redis URL</label>
+          </span>
+        </div>
+
+        <div class="col-12 mb-3">
+          <span class="p-float-label">
+            <input pInputText id="masterIp" formControlName="masterIp"/>
+            <label for="masterIp">Master IP (LB)</label>
+          </span>
+        </div>
+
+        <div class="col-12 mb-3">
+          <span class="p-float-label">
+            <input pInputText id="publicIp" formControlName="publicIp"/>
+            <label for="publicIp">Public IP (Ingress)</label>
+          </span>
+        </div>
+
+        <div class="col-12 mb-3">
+          <span class="p-float-label">
+            <input pInputText id="vpnAuth" formControlName="vpnAuth"/>
+            <label for="vpnAuth">VPN Auth key</label>
+          </span>
+        </div>
+
+        <div class="col-12 mb-3">
+          <span class="p-float-label">
+            <p-inputNumber id="requestVsLimitsCoefficientCpu" mode="decimal" inputId="requestVsLimitsCoefficientCpu"
+                           [minFractionDigits]="2" [maxFractionDigits]="3" [step]="0.01"
+                           formControlName="requestVsLimitsCoefficientCpu" [showButtons]="true" [min]="0.001" [max]="1"></p-inputNumber>
+            <label for="requestVsLimitsCoefficientCpu">Request/Limit CPU coefficient</label>
+          </span>
+        </div>
+
+        <div class="col-12 mb-3">
+          <span class="p-float-label">
+            <p-inputNumber id="requestVsLimitsCoefficientMemory" mode="decimal" inputId="requestVsLimitsCoefficientMemory"
+                           [minFractionDigits]="2" [maxFractionDigits]="3" [step]="0.01"
+                           formControlName="requestVsLimitsCoefficientMemory" [showButtons]="true" [min]="0.001" [max]="1"></p-inputNumber>
+            <label for="requestVsLimitsCoefficientMemory">Request/Limit memory coefficient</label>
+          </span>
+        </div>
+
+        <div class="col-12 mb-3">
+          <span class="p-float-label">
+            <input pInputText id="description" formControlName="description"/>
+            <label for="description">Description</label>
+          </span>
+        </div>
+
+        <div class="col-12 mb-3">
+          <p-dropdown [options]="zones" formControlName="zone"
+                      optionLabel="name" [filter]="true" appendTo="body"
+                      placeholder="Select a Zone"></p-dropdown>
+          <small class="p-error" *ngIf="clusterForm.get('zone')?.hasError('required') &&
+                clusterForm.get('zone')?.touched">
+            Zone is required
+          </small>
+        </div>
+      </div>
+
+      <div class="flex justify-content-end mt-4">
+        <button pButton type="button" label="Close"
+                class="p-button-secondary mr-2" (click)="hideDialog()"></button>
+
+        <button pButton type="submit" label="Save"
+                [disabled]="!clusterForm.valid"></button>
+      </div>
+    </form>
+  </p-dialog>
+</div>

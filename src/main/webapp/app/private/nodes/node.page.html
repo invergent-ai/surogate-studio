@@ -1,0 +1,26 @@
+<sm-page>
+  <sm-page-loader [loading]="loading">
+    <ng-template>
+      <div class="mb-5">
+        <h1 class="page-title">{{node?.name}}</h1>
+        <p class="page-subtitle">Manage your cloud node</p>
+      </div>
+
+      <sm-node-card class="block mt-5"
+                    [node]="node"
+                    [showGpus]="true"
+                    (onNodeStats)="setDefaultGpu($event)"
+                    (onGpuClicked)="selectGpu($event)"></sm-node-card>
+
+      @if (node && gpuId >= 0) {
+        <div class="mt-5">
+          <sm-gpu-stats [nodeId]="node.id" [gpuId]="gpuId"></sm-gpu-stats>
+        </div>
+      }
+    </ng-template>
+  </sm-page-loader>
+</sm-page>
+
+<div class="progress-spinner" *ngIf="lockScreen">
+  <p-progressSpinner></p-progressSpinner>
+</div>

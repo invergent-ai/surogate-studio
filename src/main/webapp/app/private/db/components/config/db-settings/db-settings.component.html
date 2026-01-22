@@ -1,0 +1,17 @@
+<div [formGroup]="databaseForm" class="mt-3">
+  <div class="grid">
+    <div class="col-12">
+      <ng-container>
+        <!-- Volume Configuration -->
+        <sm-db-volume [databaseForm]="databaseForm"
+                      [resetTrigger]="resetTrigger"
+                      [databaseId]="databaseId">
+        </sm-db-volume>
+        <!-- Advanced Settings -->
+        <sm-db-advanced-settings [resetTrigger]="resetTrigger"
+                                 [databaseForm]="databaseForm">
+        </sm-db-advanced-settings>
+      </ng-container>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,94 @@
+<sm-page-loader [loading]="!application() || !status()">
+  <ng-template>
+    @if (status()?.status === ApplicationStatus.DEPLOYED) {
+      <div>
+        @for (rs of status().resourceStatus; track rs.podName; let replica = $index) {
+          <div class="card surface-100">
+            <div class="flex align-items-center gap-2">
+              <p class="font-semibold">Replica {{replica}}</p>
+              <i-lucide [img]="Info" class="w-1rem h-1rem" [pTooltip]="rs.podName"></i-lucide>
+            </div>
+
+            <div class="mt-3 flex flex-wrap gap-3">
+              @for (cs of rs.containerStatuses; track cs.containerId) {
+                <p-card>
+                  <div class="flex justify-content-between align-items-center">
+                    <p class="font-semibold">{{containerName(application().internalName, cs.container?.imageName)}}</p>
+                    <div class="">
+                      @if(cs.stage) {
+                        <p-tag [severity]="cs.stage === ContainerStatusStage.TERMINATED ? 'danger' :
+                                         cs.stage === ContainerStatusStage.RUNNING ? 'success' :
+                                         cs.stage === ContainerStatusStage.WAITING ? 'warning' :
+                                         cs.stage === ContainerStatusStage.NOT_DEPLOYED ? 'info' : 'info'">{{cs.stage}}</p-tag>
+
+                        <div>
+                          <i class="pi pi-info-circle cursor-pointer" pTooltip="More details"
+                             *ngIf="cs.stage === ContainerStatusStage.WAITING && cs.waitingMessage"
+                             (mouseover)="op.toggle($event)" (mouseleave)="op.toggle($event)" (click)="opClick.toggle($event)"
+                             style="color: var(--blue-300)"></i>
+                          <p-overlayPanel #op [showCloseIcon]="false">
+                            <ul class="m-0 p-2" style="max-width: 600px"><li>{{ cs.waitingMessage }}</li></ul>
+                          </p-overlayPanel>
+                          <p-overlayPanel #opClick [showCloseIcon]="true">
+                            <ul class="m-0 p-2" style="max-width: 600px"><li>{{ cs.waitingMessage }}</li></ul>
+                          </p-overlayPanel>
+                        </div>
+                      } @else {
+                        <i class="pi pi-spinner pi-spin" style="font-size: 1rem"></i>
+                      }
+                    </div>
+                  </div>
+
+                  <div class="text-sm text-400">
+                    {{cs.container?.cpuLimit}} CPU, {{cs.container?.memLimit}} Mb RAM
+                  </div>
+
+                  <div class="mt-3 flex align-items-center gap-3 text-primary underline white-space-nowrap">
+                    <a (click)="toggleLogs(rs.podName, cs)">
+                      {{showLogs[rs.podName+cs.containerId] ? 'Hide' : 'Show'}}
+                      Logs
+                    </a>
+                    @if (application()?.mode !== ApplicationMode.MODEL) {
+                      <a (click)="toggleTerminal(rs.podName, cs)">
+                        {{showShell[rs.podName+cs.containerId] ? 'Hide' : 'Show'}}
+                        Shell
+                      </a>
+                      <a (click)="toggleUpload(rs.podName, cs)">
+                        {{showUpload[rs.podName+cs.containerId] ? 'Hide' : 'Show'}}
+                        Upload
+                      </a>
+                    }
+                  </div>
+                </p-card>
+              }
+            </div>
+          </div>
+
+          @for (cs of rs.containerStatuses; track cs.containerId) {
+            <div class="mt-3 p-2" *ngIf="showLogs[rs.podName+cs.containerId]">
+              <sm-logs #logs
+                       [resourceId]="application().id"
+                       resourceType="application"
+                       [podName]="rs.podName"
+                       [containerId]="cs.containerId"
+                       (logsTimeout)="handleLogsTimeout()"
+                       (logsDisconnect)="handleLogsDisconnect($event)"></sm-logs>
+            </div>
+            <div class="mt-3" *ngIf="showShell[rs.podName+cs.containerId]">
+              <sm-terminal [applicationId]="application().id" #terminal
+                           [podName]="rs.podName"
+                           [containerId]="cs.containerId"
+                           (terminalTimeout)="handleTerminalTimeout()"
+                           (terminalDisconnect)="handleTerminalDisconnect($event)"></sm-terminal>
+            </div>
+            <div class="mt-3" *ngIf="showUpload[rs.podName+cs.containerId]">
+              <sm-file [applicationId]="application().id"
+                       [podName]="rs.podName"
+                       [containerId]="cs.containerId"></sm-file>
+            </div>
+          }
+        }
+      </div>
+    }
+  </ng-template>
+</sm-page-loader>

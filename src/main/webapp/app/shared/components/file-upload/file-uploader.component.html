@@ -1,0 +1,55 @@
+<div [ngClass]="'sm-fileupload sm-fileupload-advanced p-component'">
+  <div class="sm-fileupload-buttonbar">
+    <span
+      class="p-button p-component sm-fileupload-choose p-button-sm"
+      [ngClass]="{ 'p-focus': focus, 'p-disabled': isChooseDisabled() }"
+      (focus)="onFocus()"
+      (blur)="onBlur()"
+      (click)="choose()"
+      (keydown.enter)="choose()"
+      tabindex="0"
+    >
+      <input #advancedfileinput type="file" (change)="onFileSelect($event)" [multiple]="true"
+             [accept]="accept" [disabled]="isChooseDisabled()" [attr.title]="''" />
+
+      <i-lucide [img]="Plus" class="w-1rem h-1rem p-button-icon p-button-icon-left"></i-lucide>
+      <span class="p-button-label">Choose</span>
+    </span>
+
+    <p-button *ngIf="showUploadButton" type="button" label="Upload" size="small" severity="success" (onClick)="upload()"
+              [disabled]="disabled || !hasFiles() || isFileLimitExceeded()">
+      <i-lucide [img]="CloudUpload" class="w-1rem h-1rem p-button-icon p-button-icon-left"></i-lucide>
+    </p-button>
+    <p-button *ngIf="showCancelButton" type="button" label="Cancel" size="small" outlined (onClick)="clear()" [disabled]="!hasFiles() || uploading">
+      <i-lucide [img]="X" class="w-1rem h-1rem p-button-icon p-button-icon-left"></i-lucide>
+    </p-button>
+
+    <ng-container *ngTemplateOutlet="toolbarTemplate"></ng-container>
+  </div>
+  <div #content class="sm-fileupload-content" (dragenter)="onDragEnter($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event)">
+    <p-progressBar class="sm-fileupload-top-progress" [value]="progress" [showValue]="false" *ngIf="hasFiles() && !parallel"></p-progressBar>
+
+    <p-messages [value]="msgs" [enableService]="false"></p-messages>
+
+    <div *ngIf="hasFiles()">
+      @for (file of files; track file.name; let i = $index) {
+        <div class="flex align-items-center gap-2 grid-nogutter">
+          <div class="col sm-fileupload-filename text-sm">
+            {{ file.name }}
+            <div *ngIf="parallel" class="pt-1">
+              <p-progressBar class="sm-fileupload-file-progress" [value]="25*i" [showValue]="false"></p-progressBar>
+            </div>
+          </div>
+          <div class="col-2 text-sm text-center">{{ file.size | filesize }}</div>
+          <div class="col-1 text-center">
+            <button type="button" pButton (click)="remove($event, i)" [disabled]="uploading" class="p-button-icon-only" size="small" severity="danger" outlined>
+              <i-lucide [img]="X" class="w-1rem h-1rem"></i-lucide>
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+    <ng-container *ngTemplateOutlet="contentTemplate; context: { $implicit: files }"></ng-container>
+  </div>
+</div>
+

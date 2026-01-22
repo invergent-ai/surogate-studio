@@ -1,0 +1,40 @@
+<sm-page-loader [loading]="loading">
+  <ng-template>
+    <p-card styleClass="mb-3">
+      <div class="field mb-0">
+        <label>Container:</label>
+        <p-dropdown [options]="containers()" placeholder="Select a container"
+                    [ngModel]="selectedContainer" (ngModelChange)="initMetrics($event)"></p-dropdown>
+      </div>
+    </p-card>
+
+    <div *ngIf="metrics">
+      <div class="grid">
+        <div class="col-12 lg:col-6">
+          <p-card header="CPU Utilization" styleClass="text-center">
+            <p-chart type="line" height="200" [data]="metrics.cpuData" [options]="lineOptions"></p-chart>
+          </p-card>
+        </div>
+        <div class="col-12 lg:col-6">
+          <p-card header="Memory Utilization" styleClass="text-center">
+            <p-chart type="line" height="200" [data]="metrics.memoryData" [options]="lineOptions"></p-chart>
+          </p-card>
+        </div>
+        <div class="col-12 lg:col-6">
+          <p-card header="Network In" styleClass="text-center">
+            <p-chart type="line" height="200" [data]="metrics.networkData" [options]="lineOptions"></p-chart>
+          </p-card>
+        </div>
+        <div class="col-12 lg:col-6">
+          <p-card header="Network Out" styleClass="text-center">
+            <p-chart type="line" height="200" [data]="metrics.networkData" [options]="lineOptions"></p-chart>
+          </p-card>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-offset-4 mt-2" *ngIf="!metrics">
+      <small class="m-0">No metrics available</small>
+    </div>
+  </ng-template>
+</sm-page-loader>

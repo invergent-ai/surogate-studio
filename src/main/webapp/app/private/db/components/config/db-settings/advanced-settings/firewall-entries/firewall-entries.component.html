@@ -1,0 +1,54 @@
+<div class="p-3 border-round border-1 surface-border">
+  <div class="flex align-items-center gap-2 mb-3">
+    <i class="pi pi-shield text-xl text-primary"></i>
+    <h3 class="text-lg font-semibold m-0">IP Whitelist</h3>
+  </div>
+
+  <small class="block text-600 mb-1">Add IP addresses allowed to access the public URL.</small>
+  <small class="block text-orange-600 mb-3">
+    <i class="pi pi-info-circle mr-1"></i>
+    Default policy is to allow ALL connections
+  </small>
+
+  <div [formGroup]="databaseForm">
+    <div formArrayName="firewallEntries" class="w-full">
+      <div *ngFor="let firewallEntry of firewallEntries.controls; let i = index"
+           [formGroupName]="i">
+        <div class="flex align-items-start gap-2 mb-3">
+          <!-- IP Address Input -->
+          <div class="flex-1">
+            <input
+              pInputText
+              id="ip"
+              formControlName="cidr"
+              placeholder="e.g., 192.168.1.0/24"
+              class="w-full"
+              [class.ng-dirty]="firewallEntry.get('cidr')?.touched"
+              [class.ng-invalid]="firewallEntry.get('cidr')?.touched && firewallEntry.get('cidr')?.invalid"/>
+            <div>
+              <small class="p-error" *ngIf="firewallEntry.get('cidr')?.errors?.required && firewallEntry.get('cidr')?.touched">
+                IP address is required
+              </small>
+              <small class="p-error" *ngIf="firewallEntry.get('cidr')?.errors?.ipError && firewallEntry.get('cidr')?.touched">
+                Invalid IP address format
+              </small>
+            </div>
+          </div>
+
+          <!-- Remove Button -->
+          <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-danger" (click)="removeFirewallEntry(i)"></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex mt-4 gap-2 flex-wrap sm:flex-nowrap">
+      <button
+        pButton
+        type="button"
+        size="small"
+        label="Add IP Address"
+        (click)="addFirewallEntry()">
+      </button>
+    </div>
+  </div>
+</div>

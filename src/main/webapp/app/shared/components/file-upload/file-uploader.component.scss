@@ -1,0 +1,58 @@
+.sm-fileupload-content {
+  position: relative;
+  padding: 1rem 0;
+}
+
+.sm-fileupload-row {
+  display: flex;
+  align-items: center;
+}
+
+.sm-fileupload-row > div {
+  flex: 1 1 auto;
+  width: 25%;
+}
+
+.sm-fileupload-row > div:last-child {
+  text-align: right;
+}
+
+.sm-fileupload-content .sm-fileupload-top-progress {
+  width: 100%;
+  position: absolute;
+  top: 2px;
+  left: 0;
+
+  .p-progressbar {
+    height: 5px;
+  }
+}
+
+.sm-fileupload-content .sm-fileupload-file-progress .p-progressbar {
+  height: 5px;
+}
+
+.p-button.sm-fileupload-choose {
+  position: relative;
+  overflow: hidden;
+}
+
+.p-button.sm-fileupload-choose input[type='file'] {
+  display: none;
+}
+
+.sm-fileupload-choose.sm-fileupload-choose-selected input[type='file'] {
+  display: none;
+}
+
+.p-fluid .sm-fileupload .p-button {
+  width: auto;
+}
+
+.sm-fileupload-filename {
+  word-break: break-all;
+}
+
+.sm-fileupload-buttonbar {
+  text-align: center;
+}

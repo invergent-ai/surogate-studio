@@ -1,0 +1,47 @@
+<div class="card">
+  <p class="font-bold mb-1">Whitelist IPs</p>
+  <small class="block text-color">Add IPs allowed to access the public URL. Default policy is to allow ALL.</small>
+
+  <div class="entries-table mt-3" [formGroup]="containerForm">
+    <div formArrayName="firewallEntries" class="w-full">
+      <div *ngFor="let firewallEntry of firewallEntries.controls; let i = index"
+           [formGroupName]="i"
+           class="entry mb-2">
+        <div class="grid g-0 align-items-start" style="justify-content: space-between;">
+          <div class="col-5 px-2">
+            <input pInputText
+                   formControlName="cidr"
+                   placeholder="IP (CIDR)"
+                   class="w-full dark-input"/>
+            <small class="p-error" *ngIf="firewallEntry.get('cidr')?.errors?.required && firewallEntry.get('cidr')?.touched">
+              IP is required
+            </small>
+            <small class="p-error" *ngIf="firewallEntry.get('cidr')?.errors?.ipError && firewallEntry.get('cidr')?.touched">
+              IP is invalid
+            </small>
+          </div>
+
+          <div class="col-1 flex justify-content-center">
+            <button pButton
+                    type="button"
+                    icon="pi pi-trash"
+                    class="p-button-text p-button-danger p-button-sm"
+                    (click)="removeFirewallEntry(i)">
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex mt-4" style="gap: 0.5vw;">
+      <button pButton size="small"
+              type="button"
+              label="Add IP"
+              (click)="addFirewallEntry()"
+              class="w-7rem dark-button-outlined"
+              style="width: auto;"
+              [class]="layoutService.config.colorScheme === 'light' ? '' : 'p-button-outlined'">
+      </button>
+    </div>
+  </div>
+</div>

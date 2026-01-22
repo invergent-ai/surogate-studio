@@ -1,0 +1,498 @@
+{
+  "id": null,
+  "name": "Ragflow",
+  "internalName": null,
+  "monthlyAppCosts": 3.4825200000000036,
+  "totalAppCosts": 3.4825200000000036,
+  "alias": null,
+  "firstTx": "2025-07-10T10:00:01.590930Z",
+  "fromTemplate": null,
+  "freeTier": false,
+  "description": null,
+  "ingressHostName": null,
+  "deployedNamespace": null,
+  "errorMessageKey": null,
+  "warnMessageKey": null,
+  "type": "UI",
+  "status": "CREATED",
+  "stage": null,
+  "workloadType": "DEPLOYMENT",
+  "yamlConfig": null,
+  "pipelineRunName": null,
+  "replicas": 1,
+  "updateStrategy": "ROLLING",
+  "schedulingRule": "DECENTRALIZED",
+  "project": null,
+  "containers": [
+    {
+      "id": null,
+      "imageName": "elasticsearch",
+      "imageTag": "8.11.3",
+      "type": "WORKER",
+      "pullImageMode": "PULL",
+      "registryUrl": "",
+      "registryUsername": "",
+      "cpuRequest": 1,
+      "cpuLimit": 4,
+      "memRequest": "256",
+      "memLimit": "4096",
+      "startCommand": null,
+      "startParameters": null,
+      "envVars": [
+        {
+          "id": null,
+          "key": "xpack.security.transport.ssl.enabled",
+          "value": "false",
+          "containerIndex": null
+        },
+        {
+          "id": null,
+          "key": "xpack.security.http.ssl.enabled",
+          "value": "false",
+          "containerIndex": null
+        },
+        {
+          "id": null,
+          "key": "xpack.security.enabled",
+          "value": "true",
+          "containerIndex": null
+        },
+        {
+          "id": null,
+          "key": "discovery.type",
+          "value": "single-node",
+          "containerIndex": null
+        },
+        {
+          "id": null,
+          "key": "bootstrap.memory_lock",
+          "value": "false",
+          "containerIndex": null
+        },
+        {
+          "id": null,
+          "key": "node.name",
+          "value": "es01",
+          "containerIndex": null
+        },
+        {
+          "id": null,
+          "key": "ELASTIC_PASSWORD",
+          "value": "asdqwe123",
+          "containerIndex": null
+        }
+      ],
+      "volumeMounts": [
+        {
+          "id": null,
+          "containerPath": "/usr/share/elasticsearch/data",
+          "readOnly": false,
+          "volume": {
+            "id": null,
+            "name": "ragflow-es",
+            "path": null,
+            "type": "TEMPORARY",
+            "size": 10,
+            "bucketUrl": null,
+            "accessKey": null,
+            "region": null,
+            "project": null,
+            "accessSecret": null
+          },
+          "applicationId": null,
+          "databaseId": null,
+          "virtualMachineId": null
+        }
+      ],
+      "ports": [
+        {
+          "id": null,
+          "name": "port-21",
+          "containerPort": 9300,
+          "ingressPort": false,
+          "ingressHost": "",
+          "servicePort": null,
+          "protocol": {
+            "id": "bb7804cd-8818-4c48-b7a6-4f61ae3cefac",
+            "code": "TCP",
+            "value": "0",
+            "port": 0
+          },
+          "containerIndex": null,
+          "targetPort": null
+        },
+        {
+          "id": null,
+          "name": "p1-x",
+          "containerPort": 9200,
+          "ingressPort": false,
+          "ingressHost": "",
+          "servicePort": 9200,
+          "protocol": {
+            "id": "bb7804cd-8818-4c48-b7a6-4f61ae3cefac",
+            "code": "TCP",
+            "value": "0",
+            "port": 0
+          },
+          "containerIndex": null,
+          "targetPort": null
+        }
+      ],
+      "firewallEntries": [],
+      "gpuLimit": 0,
+      "registryPassword": null,
+      "replicas": null,
+      "stage": null
+    },
+    {
+      "id": null,
+      "imageName": "minio/minio",
+      "imageTag": "RELEASE.2025-06-13T11-33-47Z",
+      "type": "WORKER",
+      "pullImageMode": "PULL",
+      "registryUrl": "",
+      "registryUsername": "",
+      "cpuRequest": 1,
+      "cpuLimit": 8,
+      "memRequest": "256",
+      "memLimit": "8192",
+      "startCommand": "/bin/sh",
+      "startParameters": "-c,minio server /data",
+      "envVars": [
+        {
+          "id": null,
+          "key": "MINIO_ROOT_PASSWORD",
+          "value": "infini_rag_flow",
+          "containerIndex": null
+        },
+        {
+          "id": null,
+          "key": "MINIO_ROOT_USER",
+          "value": "rag_flow",
+          "containerIndex": null
+        }
+      ],
+      "volumeMounts": [
+        {
+          "id": null,
+          "containerPath": "/data",
+          "readOnly": false,
+          "volume": {
+            "id": null,
+            "name": "ragflow-minio",
+            "path": null,
+            "type": "TEMPORARY",
+            "size": 10,
+            "bucketUrl": null,
+            "accessKey": null,
+            "region": null,
+            "project": null,
+            "accessSecret": null
+          },
+          "applicationId": null,
+          "databaseId": null,
+          "virtualMachineId": null
+        }
+      ],
+      "ports": [
+        {
+          "id": null,
+          "name": "p2-x",
+          "containerPort": 9000,
+          "ingressPort": false,
+          "ingressHost": "",
+          "servicePort": 9000,
+          "protocol": {
+            "id": "bb7804cd-8818-4c48-b7a6-4f61ae3cefac",
+            "code": "TCP",
+            "value": "0",
+            "port": 0
+          },
+          "containerIndex": null,
+          "targetPort": null
+        }
+      ],
+      "firewallEntries": [],
+      "gpuLimit": 0,
+      "registryPassword": null,
+      "replicas": null,
+      "stage": null
+    },
+    {
+      "id": null,
+      "imageName": "mysql",
+      "imageTag": "8.0.39",
+      "type": "WORKER",
+      "pullImageMode": "PULL",
+      "registryUrl": "",
+      "registryUsername": "",
+      "cpuRequest": 1,
+      "cpuLimit": 4,
+      "memRequest": "256",
+      "memLimit": "4096",
+      "startCommand": null,
+      "startParameters": "--max_connections=1000,--character-set-server=utf8mb4,--collation-server=utf8mb4_unicode_ci,--default-authentication-plugin=mysql_native_password,--binlog_expire_logs_seconds=604800",
+      "envVars": [
+        {
+          "id": null,
+          "key": "MYSQL_ROOT_PASSWORD",
+          "value": "asdqwe123",
+          "containerIndex": null
+        },
+        {
+          "id": null,
+          "key": "MYSQL_ROOT_HOST",
+          "value": "%",
+          "containerIndex": null
+        },
+        {
+          "id": null,
+          "key": "MYSQL_DATABASE",
+          "value": "rag_flow",
+          "containerIndex": null
+        }
+      ],
+      "volumeMounts": [
+        {
+          "id": null,
+          "containerPath": "/var/lib/mysql",
+          "readOnly": false,
+          "volume": {
+            "id": null,
+            "name": "ragflow-mysql",
+            "path": null,
+            "type": "TEMPORARY",
+            "size": 10,
+            "bucketUrl": null,
+            "accessKey": null,
+            "region": null,
+            "project": null,
+            "accessSecret": null
+          },
+          "applicationId": null,
+          "databaseId": null,
+          "virtualMachineId": null
+        }
+      ],
+      "ports": [
+        {
+          "id": null,
+          "name": "p3-x",
+          "containerPort": 3306,
+          "ingressPort": false,
+          "ingressHost": "",
+          "servicePort": 3306,
+          "protocol": {
+            "id": "bb7804cd-8818-4c48-b7a6-4f61ae3cefac",
+            "code": "TCP",
+            "value": "0",
+            "port": 0
+          },
+          "containerIndex": null,
+          "targetPort": null
+        },
+        {
+          "id": null,
+          "name": "port-12",
+          "containerPort": 33060,
+          "ingressPort": false,
+          "ingressHost": "",
+          "servicePort": null,
+          "protocol": {
+            "id": "bb7804cd-8818-4c48-b7a6-4f61ae3cefac",
+            "code": "TCP",
+            "value": "0",
+            "port": 0
+          },
+          "containerIndex": null,
+          "targetPort": null
+        }
+      ],
+      "firewallEntries": [],
+      "gpuLimit": 0,
+      "registryPassword": null,
+      "replicas": null,
+      "stage": null
+    },
+    {
+      "id": null,
+      "imageName": "statemesh/ragflow",
+      "imageTag": "latest",
+      "type": "WORKER",
+      "pullImageMode": "PULL",
+      "registryUrl": "",
+      "registryUsername": "",
+      "cpuRequest": 1,
+      "cpuLimit": 8,
+      "memRequest": "256",
+      "memLimit": "8192",
+      "startCommand": null,
+      "startParameters": null,
+      "envVars": [
+        {
+          "id": null,
+          "key": "REDIS_HOST",
+          "value": "ragflow-p4-x-service",
+          "containerIndex": null
+        },
+        {
+          "id": null,
+          "key": "MINIO_USER",
+          "value": "rag_flow",
+          "containerIndex": null
+        },
+        {
+          "id": null,
+          "key": "MINIO_HOST",
+          "value": "ragflow-p2-x-service",
+          "containerIndex": null
+        },
+        {
+          "id": null,
+          "key": "MYSQL_DBNAME",
+          "value": "rag_flow",
+          "containerIndex": null
+        },
+        {
+          "id": null,
+          "key": "REDIS_PASSWORD",
+          "value": "infini_rag_flow",
+          "containerIndex": null
+        },
+        {
+          "id": null,
+          "key": "MINIO_PASWORD",
+          "value": "infini_rag_flow",
+          "containerIndex": null
+        },
+        {
+          "id": null,
+          "key": "ES_PORT",
+          "value": "9200",
+          "containerIndex": null
+        },
+        {
+          "id": null,
+          "key": "ELASTIC_PASSWORD",
+          "value": "asdqwe123",
+          "containerIndex": null
+        },
+        {
+          "id": null,
+          "key": "MYSQL_HOST",
+          "value": "ragflow-p3-x-service",
+          "containerIndex": null
+        },
+        {
+          "id": null,
+          "key": "REDIS_PORT",
+          "value": "6379",
+          "containerIndex": null
+        },
+        {
+          "id": null,
+          "key": "MYSQL_PASSWORD",
+          "value": "asdqwe123",
+          "containerIndex": null
+        },
+        {
+          "id": null,
+          "key": "ES_HOST",
+          "value": "ragflow-p1-x-service",
+          "containerIndex": null
+        }
+      ],
+      "volumeMounts": [],
+      "ports": [
+        {
+          "id": null,
+          "name": "port-80",
+          "containerPort": 80,
+          "ingressPort": true,
+          "ingressHost": "",
+          "servicePort": 80,
+          "protocol": {
+            "id": "bb7804cd-8818-4c48-b7a6-4f61ae3cefac",
+            "code": "TCP",
+            "value": "0",
+            "port": 0
+          },
+          "containerIndex": null,
+          "targetPort": null
+        }
+      ],
+      "firewallEntries": [],
+      "gpuLimit": 0,
+      "registryPassword": null,
+      "replicas": null,
+      "stage": null
+    },
+    {
+      "id": null,
+      "imageName": "valkey/valkey",
+      "imageTag": "8",
+      "type": "WORKER",
+      "pullImageMode": "PULL",
+      "registryUrl": "",
+      "registryUsername": "",
+      "cpuRequest": 1,
+      "cpuLimit": 1,
+      "memRequest": "256",
+      "memLimit": "1024",
+      "startCommand": "/bin/sh",
+      "startParameters": "-c,redis-server --requirepass infini_rag_flow --maxmemory 128mb --maxmemory-policy allkeys-lru",
+      "envVars": [],
+      "volumeMounts": [
+        {
+          "id": null,
+          "containerPath": "/data",
+          "readOnly": false,
+          "volume": {
+            "id": null,
+            "name": "ragflow-redis",
+            "path": null,
+            "type": "TEMPORARY",
+            "size": 1,
+            "bucketUrl": null,
+            "accessKey": null,
+            "region": null,
+            "project": null,
+            "accessSecret": null
+          },
+          "applicationId": null,
+          "databaseId": null,
+          "virtualMachineId": null
+        }
+      ],
+      "ports": [
+        {
+          "id": null,
+          "name": "p4-x",
+          "containerPort": 6379,
+          "ingressPort": false,
+          "ingressHost": "",
+          "servicePort": 6379,
+          "protocol": {
+            "id": "bb7804cd-8818-4c48-b7a6-4f61ae3cefac",
+            "code": "TCP",
+            "value": "0",
+            "port": 0
+          },
+          "containerIndex": null,
+          "targetPort": null
+        }
+      ],
+      "firewallEntries": [],
+      "gpuLimit": 0,
+      "registryPassword": null,
+      "replicas": null,
+      "stage": null
+    }
+  ],
+  "annotations": [],
+  "keepVolumes": false,
+  "costPerHour": 0.014690504201680677,
+  "message": null,
+  "extraProperties": {},
+  "statusValue": "DEPLOYED"
+}

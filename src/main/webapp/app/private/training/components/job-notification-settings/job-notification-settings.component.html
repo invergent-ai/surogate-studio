@@ -1,0 +1,17 @@
+<sm-card header="Notifications" [icon]="Bell">
+  <div class="flex flex-column gap-2">
+    <div class="card surface-50 border-round-xl border-1 border-300 text-sm py-2 px-3">
+      <p-checkbox [binary]="true" [ngModel]="notifyOnSuccess()"
+                  (ngModelChange)="toggleSuccess($event)"
+                  label="Notify on success">
+      </p-checkbox>
+    </div>
+    <div class="card surface-50 border-round-xl border-1 border-300 text-sm py-2 px-3">
+
+      <p-checkbox [binary]="true" [ngModel]="notifyOnFailure()"
+                  (ngModelChange)="toggleFailure($event)"
+                  label="Notify on failure">
+      </p-checkbox>
+    </div>
+  </div>
+</sm-card>

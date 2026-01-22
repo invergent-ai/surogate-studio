@@ -1,0 +1,121 @@
+# ===================================================================
+# https://www.jhipster.tech/common-application-properties/
+# http://docs.spring.io/spring-boot/docs/current/reference/html/common-application-properties.html
+# ===================================================================
+
+logging:
+  level:
+    ROOT: DEBUG
+    tech.jhipster: INFO
+    org.hibernate.sql: INFO
+    net.statemesh: DEBUG
+    org.springframework.web: INFO
+    javax.management: WARN
+
+management:
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  metrics:
+    enable:
+      jdbc: true
+
+spring:
+  jackson:
+    serialization:
+      indent-output: true
+  datasource:
+#    type: com.zaxxer.hikari.HikariDataSource
+#    url: jdbc:postgresql://localhost:5432/sment
+#    username: sment
+#    password: sment
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:file:/app/data/sment;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;AUTO_SERVER=FALSE
+    username: sa
+    password:
+    hikari:
+      poolName: Hikari
+      auto-commit: false
+  messages:
+    cache-duration: PT1S # 1 second, see the ISO 8601 standard
+  thymeleaf:
+    cache: false
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+server:
+  port: 8080
+  address: 0.0.0.0
+
+# ===================================================================
+# JHipster specific properties
+#
+# Full reference is available at: https://www.jhipster.tech/common-application-properties/
+# ===================================================================
+
+jhipster:
+  cache: # Cache configuration
+    ehcache: # Ehcache configuration
+      time-to-live-seconds: 3600 # By default objects stay 1 hour in the cache
+      max-entries: 100 # Number of objects in each cache entry
+  # CORS is only enabled by default with the "dev" profile
+  cors:
+    # Allow Ionic for JHipster by default (* no longer allowed in Spring Boot 2.4+)
+    allowed-origins: 'http://localhost:8100,https://localhost:8100,http://localhost:9000,https://localhost:9000,http://localhost:4200,https://localhost:4200,http://surogate:8080,https://studio.densemax.local,https://surogate.densemax.local'
+    # Enable CORS when running in GitHub Codespaces
+    allowed-methods: '*'
+    allowed-headers: '*'
+    exposed-headers: 'Authorization,Link,X-Total-Count,X-${jhipster.clientApp.name}-alert,X-${jhipster.clientApp.name}-error,X-${jhipster.clientApp.name}-params'
+    allow-credentials: true
+    max-age: 1800
+  security:
+    authentication:
+      jwt:
+        # This token must be encoded using Base64 and be at least 256 bits long (you can type `openssl rand -base64 64` on your command line to generate a 512 bits one)
+        base64-secret: YjJhZGYyNjE4NTBhZjE3ZmMzY2JmMDNhNzlmNDk4OGM2MmVkMjk3Y2Y0NDk5YTE1NjUwYmNlNWFjNDBkNDA4Yzg4ZWEwYmE2N2MxM2M5ZDlmYTVkZTI1ZjBlOTQ4Zjk5MTExNTNiODdkNmQ2MDJlNDI2ZGYwNDMwZTNlNzQwMWI=
+        # Token is valid 24 hours
+        token-validity-in-seconds: 86400
+        token-validity-in-seconds-for-remember-me: 2592000
+  logging:
+    use-json-format: false # By default, logs are not in Json format
+    logstash: # Forward logs to logstash over a socket, used by LoggingConfiguration
+      enabled: false
+      host: localhost
+      port: 5000
+      ring-buffer-size: 512
+# ===================================================================
+# Application specific properties
+# Add your own application properties here, see the ApplicationProperties class
+# to have type-safe configuration, like in the JHipsterProperties above
+#
+# More documentation is available at:
+# https://www.jhipster.tech/common-application-properties/
+# ===================================================================
+
+# application:
+app:
+  client-url: https://studio.densemax.local
+  server-url: https://studio.densemax.local
+  k8s-access-mode: true
+  node-reservation-duration: 60 # Minutes
+  check-node-resource-updates: true
+  job:
+    delete-terminating-schedule: 0 0/1 * * * ? # Every 1 minute
+    update-node-status-schedule: 0/30 * * * * ? # Every minute
+    terminating-pods-delete-finalizers: true
+  token:
+    ttl: 300 # Seconds (Needs time to save wallet mnemonic)
+  lake-fs:
+    key: AKIAJ3ASUQUROUFTNOUQ # created once lakefs is installed
+    secret: 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 # created once lakefs is installed
+    endpoint: https://lakefs.densemax.local
+    endpoint-internal: http://lakefs.statemesh.svc.sm.local
+    s3Endpoint: https://lakefs-s3.densemax.local
+    master-key: 3c2iMoO05OQqCHOkF42aV2v1k5zldbJt  # same as statemesh-installer/appliance-master/lakefs.yml:authEncryptSecretKey

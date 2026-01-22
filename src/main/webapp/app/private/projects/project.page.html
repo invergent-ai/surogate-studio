@@ -1,0 +1,72 @@
+<sm-page>
+  <sm-page-loader [loading]="loading" *ngIf="project">
+    <ng-template>
+      <div class="mb-5">
+        <h1 class="page-title">Project details</h1>
+        <p class="page-subtitle">Projects are a way of grouping cloud resources together</p>
+      </div>
+
+      <p-card>
+        <form ngForm class="p-fluid" [formGroup]="projectForm">
+          <!-- Name -->
+          <div class="field">
+            <label for="name">Name:</label>
+            <input type="text" pInputText id="name" formControlName="name" [class.ng-dirty]="projectForm.dirty"
+                   placeholder="Enter project name"/>
+            <small [class.text-red-500]="projectForm.dirty && projectForm.get('name')?.errors?.required">
+              The name is required
+            </small>
+            <small [class.text-red-500]="projectForm.dirty && (projectForm.get('name')?.errors?.minlength || projectForm.get('name')?.errors?.maxlength)">
+              and must be at least 3 and at most 50 characters.</small>
+          </div>
+
+          <!-- Description -->
+          <div class="field">
+            <label for="description">Description:</label>
+            <textarea type="text" pInputTextarea rows="5" id="description" formControlName="description"
+                      placeholder="The description can contain any characters and the maximum length is 250 characters."></textarea>
+          </div>
+
+          <div class="flex flex-row column-gap-3 mt-5">
+            <button pButton type="button" class="w-8rem" size="small" label="Save" [disabled]="!projectForm.valid" (click)="saveProject()"></button>
+            <button pButton type="button" severity="danger" size="small" class="w-8rem" [disabled]="projectResources?.length > 0"
+                    label="Delete" (click)="deleteProject($event)"></button>
+            <p-confirmPopup key="confirmDelete"></p-confirmPopup>
+          </div>
+        </form>
+      </p-card>
+
+      <div class="mt-5 mb-3">
+        <h2 class="text-lg m-0">Resources</h2>
+        <p class="text-sm text-500">Cloud resources available in this project.</p>
+      </div>
+
+      <p-card>
+        <p-table [value]="projectResources"
+                 [rows]="10"
+                 [paginator]="true"
+                 [rowHover]="true"
+                 styleClass="p-datatable-sm text-sm"
+                 [tableStyle]="{'min-width': '50rem'}">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Resource ID</th>
+              <th>Resource Type</th>
+              <th>Resource Name</th>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="body" let-res>
+            <tr>
+              <td class="w-22rem"><a class="text-green-700 font-semibold text-decoration-none" (click)="gotoResource(res)">{{res.id}}</a></td>
+              <td class="w-15rem">{{res.type}}</td>
+              <td>{{res.name}}</td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </p-card>
+
+      <p-confirmDialog></p-confirmDialog>
+    </ng-template>
+  </sm-page-loader>
+</sm-page>

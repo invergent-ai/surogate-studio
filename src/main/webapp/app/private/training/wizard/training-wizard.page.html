@@ -1,0 +1,61 @@
+<sm-page>
+  <sm-page-loader>
+    <ng-template>
+      <div class="mb-5">
+        <h1 class="page-title">Let's build AI</h1>
+        <p class="page-subtitle">Start by choosing a task. We’ll walk you through configuration, resources, and launch.</p>
+      </div>
+
+      <div class="grid">
+        <div *ngFor="let item of items" class="col-4">
+          <ng-container [ngTemplateOutlet]="card"
+                        [ngTemplateOutletContext]="{imgBg: item.imgBg, img: item.img, title: item.title, subtitle: item.subTitle,
+                        description: item.description, tags: item.tags, estimated: item.estimated, routerLink: item.routerLink,
+                        disabled: item.disabled, enterprise: item.enterprise}">
+          </ng-container>
+        </div>
+      </div>
+    </ng-template>
+  </sm-page-loader>
+</sm-page>
+
+<ng-template #card let-imgBg="imgBg" let-img="img" let-title="title" let-subtitle="subtitle" let-description="description"
+             let-tags="tags" let-estimated="estimated" let-routerLink="routerLink" let-disabled="disabled" let-enterprise="enterprise">
+  <div class="card h-full w-full surface-card border-1 border-50 border-round-xl shadow-1 hover:shadow-2 hover:border-500 cursor-pointer flex flex-column pb-3">
+    <div class="flex gap-3 align-items-start">
+      <div>
+        <div class="flex justify-content-center align-items-center w-2.5rem h-3rem border-round-xl align-items-center text-white shadow-1 {{imgBg}}" >
+          <i-lucide [img]="img" class="w-1.5rem h-1.5rem"></i-lucide>
+        </div>
+      </div>
+      <div>
+        <div class="flex gap-2">
+          <h3 class="font-semibold">{{ title }}</h3>
+          <p-tag severity="secondary" [value]="subtitle" styleClass="font-normal text-sm"></p-tag>
+          @if (enterprise) {
+            <p-tag severity="warning" class="ml-1 text-sm font-normal">Enterprise</p-tag>
+          }
+        </div>
+        <p class="text-500 text-sm line-height-2 h-3rem">{{description}}</p>
+        <div class="mt-3 flex gap-2 flex-wrap">
+          <p-tag *ngFor="let tag of tags" [severity]="tag.severity" rounded styleClass="font-normal text-sm">
+            <div class="flex gap-1 align-items-center">
+              <lucide-icon [img]="tag.image" class="w-1rem h-1rem"></lucide-icon>
+              <p>{{tag.value}}</p>
+            </div>
+          </p-tag>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex-grow-1 flex align-items-center justify-content-between text-sm mt-3">
+      <span class="text-500">Estimated: {{estimated}}</span>
+      <button pButton severity="secondary" size="small" [routerLink]="routerLink" [disabled]="disabled">
+        <div class="flex gap-2">
+          <span>Choose</span>
+          <i-lucide [img]="ArrowRight" class="w-1rem h-1rem"></i-lucide>
+        </div>
+      </button>
+    </div>
+  </div>
+</ng-template>

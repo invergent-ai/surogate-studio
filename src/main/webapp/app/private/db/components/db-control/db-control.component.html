@@ -1,0 +1,12 @@
+<div class="flex gap-2">
+  <button pButton size="small" severity="success" icon="pi pi-play"
+          tooltipPosition="bottom" pTooltip="Start Database"
+          [loading]="loading()"
+          [disabled]="loading() || startDisabled()"
+          (click)="startDb()"></button>
+  <button pButton size="small" severity="danger" icon="pi pi-stop"
+          tooltipPosition="bottom" pTooltip="Stop Database"
+          [loading]="loading()"
+          [disabled]="loading() || stopDisabled()"
+          (click)="stopDb()"></button>
+</div>

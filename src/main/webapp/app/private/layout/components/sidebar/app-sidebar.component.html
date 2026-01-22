@@ -1,0 +1,19 @@
+<div class="layout-sidebar" >
+  <div class="sidebar-header gap-2">
+    <a [routerLink]="['/']" class="app-logo">
+      <div class="app-logo-normal ">
+        <img class="h-2rem"
+           [src]="'assets/layout/images/inv-logo-horiz-'+ (layoutService.config.colorScheme === 'light' ? 'black' : 'white') + '.svg'"
+           alt="">
+      </div>
+    </a>
+    <div>
+      <p class="font-bold">Surogate</p>
+      <p class="text-sm text-500">Studio</p>
+    </div>
+  </div>
+
+  <div #menuContainer class="layout-menu-container">
+    <sm-app-menu></sm-app-menu>
+  </div>
+</div>

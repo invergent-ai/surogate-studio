@@ -1,0 +1,67 @@
+// Only container image input and Docker Hub pill styles
+.selected-image-container {
+  position: relative;
+
+  .p-inputgroup {
+    background: var(--surface-ground);
+    border: 1px solid var(--surface-border);
+    border-radius: 6px;
+    overflow: hidden;
+    display: flex;
+
+    .p-inputgroup-addon {
+      background: var(--surface-ground);
+      border: none;
+      padding: 0.5rem 0.75rem;
+
+      .docker-hub-pill {
+        background: #1488C6;
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+      }
+    }
+
+    input {
+      background: var(--surface-ground);
+      border: none;
+      flex: 1;
+      color: var(--text-color);
+
+      &::placeholder {
+        color: var(--text-color-secondary);
+      }
+    }
+
+    .p-button {
+      background: var(--surface-ground);
+      border: none;
+      border-left: 1px solid var(--surface-border);
+
+      &:hover {
+        background: var(--surface-hover);
+      }
+
+      img {
+        width: 20px;
+        height: 20px;
+        opacity: 0.7;
+      }
+    }
+  }
+}
+
+.docker-search-overlay {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: var(--surface-overlay);
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}

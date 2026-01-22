@@ -1,0 +1,237 @@
+// Thinking block styles
+.thinking-block {
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-left: 4px solid #6366f1;
+  transition: all 0.3s ease;
+
+  &.streaming {
+    border-left-color: #10b981;
+    animation: thinking-pulse 2s ease-in-out infinite;
+  }
+}
+
+@keyframes thinking-pulse {
+  0%, 100% {
+    border-left-color: #10b981;
+  }
+  50% {
+    border-left-color: #34d399;
+  }
+}
+
+.thinking-header {
+  user-select: none;
+  transition: background 0.2s ease;
+  background: #f3f4f6;
+
+  &:hover {
+    background: #e5e7eb;
+  }
+}
+
+.thinking-block.streaming .thinking-header {
+  background: #ecfdf5;
+
+  &:hover {
+    background: #d1fae5;
+  }
+}
+
+.thinking-content {
+  animation: slideDown 0.3s ease-out;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 400px;
+  }
+}
+
+// Cursor animation for streaming
+.cursor {
+  display: inline-block;
+  animation: blink 1s step-end infinite;
+  font-weight: bold;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+// Font monospace helper
+.font-monospace {
+  font-family: 'Courier New', 'Consolas', 'Monaco', monospace;
+}
+
+// Max width helper (since PrimeFlex doesn't have max-w-70)
+.max-w-70 {
+  max-width: 70%;
+}
+
+// White space helper
+.white-space-pre-wrap {
+  white-space: pre-wrap;
+}
+
+// Text overflow helper
+.text-overflow-ellipsis {
+  text-overflow: ellipsis;
+}
+
+// Smooth height transition for textarea
+textarea {
+  resize: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+// Height helper for main container
+.h-screen {
+  height: calc(100vh - 7rem);
+}
+
+// File upload styles
+input[type="file"] {
+  &.hidden {
+    display: none;
+  }
+}
+
+// File preview styles
+.file-preview {
+  position: relative;
+
+  &:hover .file-remove {
+    opacity: 1;
+  }
+}
+
+.file-remove {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  background: rgba(0, 0, 0, 0.7) !important;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.9) !important;
+  }
+}
+
+// Image object-fit helper
+.object-cover {
+  object-fit: cover;
+}
+
+// File attachment animations
+.file-attachment {
+  animation: slideInUp 0.3s ease-out;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Loading states
+.file-loading {
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: inherit;
+  }
+}
+
+// File type icons
+.file-icon {
+  &.pdf {
+    color: #dc3545;
+  }
+
+  &.image {
+    color: #28a745;
+  }
+}
+
+// Drag and drop styles
+.drag-over {
+  border: 2px dashed #6366f1;
+  background: rgba(99, 102, 241, 0.05);
+}
+
+// Message bubble with files
+.message-with-files {
+  .file-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+}
+
+// Responsive file previews
+@media (max-width: 768px) {
+  .file-grid {
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)) !important;
+  }
+
+  .max-w-70 {
+    max-width: 85%;
+  }
+}
+
+// File size indicator
+.file-size {
+  font-size: 0.75rem;
+  color: #6b7280;
+  opacity: 0.8;
+}
+
+// Error states for files
+.file-error {
+  border-color: #dc3545 !important;
+  background: rgba(220, 53, 69, 0.05);
+
+  .file-icon {
+    color: #dc3545;
+  }
+}
+
+// Success states for files
+.file-success {
+  border-color: #28a745 !important;
+  background: rgba(40, 167, 69, 0.05);
+}
+
+// Hover effects for file attachments
+.file-attachment-item {
+  transition: all 0.2s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+}

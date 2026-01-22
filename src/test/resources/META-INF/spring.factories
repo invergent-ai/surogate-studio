@@ -1,0 +1,2 @@
+org.springframework.test.context.ContextCustomizerFactory = net.statemesh.\
+    config.SqlTestContainersSpringContextCustomizerFactory

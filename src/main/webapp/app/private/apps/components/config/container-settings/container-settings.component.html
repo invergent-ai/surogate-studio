@@ -1,0 +1,132 @@
+<div [formGroup]="containerForm">
+  <div class="flex flex-column gap-4">
+    <div class="card surface-card">
+      <!-- Container image-->
+      <p class="font-bold mb-1">Container image</p>
+
+      <div class="field pt-3">
+        <div class="selected-image-container">
+          <div class="p-inputgroup flex flex-wrap">
+
+            <span class="p-inputgroup-addon" *ngIf="selectedImage">
+              <span class="registry-pill docker-hub-pill">Docker Hub</span>
+            </span>
+
+            <input pInputText
+                   formControlName="imageName"
+                   placeholder="Docker image of your application (eg. nginx)"
+                   (click)="toggleRegistrySearch()"
+                   [readOnly]="true"
+                   [ngClass]="{'with-registry-badge': selectedImage}"/>
+            <button pButton
+                    type="button"
+                    class="p-button-outlined"
+                    (click)="toggleRegistrySearch()">
+              <div class="flex flex-row align-items-center gap-2">
+                <img *ngIf="!isPrivateRegistry" ngSrc="../../../../../assets/layout/images/default-docker.svg"
+                     width="20" height="20" alt="Docker" />
+                <i *ngIf="isPrivateRegistry" class="pi pi-search"></i>
+                <span>{{ isPrivateRegistry ? 'Search Repository' : 'Search DockerHub' }}</span>
+              </div>
+            </button>
+            <button pButton
+                    pTooltip="Use a private container registry"
+                    tooltipPosition="left"
+                    type="button"
+                    class="p-button-outlined"
+                    (click)="toggleRegistrySettings()">
+              <i class="pi pi-lock"></i>&nbsp;Private registry
+            </button>
+          </div>
+
+          <small class="p-error m-0"
+                 *ngIf="containerForm.dirty && containerForm.get('imageName')?.errors?.['required']">
+            Container image is required.
+          </small>
+
+          <sm-registry-settings *ngIf="showRegistrySettings"
+                                [registry]="{
+                                    registryUrl: containerForm.get('registryUrl').value,
+                                    registryUser: containerForm.get('registryUsername').value,
+                                    registryPassword: containerForm.get('registryPassword').value
+                                  }"
+                                [applicationId]="applicationId"
+                                [imageName]="containerForm.get('imageName').value"
+                                (registryValidated)="onRegistryValidated($event)"
+                                (cancelPrivateRegistry)="onCancelPrivateRegistry()"
+                                (closeSettings)="showRegistrySettings = false">
+          </sm-registry-settings>
+
+          <div *ngIf="showRegistrySearch" class="registry-search-overlay mt-3">
+            <sm-docker-hub-search [registry]="selectedRegistry"
+                                  (imageSelected)="onDockerImageSelected($event)"
+                                  (registryChanged)="onCancelPrivateRegistry()">
+            </sm-docker-hub-search>
+          </div>
+        </div>
+      </div>
+
+      <!-- Image Tag selection -->
+      <div class="field" *ngIf="selectedImage && containerForm.get('imageTag')">
+        <label>
+          <p class="text-sm font-normal">Select a tag for this container image.</p>
+        </label>
+        <p-dropdown styleClass="w-full"
+                    inputId="imageTag" id="imageTag"
+                    formControlName="imageTag"
+                    [options]="availableTags"
+                    optionValue="value"
+                    optionLabel="label"
+                    [filter]="true" appendTo="body"
+                    (onChange)="onTagChange($event)">
+          <ng-template pTemplate="selectedItem">
+            <div class="flex align-items-center gap-2">
+              <span class="tag-label">{{ containerForm.get('imageTag')?.value }}</span>
+            </div>
+          </ng-template>
+          <ng-template pTemplate="item" let-tag>
+            <div class="flex align-items-center gap-2">
+              <span class="tag-label">{{ tag.label }}</span>
+            </div>
+          </ng-template>
+        </p-dropdown>
+      </div>
+    </div>
+
+    <!-- Container Configuration Sections -->
+    @if (selectedImage && containerForm.get('imageTag')?.value) {
+      <!-- Ports Configuration -->
+      <sm-ports-settings [ports]="ports"
+                         [applicationName]="applicationName"
+                         [publicIp]="publicIp"
+                         [containerForm]="containerForm"
+                         [resetTrigger]="resetTrigger"
+                         [containerIndex]="containerIndex"
+                         [hasExistingIngressPort]="hasExistingIngressPort"
+                         [selectedImage]="selectedImage"
+                         [selectedTag]="containerForm.get('imageTag')?.value"
+                         [defaultPorts]="defaultPorts || []"
+                         [mode]="mode"
+                         [namespace]="namespace"
+                         (portsChange)="onPortsChange($event)">
+      </sm-ports-settings>
+
+      @if (applicationForm.value.mode !== ApplicationMode.MODEL) {
+        <!-- Volume Configuration -->
+        <sm-volume [containerForm]="containerForm"
+                   [applicationForm]="applicationForm"
+                   [defaultVolumes]="defaultVolumes"
+                   [containerIndex]="containerIndex"
+                   [applicationId]="applicationId">
+        </sm-volume>
+      }
+
+      <!-- Advanced Settings -->
+      <sm-advanced-settings [resetTrigger]="resetTrigger"
+                            [applicationForm]="applicationForm"
+                            [containerForm]="containerForm"
+                            [containerIndex]="containerIndex">
+      </sm-advanced-settings>
+    }
+  </div>
+</div>

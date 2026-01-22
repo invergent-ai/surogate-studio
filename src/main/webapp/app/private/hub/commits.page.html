@@ -1,0 +1,65 @@
+<sm-page>
+  <sm-page-loader>
+    <ng-template>
+      <div class="mb-3">
+        <h1 class="page-title text-xl flex gap-3">
+          <span class="font-medium">{{ repository().metadata?.displayName  ? repository().metadata.displayName: repository().id }}</span>
+          <p-tag severity="info">
+            <div class="flex gap-1 align-items-center px-1">
+              <i-lucide [img]="Bot" class="w-1rem h-1rem"></i-lucide>
+              <p>Model</p>
+            </div>
+          </p-tag>
+        </h1>
+      </div>
+
+      <p-tabMenu [model]="menu" [activeItem]="menu[3]">
+        <ng-template pTemplate="item" let-item>
+          <a [routerLink]="item.route" [queryParams]="item.queryParams" class="p-menuitem-link">
+            <span [class]="item.icon"></span>
+            <span class="ml-2">{{ item.label }}</span>
+          </a>
+        </ng-template>
+      </p-tabMenu>
+
+      <div class="my-3">
+        <p-card class="topPanel">
+          <div class="flex justify-content-between">
+            <div class="col">
+              <div class="flex gap-3 align-items-center">
+                <sm-ref-selector type="branch" [repoId]="repository()?.id" [ngModel]="selectedRef()"
+                                 (ngModelChange)="chooseBranch($event)"></sm-ref-selector>
+              </div>
+            </div>
+
+            <div class="col-4 flex gap-2 align-items-center justify-content-end">
+              <button pButton size="small" outlined (click)="refresh()">
+                <i-lucide [img]="RefreshCw" class="w-1rem h-1rem"></i-lucide> &nbsp; Refresh
+              </button>
+            </div>
+          </div>
+        </p-card>
+      </div>
+
+      @if (selectedCommit()) {
+        <sm-commit [repoId]="repoId()" [commitId]="selectedCommit()"></sm-commit>
+      } @else {
+        <p-table [value]="commits()" [tableStyle]="{'table-layout': 'auto', 'width': '100%'}">
+          <ng-template pTemplate="body" let-data>
+            <tr>
+              <td>
+                <a class="font-medium text-900 no-underline hover:underline" [routerLink]="['/hub/commits', repoId()]" [queryParams]="{'commit': data.id}">{{data.message || '[No commit message]'}}</a>
+                <p class="mt-1 text-xs text-500">{{data.committer || 'somebody'}} committed at {{data.creationDate * 1000 | date: 'dd MMM YYYY HH:mm:ss'}} ({{dayjs(data.creationDate * 1000).fromNow(false)}})</p>
+              </td>
+              <td>
+                <div class="flex justify-content-end pr-3">
+                  <a class="underline" [routerLink]="['/hub/files', repository().id]" [queryParams]="{'ref': data.id, 'refType': 'commit'}">Browse objects</a>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      }
+    </ng-template>
+  </sm-page-loader>
+</sm-page>

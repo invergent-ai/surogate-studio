@@ -1,0 +1,40 @@
+<p-card class="diffPanel">
+  <ng-template pTemplate="header">
+    <div class="p-3 surface-100">
+      <span>Showing changes for commit</span>&nbsp;<span class="font-semibold">{{commitId().substring(0, 9)}}</span>
+    </div>
+  </ng-template>
+
+  <p-table [value]="diffs()" dataKey="path" [expandedRowKeys]="expandedRows"
+           [tableStyle]="{'table-layout': 'auto', 'width': '100%'}" (onRowExpand)="showDiff($event)">
+    <ng-template pTemplate="body" let-diff let-expanded="expanded">
+      <tr [class.bg-red-100]="diff.type === 'REMOVED'"
+          [class.bg-green-100]="diff.type === 'ADDED'"
+          [class.bg-yellow-100]="diff.type === 'CHANGED' || diff.type === 'prefix_changed'"
+          [class.bg-red-200]="diff.type === 'conflict'">
+        <td style="width: 1%;  padding-right: 0;">
+          <p-button type="button" size="small" [pRowToggler]="diff" [text]="true" [plain]="true" [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'" />
+        </td>
+        <td style="padding-left: 1rem;">
+          <div class="flex justify-content-start">
+            <p>{{diff.path}}</p>
+          </div>
+        </td>
+        <td>
+          {{diff.type}}
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="rowexpansion" let-diff>
+      <tr>
+        <td colspan="3">
+          <ngx-side-by-side-diff class="ngx-diff-light-theme"
+                                 [title]="'Left commit:'+commit().parents[0].substring(0,9)+', Right commit:'+commit().id.substring(0,9)"
+                                 [before]="leftContent() || ''" [after]="rightContent() || ''"
+                                 [lineContextSize]="4"></ngx-side-by-side-diff>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</p-card>
+

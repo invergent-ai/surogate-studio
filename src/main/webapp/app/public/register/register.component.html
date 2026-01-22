@@ -1,0 +1,138 @@
+<div [class]="'login-body flex min-h-screen ' + (layoutService.config.colorScheme === 'light' ? 'layout-light':'layout-dark')">
+  <div class="login-panel w-full">
+    <div class="p-fluid min-h-screen flex align-items-center justify-content-center">
+      <div class="form-container">
+        <!-- Logo -->
+        <div class="flex justify-content-center mb-5">
+          <img [src]="'assets/layout/images/inv-logo-horiz-'+
+          (layoutService.config.colorScheme === 'light' ? 'black' : 'white') + '.svg'"
+               class="login-logo" style="width: 200px;"  alt=""/>
+        </div>
+
+        <!-- Register Form -->
+        <form [formGroup]="registerForm" (ngSubmit)="register()">
+          <h4>Register</h4>
+          <span class="block text-600 font-medium mb-4">Let's get started</span>
+
+          <!-- Email -->
+          <div class="mb-3">
+            <span class="p-input-icon-left w-full">
+              <i class="pi pi-envelope"></i>
+              <input type="email"
+                     id="login"
+                     name="login"
+                     data-cy="login"
+                     formControlName="login"
+                     #login
+                     pInputText
+                     autocomplete="off"
+                     placeholder="Email" />
+            </span>
+            <!-- Email validation messages -->
+            <small class="form-text text-danger"
+                   *ngIf="registerForm.get('login')?.errors?.required &&
+                   (registerForm.get('login')?.dirty || registerForm.get('login')?.touched)">
+              Email is required
+            </small>
+            <small class="form-text text-danger"
+                   *ngIf="registerForm.get('login')?.errors?.email">
+              Invalid email format
+            </small>
+          </div>
+
+          <!-- Password -->
+          <div class="mb-3">
+            <p-password inputId="password"
+                        formControlName="password"
+                        autocomplete="off"
+                        [toggleMask]="true"
+                        [feedback]="false"
+                        placeholder="Password" />
+
+            <!-- Password validation messages -->
+            <div *ngIf="registerForm.get('password')!.invalid &&
+                 (registerForm.get('password')!.dirty || registerForm.get('password')!.touched)">
+              <small class="form-text text-danger"
+                     *ngIf="registerForm.get('password')?.errors?.minlength">
+                Your password is required to be at least 4 characters
+              </small>
+              <small class="form-text text-danger"
+                     *ngIf="registerForm.get('password')?.errors?.maxlength">
+                Your password cannot be longer than 50 characters
+              </small>
+            </div>
+          </div>
+
+          <!-- Confirm Password -->
+          <div class="mb-4">
+            <p-password  inputId="confirmPassword"
+                         formControlName="confirmPassword"
+                         autocomplete="off"
+                         [toggleMask]="true"
+                         [feedback]="false"
+                         placeholder="Confirm password" />
+            <!-- Password match error -->
+            <small class="form-text text-danger" *ngIf="doNotMatch">
+              The password and its confirmation do not match
+            </small>
+          </div>
+
+          <!-- Terms & Conditions -->
+          <div class="mb-4 flex align-items-center">
+            <p-checkbox id="confirmed"
+                        name="confirmed"
+                        formControlName="confirmed"
+                        [binary]="true"
+                        styleClass="mr-2">
+            </p-checkbox>
+            <label for="confirmed" class="text-color-secondary">
+              I have read the
+              <a class="cursor-pointer text-green-700" href="https://www.statemesh.net/terms-of-use" target="_blank">Terms of Use</a>
+            </label>
+          </div>
+
+          <div class="text-color my-3 line-height-2">
+            <a href="mailto: partners@statemesh.net" class="cursor-pointer font-bold hover:text-primary transition-colors duration-200 text-green-700">Reach out to us</a>
+            if you are a Data Center or a Professional Node Operator.
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex gap-2 mb-4">
+            <button pButton
+                    type="button"
+                    label="Cancel"
+                    class="p-button-outlined p-button-danger flex"
+                    [routerLink]="['/login']">
+            </button>
+            <button pButton
+                    type="submit"
+                    label="Submit"
+                    [disabled]="!registerForm.valid || !registerForm.get('confirmed').value"
+                    [loading]="loading"
+                    loadingIcon="pi pi-spin pi-spinner">
+            </button>
+          </div>
+
+          <p-messages></p-messages>
+
+          <!-- Login Link -->
+          <div class="text-center">
+            <span class="text-color-secondary">Already have an account?
+              <a class="font-medium cursor-pointer text-green-700" [routerLink]="['/login']">
+                Login
+              </a>
+            </span>
+          </div>
+        </form>
+      </div>
+    </div>
+    <!-- Footer -->
+    <div class="login-footer flex align-items-center gap-2 justify-content-center mt-4 mb-3">
+      <span>Copyright © 2024 StateMesh</span>
+      <span>|</span>
+      <a href="https://www.statemesh.net/privacy-policy" target="_blank">Privacy Policy</a>
+      <span>|</span>
+      <a href="https://www.statemesh.net/terms-of-use" target="_blank">Terms of Use</a>
+    </div>
+  </div>
+</div>

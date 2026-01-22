@@ -1,0 +1,23 @@
+<ul class="layout-menu" #layoutMenu>
+    <ng-container *ngFor="let item of model; let i = index;">
+        <li sm-menuitem *ngIf="!item.separator" [class.menu-highlight-section]="item.highlight"
+            [item]="item" [index]="i" [root]="true"></li>
+        <li *ngIf="item.separator" class="menu-separator"></li>
+    </ng-container>
+</ul>
+<p-overlayPanel #op [appendTo]="layoutMenu" [style]="{'left': '2rem !important'}" styleClass="left-2rem">
+  <div class="flex flex-column text-sm">
+    <div class="p-2 flex gap-2 align-items-center cursor-pointer overlayMenu" [routerLink]="['/apps/deploy']" (click)="op.hide()">
+      <i-lucide [img]="AppWindow" class="w-1rem h-1rem"></i-lucide>
+      <span>Application / Model</span>
+    </div>
+    <div class="p-2 flex gap-2 align-items-center cursor-pointer overlayMenu" [routerLink]="['/dbs/deploy']" (click)="op.hide()">
+      <i-lucide [img]="Database" class="w-1rem h-1rem"></i-lucide>
+      <span>Database</span>
+    </div>
+    <div class="p-2 flex gap-2 align-items-center cursor-pointer overlayMenu" [routerLink]="['/volumes/create']" (click)="op.hide()">
+      <i-lucide [img]="HardDrive" class="w-1rem h-1rem"></i-lucide>
+      <span>Volume</span>
+    </div>
+  </div>
+</p-overlayPanel>

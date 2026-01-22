@@ -1,0 +1,18 @@
+<p-button
+  (click)="repoPanel.toggle($event)"
+  icon="pi pi-warehouse"
+  size="small"
+  [disabled]="!canSelect()"
+  [label]="selectedLabel()" />
+
+<p-overlayPanel #repoPanel [dismissable]="true" [showCloseIcon]="false">
+  <p-listbox
+    [options]="repos()"
+    [style]="{ width: '100%' }"
+    optionLabel="displayLabel"
+    [(ngModel)]="selectedRepo"
+    [filter]="true"
+    (ngModelChange)="onRepoChange(repoPanel)">
+  </p-listbox>
+
+</p-overlayPanel>

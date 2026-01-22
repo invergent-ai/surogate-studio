@@ -1,0 +1,33 @@
+<div class="grid" *ngIf="!disableFeature">
+  <div class="col-12 xl:col-12">
+    <div class="card py-4 px-3">
+      <label for="profiles" class="col-12 p-1 justify-content-start">Select a deployment profile:</label>
+      <div class="flex flex-wrap mt-4" id="profiles">
+        <div *ngFor="let profile of profiles; index as idx" class="col-6 sm:col-4 md:col-2 p-1">
+          <div class="card mb-1 p-3 cursor-pointer hover:border-primary"
+               [class.border-primary]="profile.selected && !profile.disabled"
+               [class.disabled]="profile.disabled"
+               [ngClass]="{'hover:border-primary': !(readonly || profile.disabled)}"
+               (click)="!(readonly || profile.disabled) ? profileSelected(profile) : null">
+            <div class="flex align-items-center justify-content-center">
+              <div class="flex align-items-center gap-2">
+                <i class="pi text-600" [ngClass]="profile.icon"></i>
+                <span class="font-medium font-med text-900">{{ profile.name }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="description">
+        <ul class="font-sm mb-0">
+          <li class="mb-2">{{ selectedProfile?.desc1 }}</li>
+          <li>{{ selectedProfile?.desc2 }}</li>
+        </ul>
+      </div>
+      <div *ngIf="selectedProfile?.id === Profile.HPC" class="text-green-700 mt-2 ml-4">
+          All resources will be deployed on the same datacenter.
+      </div>
+    </div>
+  </div>
+</div>
+
