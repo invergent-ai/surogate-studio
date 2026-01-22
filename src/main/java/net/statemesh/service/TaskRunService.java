@@ -135,7 +135,7 @@ public class TaskRunService {
                     lakeFsService.createDatasetRepository(lakeFsRepo, hfRepo.getValue());
                 }
             }
-            taskRunDTO.getParams().add(TaskRunParamDTO.builder().key("hf-token").value("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").build());
+            taskRunDTO.getParams().add(TaskRunParamDTO.builder().key("hf-token").value("").build());
             taskRunDTO.getParams().add(TaskRunParamDTO.builder().key("lakefs-repo").value(repoId).build());
             taskRunDTO.getParams().add(TaskRunParamDTO.builder().key("lakefs-branch").value("main").build());
         }
