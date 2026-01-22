@@ -1,5 +1,5 @@
 import {Component, computed, input, OnChanges, OnInit, signal} from '@angular/core';
-import {LabelTooltipComponent} from '../../../../shared/components/label-tooltip/label-tooltip.component';
+import {LabelTooltipComponent} from '../label-tooltip/label-tooltip.component';
 import {Database, LucideAngularModule, Plus, Trash} from 'lucide-angular';
 import {PrimeTemplate} from 'primeng/api';
 import {TableModule, TableRowExpandEvent} from 'primeng/table';
@@ -19,49 +19,64 @@ import {
   DATASET_SYSTEM_PROMPT_FIELD,
   DATASET_SYSTEM_PROMPT_TYPE,
   DATASET_TEXT_COLUMN
-} from '../../tooltips';
+} from '../../../private/training/tooltips';
 import {FormArray, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
 import {ButtonDirective} from 'primeng/button';
-import {CardComponent} from '../../../../shared/components/card/card.component';
+import {CardComponent} from '../card/card.component';
 import {InputNumberModule} from 'primeng/inputnumber';
 import {v4 as uuidv4} from 'uuid';
 import {InputTextModule} from 'primeng/inputtext';
 import {FieldsetModule} from 'primeng/fieldset';
 import {DropdownModule} from 'primeng/dropdown';
-import {RepoSelectorComponent} from '../../../../shared/components/repo-selector/repo-selector.component';
+import {RepoSelectorComponent} from '../repo-selector/repo-selector.component';
 import {InputGroupModule} from 'primeng/inputgroup';
 import {InputTextareaModule} from 'primeng/inputtextarea';
-import {RefSelection, RefSelectorComponent} from '../../../hub/components/ref-selector.component';
+import {RefSelection, RefSelectorComponent} from '../../../private/hub/components/ref-selector.component';
 import {NgIf} from '@angular/common';
+import {CheckboxModule} from 'primeng/checkbox';
+import {ChipsModule} from 'primeng/chips';
+import {TooltipModule} from 'primeng/tooltip';
 
-export type DatasetTask = 'pretrain' | 'sft';
-export const newDatasetForm = (id: string, type: string) => new FormGroup({
-  id: new FormControl<string>(id, [Validators.required]),
-  repoId: new FormControl<string>(null, [Validators.required]),
-  ref: new FormControl<RefSelection>(null, [Validators.required]),
-  path: new FormControl<string>(null, []),
-  type: new FormControl<string>(type, [Validators.required]),
-  subset: new FormControl<string>(null, []),
-  split: new FormControl<string>(null, []),
-  samples: new FormControl<string>(null),
-  // text format
-  textField: new FormControl<string>(null),
-  // instruction format
-  instructionField: new FormControl<string>(null),
-  inputField: new FormControl<string>(null),
-  outputField: new FormControl<string>(null),
-  systemPromptType: new FormControl<string>(null),
-  systemPromptField: new FormControl<string>(null),
-  systemPrompt: new FormControl<string>(null),
-  promptFormat: new FormControl<string>(null),
-  promptFormatNoInput: new FormControl<string>(null),
-  // conversation format
-  messagesField: new FormControl<string>(null),
-  systemField: new FormControl<string>(null),
-  toolsField: new FormControl<string>(null),
-  messagePropertyMappingsRole: new FormControl<string>(null),
-  messagePropertyMappingsContent: new FormControl<string>(null)
-});
+export type DatasetTask = 'pretrain' | 'sft' | 'eval';
+
+export const newDatasetForm = (id: string, type: string, task: DatasetTask = 'sft') => {
+  const isEval = task === 'eval';
+  return new FormGroup({
+    id: new FormControl<string>(id, [Validators.required]),
+    repoId: new FormControl<string>(null, [Validators.required]),
+    ref: new FormControl<RefSelection>(null, [Validators.required]),
+    path: new FormControl<string>(null, []),
+    type: new FormControl<string>(type, [Validators.required]),
+    subset: new FormControl<string>(null, []),
+    split: new FormControl<string>(isEval ? 'test' : null, []),
+    samples: new FormControl<string>(null),
+    // text format
+    textField: new FormControl<string>(null),
+    // instruction format
+    instructionField: new FormControl<string>(null),
+    inputField: new FormControl<string>(null),
+    outputField: new FormControl<string>(null),
+    systemPromptType: new FormControl<string>(null),
+    systemPromptField: new FormControl<string>(null),
+    systemPrompt: new FormControl<string>(null),
+    promptFormat: new FormControl<string>(null),
+    promptFormatNoInput: new FormControl<string>(null),
+    // conversation format
+    messagesField: new FormControl<string>(null),
+    systemField: new FormControl<string>(null),
+    toolsField: new FormControl<string>(null),
+    messagePropertyMappingsRole: new FormControl<string>(null),
+    messagePropertyMappingsContent: new FormControl<string>(null),
+    // eval format
+    name: new FormControl<string>(isEval ? '' : null, isEval ? [Validators.required] : []),
+    instructionColumn: new FormControl<string>('instruction'),
+    answerColumn: new FormControl<string>('answer'),
+    evalTypeColumn: new FormControl<string>('eval_type'),
+    judgeCriteriaColumn: new FormControl<string>('judge_criteria'),
+    defaultJudgeCriteria: new FormControl<string>('Evaluate if the response correctly answers the question based on the expected answer.'),
+  });
+};
+
 
 @Component({
   selector: 'sm-dataset-table-chooser',
@@ -85,7 +100,10 @@ export const newDatasetForm = (id: string, type: string) => new FormGroup({
     RefSelectorComponent,
     FormsModule,
     NgIf,
-  ]
+    CheckboxModule,
+    ChipsModule,
+    TooltipModule,
+  ],
 })
 export class DatasetTableChooserComponent implements OnInit, OnChanges {
   task = input.required<DatasetTask>();
@@ -96,22 +114,30 @@ export class DatasetTableChooserComponent implements OnInit, OnChanges {
   formArrayForDisplay = signal<FormGroup[]>([]);
   currentForm = signal<FormGroup>(null);
   expandedRows = signal<Record<string, boolean>>({});
+
   dsFormats = computed(() => {
     const task = this.task();
     if (task === 'pretrain') {
-      return [
-        { label: 'Pre-training', value: "text" }
-      ];
+      return [{ label: 'Pre-training', value: 'text' }];
     } else if (task === 'sft') {
       return [
-        { label: 'Continued pre-training', value: "text" },
-        { label: "Instruction Tuning", value: "instruction" },
-        { label: "Conversation", value: "conversation" },
+        { label: 'Continued pre-training', value: 'text' },
+        { label: 'Instruction Tuning', value: 'instruction' },
+        { label: 'Conversation', value: 'conversation' },
       ];
-    } else {
-      return [];
+    } else if (task === 'eval') {
+      return [{ label: 'Custom Evaluation', value: 'custom_evaluation' }];
     }
+    return [];
   });
+
+  // Eval tooltips
+  readonly TOOLTIP_INSTRUCTION = 'Column containing the full prompt/question (include MCQ options in text if needed)';
+  readonly TOOLTIP_ANSWER = 'Column containing the expected answer';
+  readonly TOOLTIP_EVAL_TYPE = 'Column specifying evaluation type: "exact_match" or "judge" (optional, defaults to exact_match)';
+  readonly TOOLTIP_JUDGE_CRITERIA = 'Column containing per-row judge criteria (optional)';
+  readonly TOOLTIP_DEFAULT_CRITERIA = 'Default judge criteria when not specified per-row in dataset';
+
 
   ngOnInit() {
     this.initFormArraySubscription();
@@ -127,19 +153,17 @@ export class DatasetTableChooserComponent implements OnInit, OnChanges {
       this.formArrayForDisplay.set([]);
       return;
     }
-    // Avoid multiple subscriptions
-    (fa as any).__dsChooserSubscribed ||= (
-      fa.valueChanges.subscribe(() => {
-        this.formArrayForDisplay.set(this.formArrayAsArray());
-      })
-    );
-    // Initial population
+    (fa as any).__dsChooserSubscribed ||= fa.valueChanges.subscribe(() => {
+      this.formArrayForDisplay.set(this.formArrayAsArray());
+    });
     this.formArrayForDisplay.set(this.formArrayAsArray());
   }
 
   add() {
     const id = uuidv4();
-    const form = newDatasetForm(id, this.task() === 'pretrain' ? 'text' : 'instruction');
+    const task = this.task();
+    const defaultType = task === 'pretrain' ? 'text' : task === 'eval' ? 'custom_evaluation' : 'instruction';
+    const form = newDatasetForm(id, defaultType, task); // type first, then task
     this.formArray().push(form);
     this.formArrayForDisplay.set(this.formArrayAsArray());
     this.currentForm.set(form);
@@ -147,12 +171,12 @@ export class DatasetTableChooserComponent implements OnInit, OnChanges {
   }
 
   remove(dataset: FormGroup) {
-    let idx = this.indexOfDataset(dataset);
+    const idx = this.indexOfDataset(dataset);
     if (idx > -1) {
       this.formArray().removeAt(idx);
     }
     this.formArrayForDisplay.set(this.formArrayAsArray());
-    if (this.currentForm() && this.currentForm().value.id === dataset.value.id) {
+    if (this.currentForm()?.value.id === dataset.value.id) {
       this.currentForm.set(null);
       this.expandedRows.set({});
     }
@@ -173,29 +197,27 @@ export class DatasetTableChooserComponent implements OnInit, OnChanges {
   }
 
   uniqFormEntry = (formGroup: FormGroup): string => {
-    return formGroup ? formGroup.value.id : null;
+    return formGroup?.value?.id ?? null;
   };
 
   dsFormatLabel = (format: string): string => {
-    return format ? this.dsFormats().filter(ds => ds.value === format)[0]?.label : '';
+    return format ? this.dsFormats().find(ds => ds.value === format)?.label ?? '' : '';
   };
 
   private formArrayAsArray(): FormGroup[] {
-    if (!this.formArray()) {
-      return [];
-    }
-
-    const arr = new Array<FormGroup>(this.formArray().length);
-    for (let i = 0; i < arr.length; i++) {
-      arr[i] = this.formArray().at(i) as FormGroup;
+    const fa = this.formArray();
+    if (!fa) return [];
+    const arr: FormGroup[] = [];
+    for (let i = 0; i < fa.length; i++) {
+      arr.push(fa.at(i) as FormGroup);
     }
     return arr;
   }
 
   private indexOfDataset(dataset: FormGroup): number {
-    for (let i=0; i<this.formArray().length; i++) {
-      const form = this.formArray().at(i) as FormGroup;
-      if (form.value.id === dataset.value.id) {
+    const fa = this.formArray();
+    for (let i = 0; i < fa.length; i++) {
+      if ((fa.at(i) as FormGroup).value.id === dataset.value.id) {
         return i;
       }
     }
@@ -203,9 +225,9 @@ export class DatasetTableChooserComponent implements OnInit, OnChanges {
   }
 
   readonly systemPromptType = [
-    {label: 'None', value: "none"},
-    {label: "Field", value: "field"},
-    {label: "Fixed", value: "fixed"},
+    { label: 'None', value: 'none' },
+    { label: 'Field', value: 'field' },
+    { label: 'Fixed', value: 'fixed' },
   ];
 
   protected readonly DATASET_SPLIT = DATASET_SPLIT;

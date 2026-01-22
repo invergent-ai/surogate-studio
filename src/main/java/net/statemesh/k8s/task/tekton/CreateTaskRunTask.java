@@ -38,6 +38,12 @@ public class CreateTaskRunTask extends BaseMutationTask<String> {
         log.info("Running Task...");
 
         if (!taskRunExists()) {
+
+            if (taskRun.getType() == TaskRunType.EVALUATION) {
+                resolveAndOverrideJudgeEndpoint();
+                resolveAndOverrideSimulatorEndpoint();
+            }
+
             log.debug("Create task run {}", taskRun.getName());
 
             // Resolve model endpoints for evaluation tasks
@@ -62,6 +68,71 @@ public class CreateTaskRunTask extends BaseMutationTask<String> {
             throw new SkippedExistsException();
         }
     }
+
+
+    private String resolveInternalModelEndpoint(String internalName, String namespace) {
+        if (internalName == null || namespace == null) {
+            return null;
+        }
+
+        String serviceLabel = internalName + "-router";
+        String labelSelector = "app.kubernetes.io/instance=" + serviceLabel;
+
+        try {
+            var services = getApiStub().getCoreV1Api()
+                .listNamespacedService(namespace)
+                .labelSelector(labelSelector)
+                .execute();
+
+            for (var svc : services.getItems()) {
+                if (svc.getSpec() == null || svc.getSpec().getPorts() == null) {
+                    continue;
+                }
+                for (var port : svc.getSpec().getPorts()) {
+                    if (port.getPort() == 80) {
+                        // Use short name - same namespace as eval pod
+                        String endpoint = String.format("http://%s/v1", svc.getMetadata().getName());
+                        log.info("Resolved internal model endpoint: {}", endpoint);
+                        return endpoint;
+                    }
+                }
+            }
+            log.warn("No service with port 80 found for label {}", labelSelector);
+        } catch (ApiException e) {
+            log.error("Failed to find service with label {}", labelSelector, e);
+        }
+        return null;
+    }
+
+    private void resolveAndOverrideJudgeEndpoint() {
+        String judgeEndpoint = resolveInternalModelEndpoint(
+            getParamValue("JUDGE_MODEL_INTERNAL_NAME"),
+            getParamValue("JUDGE_MODEL_NAMESPACE")
+        );
+        if (judgeEndpoint != null) {
+            taskRun.getParams().removeIf(p -> "JUDGE_MODEL_BASE_URL".equals(p.getKey()));
+            taskRun.getParams().add(TaskRunParamDTO.builder()
+                .key("JUDGE_MODEL_BASE_URL")
+                .value(judgeEndpoint)
+                .build());
+        }
+    }
+
+    private void resolveAndOverrideSimulatorEndpoint() {
+        String simulatorEndpoint = resolveInternalModelEndpoint(
+            getParamValue("SIMULATOR_MODEL_INTERNAL_NAME"),
+            getParamValue("SIMULATOR_MODEL_NAMESPACE")
+        );
+        if (simulatorEndpoint != null) {
+            taskRun.getParams().removeIf(p -> "SIMULATOR_MODEL_BASE_URL".equals(p.getKey()));
+            taskRun.getParams().add(TaskRunParamDTO.builder()
+                .key("SIMULATOR_MODEL_BASE_URL")
+                .value(simulatorEndpoint)
+                .build());
+        }
+    }
+
+
 
     private String resolveIngressEndpoint() {
         if (taskRun.getType() != TaskRunType.EVALUATION) {

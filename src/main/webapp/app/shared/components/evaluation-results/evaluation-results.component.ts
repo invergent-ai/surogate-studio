@@ -1,28 +1,70 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges, inject, signal } from '@angular/core';
+import { Component, inject, Input, OnChanges, OnInit, signal, SimpleChanges } from '@angular/core';
 import { EvaluationResultService } from '../../service/evaluation-result.service';
 import {
   IEvaluationResult,
-  ITaskResult,
-  IRedTeamingResult,
-  IVulnerabilityResult,
-  IEvaluation,
-  IDetailedResult,
   IMetricSummary,
+  IRedTeamingResult,
+  ITaskResult,
+  IVulnerabilityResult
 } from '../../model/evaluation-result.model';
 import { CommonModule } from '@angular/common';
 import { CardComponent } from '../card/card.component';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
-import { ButtonDirective } from 'primeng/button';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { FormsModule } from '@angular/forms';
 import { TabViewModule } from 'primeng/tabview';
-import { LucideAngularModule, FileText, BarChart3, ShieldCheck, ShieldAlert, CheckCircle, XCircle, MessageSquare } from 'lucide-angular';
+import {
+  BarChart3,
+  CheckCircle,
+  FileText,
+  FlaskConical,
+  LucideAngularModule,
+  MessageSquare,
+  ShieldAlert,
+  ShieldCheck,
+  XCircle,
+  Download
+} from 'lucide-angular';
 import { MarkdownModule } from 'ngx-markdown';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { DividerModule } from 'primeng/divider';
 import { AccordionModule } from 'primeng/accordion';
 import { TooltipModule } from 'primeng/tooltip';
+import { ButtonDirective } from 'primeng/button';
+
+interface ICustomDetailedResult {
+  original_idx: number;
+  eval_type: string;
+  instruction: string;
+  expected: string;
+  output: string;
+  raw_output: string;
+  score: number;
+  success: boolean;
+  reason: string;
+  format: string;
+  criteria?: string;
+}
+
+interface ICustomTaskResult {
+  total?: number;
+  correct?: number;
+  accuracy?: number;
+  avg_score?: number;
+  success_rate?: number;
+}
+
+interface ICustomBenchmark {
+  benchmark_name: string;
+  backend: string;
+  overall_score: number;
+  num_samples: number;
+  task_results: { [key: string]: ICustomTaskResult };
+  detailed_results: ICustomDetailedResult[];
+  metadata: any;
+  status: string;
+}
 
 @Component({
   standalone: true,
@@ -32,7 +74,6 @@ import { TooltipModule } from 'primeng/tooltip';
     CardComponent,
     TableModule,
     TagModule,
-    ButtonDirective,
     ProgressSpinnerModule,
     FormsModule,
     TabViewModule,
@@ -42,6 +83,7 @@ import { TooltipModule } from 'primeng/tooltip';
     DividerModule,
     AccordionModule,
     TooltipModule,
+    ButtonDirective,
   ],
   template: `
     <sm-card header="Evaluation Results" [icon]="BarChart3">
@@ -84,6 +126,34 @@ import { TooltipModule } from 'primeng/tooltip';
                     <div class="text-2xl font-semibold text-red-500">{{ getSuccessfulAttacks() }}</div>
                     <div class="text-xs text-500">Succeeded</div>
                   </div>
+                </div>
+              </div>
+            }
+
+            @if (hasCustomEvaluation()) {
+              <!-- Custom Evaluation Summary Card -->
+              <div class="border-1 border-200 border-round p-4 mb-4">
+                <div class="flex align-items-center gap-3 mb-3">
+                  <i-lucide [img]="FlaskConical" class="w-1.5rem h-1.5rem text-primary"></i-lucide>
+                  <span class="font-semibold">Custom Evaluation</span>
+                </div>
+                <div class="flex flex-column align-items-center mb-3">
+                  <div class="text-4xl font-bold mb-1" [class]="getCustomScoreClass()">
+                    {{ getCustomOverallScore() | percent: '1.1-1' }}
+                  </div>
+                  <div class="text-sm text-500">Overall Score</div>
+                </div>
+                <p-divider></p-divider>
+                <div class="grid text-center">
+                  @for (taskEntry of getCustomTaskSummary(); track taskEntry.name) {
+                    <div class="col">
+                      <div class="text-2xl font-semibold" [class]="getScoreClass(taskEntry.score)">
+                        {{ taskEntry.score | percent: '1.0-0' }}
+                      </div>
+                      <div class="text-xs text-500">{{ taskEntry.name | titlecase }}</div>
+                      <div class="text-xs text-400">{{ taskEntry.correct }}/{{ taskEntry.total }}</div>
+                    </div>
+                  }
                 </div>
               </div>
             }
@@ -160,6 +230,167 @@ import { TooltipModule } from 'primeng/tooltip';
               </div>
             </div>
           </p-tabPanel>
+
+          <!-- Custom Evaluation Tab -->
+          @if (hasCustomEvaluation()) {
+            <p-tabPanel header="Custom Evaluation">
+              @for (benchmark of getCustomBenchmarks(); track benchmark.benchmark_name) {
+                <div class="mb-4">
+                  <div class="flex align-items-center justify-content-between mb-3">
+                    <div>
+                      <h4 class="text-sm font-semibold mb-1">{{ benchmark.benchmark_name }}</h4>
+                      <span class="text-xs text-500"
+                        >{{ benchmark.backend }} · {{ benchmark.detailed_results?.length || 0 }} test cases</span
+                      >
+                    </div>
+                    <div class="flex align-items-center gap-2">
+                      <span class="text-lg font-bold" [class]="getScoreClass(benchmark.overall_score)">
+                        {{ benchmark.overall_score | percent: '1.1-1' }}
+                      </span>
+                      <p-tag [severity]="getBenchmarkStatusSeverity(benchmark.status)" [value]="benchmark.status"></p-tag>
+                    </div>
+                  </div>
+
+                  <!-- Task Results Summary -->
+                  @if (benchmark.task_results) {
+                    <div class="grid mb-3">
+                      @for (task of getCustomTaskEntries(benchmark.task_results); track task.key) {
+                        <div class="col-6 md:col-4 lg:col-3">
+                          <div class="border-1 border-200 border-round p-3 text-center">
+                            <div class="text-xs text-500 mb-1">{{ task.key | titlecase }}</div>
+                            @if (task.value.accuracy !== undefined) {
+                              <div class="text-xl font-semibold" [class]="getScoreClass(task.value.accuracy)">
+                                {{ task.value.accuracy | percent: '1.0-0' }}
+                              </div>
+                              <div class="text-xs text-400">{{ task.value.correct }}/{{ task.value.total }}</div>
+                            } @else if (task.value.avg_score !== undefined) {
+                              <div class="text-xl font-semibold" [class]="getScoreClass(task.value.avg_score)">
+                                {{ task.value.avg_score | number: '1.2-2' }}
+                              </div>
+                              <div class="text-xs text-400">{{ task.value.success_rate | percent: '1.0-0' }} success</div>
+                            }
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+
+                  <!-- Detailed Results -->
+                  @if (benchmark.detailed_results && benchmark.detailed_results.length > 0) {
+                    <p-accordion>
+                      <p-accordionTab header="Detailed Results ({{ benchmark.detailed_results.length }})">
+                        <!-- Filter by eval_type -->
+                        <div class="flex gap-2 mb-3">
+                          <p-tag
+                            [severity]="selectedEvalType() === 'all' ? 'info' : 'secondary'"
+                            value="All"
+                            [rounded]="true"
+                            class="cursor-pointer"
+                            (click)="selectedEvalType.set('all')"
+                          ></p-tag>
+                          @for (evalType of getUniqueEvalTypes(benchmark); track evalType) {
+                            <p-tag
+                              [severity]="selectedEvalType() === evalType ? 'info' : 'secondary'"
+                              [value]="evalType | titlecase"
+                              [rounded]="true"
+                              class="cursor-pointer"
+                              (click)="selectedEvalType.set(evalType)"
+                            ></p-tag>
+                          }
+                        </div>
+
+                        <p-table
+                          [value]="filterDetailedResults(benchmark.detailed_results)"
+                          styleClass="p-datatable-sm"
+                          [paginator]="true"
+                          [rows]="10"
+                          [rowsPerPageOptions]="[5, 10, 25]"
+                        >
+                          <ng-template pTemplate="header">
+                            <tr>
+                              <th style="width: 50px">#</th>
+                              <th>Instruction</th>
+                              <th>Expected</th>
+                              <th>Output</th>
+                              <th style="width: 80px">Score</th>
+                              <th style="width: 100px">Type</th>
+                              <th style="width: 80px">Status</th>
+                            </tr>
+                          </ng-template>
+                          <ng-template pTemplate="body" let-detail>
+                            <tr>
+                              <td class="text-xs text-500">{{ detail.original_idx }}</td>
+                              <td>
+                                <div
+                                  class="text-sm"
+                                  style="max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+                                  [pTooltip]="detail.instruction"
+                                  tooltipPosition="top"
+                                >
+                                  {{ detail.instruction }}
+                                </div>
+                              </td>
+                              <td>
+                                <code class="text-xs bg-surface-100 px-2 py-1 border-round">{{ detail.expected }}</code>
+                              </td>
+                              <td>
+                                <div class="flex align-items-center gap-2">
+                                  <code class="text-xs bg-surface-100 px-2 py-1 border-round">{{ detail.output || '(empty)' }}</code>
+                                  @if (detail.raw_output && detail.raw_output !== detail.output) {
+                                    <i-lucide
+                                      [img]="MessageSquare"
+                                      class="w-1rem h-1rem text-400 cursor-pointer"
+                                      [pTooltip]="'Raw: ' + detail.raw_output"
+                                      tooltipPosition="top"
+                                    ></i-lucide>
+                                  }
+                                </div>
+                              </td>
+                              <td>
+                                <span class="font-semibold" [class]="getScoreClass(detail.score)">
+                                  {{ detail.score | number: '1.1-1' }}
+                                </span>
+                              </td>
+                              <td>
+                                <div class="flex flex-column gap-1">
+                                  <p-tag
+                                    [severity]="getEvalTypeSeverity(detail.eval_type)"
+                                    [value]="detail.eval_type"
+                                    [rounded]="true"
+                                    styleClass="text-xs"
+                                  ></p-tag>
+                                  @if (detail.format) {
+                                    <p-tag severity="secondary" [value]="detail.format" [rounded]="true" styleClass="text-xs"></p-tag>
+                                  }
+                                </div>
+                              </td>
+                              <td>
+                                <div class="flex align-items-center gap-2">
+                                  @if (detail.success) {
+                                    <i-lucide [img]="CheckCircle" class="w-1.25rem h-1.25rem text-green-500"></i-lucide>
+                                  } @else {
+                                    <i-lucide [img]="XCircle" class="w-1.25rem h-1.25rem text-red-500"></i-lucide>
+                                  }
+                                  @if (detail.reason) {
+                                    <i-lucide
+                                      [img]="MessageSquare"
+                                      class="w-1rem h-1rem text-400 cursor-pointer"
+                                      [pTooltip]="detail.reason"
+                                      tooltipPosition="left"
+                                    ></i-lucide>
+                                  }
+                                </div>
+                              </td>
+                            </tr>
+                          </ng-template>
+                        </p-table>
+                      </p-accordionTab>
+                    </p-accordion>
+                  }
+                </div>
+              }
+            </p-tabPanel>
+          }
 
           <!-- Quality Metrics Tab -->
           @if (hasQualityMetrics()) {
@@ -278,7 +509,7 @@ import { TooltipModule } from 'primeng/tooltip';
               @for (target of result()?.targets; track target.name) {
                 @if (target.benchmarks && target.benchmarks.length > 0) {
                   <h4 class="text-sm font-semibold mb-2">{{ target.name }} ({{ target.model }})</h4>
-                  <p-table [value]="target.benchmarks" styleClass="p-datatable-sm">
+                  <p-table [value]="getNonCustomBenchmarks(target.benchmarks)" styleClass="p-datatable-sm">
                     <ng-template pTemplate="header">
                       <tr>
                         <th>Benchmark</th>
@@ -303,7 +534,7 @@ import { TooltipModule } from 'primeng/tooltip';
                     </ng-template>
                   </p-table>
 
-                  @for (benchmark of target.benchmarks; track benchmark.benchmark_name) {
+                  @for (benchmark of getNonCustomBenchmarks(target.benchmarks); track benchmark.benchmark_name) {
                     @if (benchmark.task_results && getTaskResultEntries(benchmark.task_results).length > 0) {
                       <div class="mt-3 mb-4">
                         <h5 class="text-xs font-semibold mb-2 text-500">{{ benchmark.benchmark_name }} - Task Breakdown</h5>
@@ -396,7 +627,14 @@ import { TooltipModule } from 'primeng/tooltip';
           }
 
           <!-- Report Tab -->
+          <!-- Report Tab -->
           <p-tabPanel header="Report">
+            <div class="flex justify-content-end mb-3">
+              <button pButton size="small" severity="secondary" (click)="downloadPdf()" class="flex gap-2">
+                <i-lucide [img]="Download" class="w-1rem h-1rem"></i-lucide>
+                Download PDF
+              </button>
+            </div>
             @if (report()) {
               <div class="markdown-content border-1 border-200 border-round p-3 overflow-auto" style="max-height: 400px;">
                 <markdown [data]="report()"></markdown>
@@ -512,6 +750,7 @@ export class EvaluationResultsComponent implements OnInit, OnChanges {
   error = signal<string | null>(null);
   result = signal<IEvaluationResult | null>(null);
   report = signal<string | null>(null);
+  selectedEvalType = signal<string>('all');
 
   protected readonly FileText = FileText;
   protected readonly BarChart3 = BarChart3;
@@ -520,6 +759,8 @@ export class EvaluationResultsComponent implements OnInit, OnChanges {
   protected readonly CheckCircle = CheckCircle;
   protected readonly XCircle = XCircle;
   protected readonly MessageSquare = MessageSquare;
+  protected readonly FlaskConical = FlaskConical;
+  protected readonly Download = Download;
 
   ngOnInit() {
     if (this.taskRunId) {
@@ -530,6 +771,12 @@ export class EvaluationResultsComponent implements OnInit, OnChanges {
   ngOnChanges(changes: SimpleChanges) {
     if (changes['taskRunId'] && this.taskRunId) {
       this.loadResultByJobId();
+    }
+  }
+
+  downloadPdf(): void {
+    if (this.taskRunId) {
+      this.resultService.downloadPdf(this.taskRunId);
     }
   }
 
@@ -567,6 +814,94 @@ export class EvaluationResultsComponent implements OnInit, OnChanges {
 
   getModelUnderTest(): any {
     return this.result()?.targets?.find(t => t.name === 'model-under-test');
+  }
+
+  // Custom Evaluation methods
+  hasCustomEvaluation(): boolean {
+    return (
+      this.result()?.targets?.some(t => t.benchmarks?.some(b => b.backend === 'custom_eval' || b.benchmark_name === 'custom')) || false
+    );
+  }
+
+  getCustomBenchmarks(): ICustomBenchmark[] {
+    const benchmarks: ICustomBenchmark[] = [];
+    this.result()?.targets?.forEach(t => {
+      t.benchmarks?.forEach(b => {
+        if (b.backend === 'custom_eval' || b.benchmark_name === 'custom') {
+          benchmarks.push(b as unknown as ICustomBenchmark);
+        }
+      });
+    });
+    return benchmarks;
+  }
+
+  getNonCustomBenchmarks(benchmarks: any[]): any[] {
+    return benchmarks?.filter(b => b.backend !== 'custom_eval' && b.benchmark_name !== 'custom') || [];
+  }
+
+  getCustomOverallScore(): number {
+    const benchmarks = this.getCustomBenchmarks();
+    if (benchmarks.length === 0) return 0;
+    return benchmarks.reduce((sum, b) => sum + b.overall_score, 0) / benchmarks.length;
+  }
+
+  getCustomScoreClass(): string {
+    return this.getScoreClass(this.getCustomOverallScore());
+  }
+
+  getCustomTaskSummary(): { name: string; score: number; correct: number; total: number }[] {
+    const summary: { name: string; score: number; correct: number; total: number }[] = [];
+    const benchmarks = this.getCustomBenchmarks();
+
+    benchmarks.forEach(b => {
+      if (b.task_results) {
+        Object.entries(b.task_results).forEach(([key, value]) => {
+          const task = value as ICustomTaskResult;
+          if (task.accuracy !== undefined) {
+            summary.push({
+              name: key.replace('_', ' '),
+              score: task.accuracy,
+              correct: task.correct || 0,
+              total: task.total || 0,
+            });
+          } else if (task.avg_score !== undefined) {
+            summary.push({
+              name: key,
+              score: task.avg_score,
+              correct: Math.round((task.success_rate || 0) * (task.total || 0)),
+              total: task.total || 0,
+            });
+          }
+        });
+      }
+    });
+    return summary;
+  }
+
+  getCustomTaskEntries(taskResults: { [key: string]: ICustomTaskResult }): { key: string; value: ICustomTaskResult }[] {
+    if (!taskResults) return [];
+    return Object.entries(taskResults).map(([key, value]) => ({ key, value }));
+  }
+
+  getUniqueEvalTypes(benchmark: ICustomBenchmark): string[] {
+    if (!benchmark.detailed_results) return [];
+    return [...new Set(benchmark.detailed_results.map(d => d.eval_type))];
+  }
+
+  filterDetailedResults(results: ICustomDetailedResult[]): ICustomDetailedResult[] {
+    if (this.selectedEvalType() === 'all') return results;
+    return results.filter(r => r.eval_type === this.selectedEvalType());
+  }
+
+  getEvalTypeSeverity(evalType: string): 'success' | 'info' | 'warning' | 'danger' | 'secondary' {
+    switch (evalType) {
+      case 'exact_match':
+        return 'info';
+      case 'judge':
+        return 'warning';
+      default:
+        return 'secondary';
+    }
   }
 
   // Quality Metrics methods
@@ -669,13 +1004,15 @@ export class EvaluationResultsComponent implements OnInit, OnChanges {
 
   // Benchmarks methods
   hasBenchmarks(): boolean {
-    return this.result()?.targets?.some(t => t.benchmarks && t.benchmarks.length > 0) || false;
+    return (
+      this.result()?.targets?.some(t => t.benchmarks?.some(b => b.backend !== 'custom_eval' && b.benchmark_name !== 'custom')) || false
+    );
   }
 
   getTotalBenchmarks(): number {
     let count = 0;
     this.result()?.targets?.forEach(t => {
-      count += t.benchmarks?.length || 0;
+      count += this.getNonCustomBenchmarks(t.benchmarks || []).length;
     });
     return count;
   }
@@ -683,7 +1020,7 @@ export class EvaluationResultsComponent implements OnInit, OnChanges {
   getPassedCount(): number {
     let count = 0;
     this.result()?.targets?.forEach(t => {
-      t.benchmarks?.forEach(b => {
+      this.getNonCustomBenchmarks(t.benchmarks || []).forEach(b => {
         const status = b.status?.toLowerCase();
         if (status === 'completed' || status === 'success' || status === 'passed') {
           count++;
@@ -696,7 +1033,7 @@ export class EvaluationResultsComponent implements OnInit, OnChanges {
   getFailedCount(): number {
     let count = 0;
     this.result()?.targets?.forEach(t => {
-      t.benchmarks?.forEach(b => {
+      this.getNonCustomBenchmarks(t.benchmarks || []).forEach(b => {
         const status = b.status?.toLowerCase();
         if (status === 'failed' || status === 'error') {
           count++;

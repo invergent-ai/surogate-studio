@@ -35,6 +35,11 @@ export class EvaluationResultService {
     return this.getReport(filename).pipe(catchError(() => of(null)));
   }
 
+  getPdfReportByJobId(jobId: string): Observable<Blob | null> {
+    const filename = `report_${jobId}.pdf`;
+    return this.getPdfReport(filename).pipe(catchError(() => of(null)));
+  }
+
   getResult(filename: string): Observable<IEvaluationResult> {
     return this.http
       .get(`${this.resourceUrl}/eval-results/${this.EVAL_REPO}/${this.EVAL_BRANCH}/${filename}`, {
@@ -46,6 +51,25 @@ export class EvaluationResultService {
   getReport(filename: string): Observable<string> {
     return this.http.get(`${this.resourceUrl}/eval-results/${this.EVAL_REPO}/${this.EVAL_BRANCH}/${filename}`, {
       responseType: 'text',
+    });
+  }
+
+  getPdfReport(filename: string): Observable<Blob> {
+    return this.http.get(`${this.resourceUrl}/eval-results/${this.EVAL_REPO}/${this.EVAL_BRANCH}/${filename}`, {
+      responseType: 'blob',
+    });
+  }
+
+  downloadPdf(jobId: string): void {
+    this.getPdfReportByJobId(jobId).subscribe(blob => {
+      if (blob) {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `report_${jobId}.pdf`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+      }
     });
   }
 }

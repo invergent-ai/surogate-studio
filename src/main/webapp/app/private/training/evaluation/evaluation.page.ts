@@ -10,7 +10,6 @@ import { InputTextModule } from 'primeng/inputtext';
 import { ApplicationService } from '../../../shared/service/application.service';
 import { IApplication } from '../../../shared/model/application.model';
 import { InputTextareaModule } from 'primeng/inputtextarea';
-import { JobNotificationSettingsComponent } from '../components/job-notification-settings/job-notification-settings.component';
 import { LabelTooltipComponent } from '../../../shared/components/label-tooltip/label-tooltip.component';
 import {
   Activity,
@@ -18,6 +17,7 @@ import {
   Beaker,
   Bot,
   ClipboardList,
+  Database,
   Flame,
   GalleryVerticalEnd,
   Gauge,
@@ -29,11 +29,19 @@ import {
   ShieldCheck,
   Sparkles,
   Trash,
-  Zap,
+  Zap
 } from 'lucide-angular';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
-import { AbstractControl, FormArray, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormArray,
+  FormControl,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators
+} from '@angular/forms';
 import {
   BASE_RUN_NAME,
   EVA_PII_LEAKAGE,
@@ -85,7 +93,7 @@ import {
   EVAL_TRUTHFUL_QA,
   EVAL_TURN_ANALYSIS,
   EVAL_USE_GATEWAY_MODEL,
-  EVAL_WINNOGRANDE,
+  EVAL_WINNOGRANDE
 } from '../tooltips';
 import { ButtonDirective } from 'primeng/button';
 import { NgForOf, NgIf, NgTemplateOutlet } from '@angular/common';
@@ -103,6 +111,7 @@ import { injectParams } from 'ngxtension/inject-params';
 import { TaskRunType } from '../../../shared/model/enum/task-run-type.model';
 import { TaskRunProvisioningStatus } from '../../../shared/model/enum/task-run-provision-status.model';
 import { lastValueFrom, of } from 'rxjs';
+import { v4 as uuidv4 } from 'uuid';
 import { TaskRunService } from '../../../shared/service/task-run.service';
 import { ITaskRun, ITaskRunParam } from '../../../shared/model/tasks.model';
 import { derivedAsync } from 'ngxtension/derived-async';
@@ -110,11 +119,21 @@ import { catchError, tap } from 'rxjs/operators';
 import { LayoutService } from '../../../shared/service/theme/app-layout.service';
 import { displaySuccess } from '../../../shared/util/success.util';
 import { AccountService } from '../../../shared/service/account.service';
-import { DeployedModelSelectorComponent } from '../../../shared/components/deployed-model-selector/deployed-model-selector.component';
+import {
+  DeployedModelSelectorComponent
+} from '../../../shared/components/deployed-model-selector/deployed-model-selector.component';
 import { EvaluationResultsComponent } from '../../../shared/components/evaluation-results/evaluation-results.component';
 import { MessageModule } from 'primeng/message';
 import { DividerModule } from 'primeng/divider';
 import { TooltipModule } from 'primeng/tooltip';
+import {
+  LLMProviderConfig,
+  LlmProviderConfigComponent
+} from '../../../shared/components/llm-provider-config/llm-provider-config.component';
+import {
+  DatasetTableChooserComponent,
+  newDatasetForm,
+} from '../../../shared/components/dataset-table-chooser/dataset-table-chooser.component';
 
 @Component({
   standalone: true,
@@ -130,7 +149,6 @@ import { TooltipModule } from 'primeng/tooltip';
     InputNumberModule,
     InputTextModule,
     InputTextareaModule,
-    JobNotificationSettingsComponent,
     LabelTooltipComponent,
     LucideAngularModule,
     TableModule,
@@ -149,6 +167,8 @@ import { TooltipModule } from 'primeng/tooltip';
     MessageModule,
     DividerModule,
     TooltipModule,
+    LlmProviderConfigComponent,
+    DatasetTableChooserComponent,
   ],
   styles: [
     `
@@ -803,6 +823,15 @@ export class EvaluationPage implements OnInit {
     },
   ];
 
+  providers = [
+    { name: 'OpenAI', code: 'openai' },
+    { name: 'Anthropic', code: 'anthropic' },
+    { name: 'vLLM', code: 'vllm' },
+    { name: 'OpenRouter', code: 'openrouter' },
+    { name: 'Azure', code: 'azure' },
+    { name: 'Custom', code: 'custom' },
+  ];
+
   advanced = signal(false);
   selected = signal<any[]>([]);
   taskRunId = injectParams('id');
@@ -823,13 +852,17 @@ export class EvaluationPage implements OnInit {
     name: new FormControl<string>('', [Validators.required, Validators.minLength(3)]),
     description: new FormControl<string>(''),
     deployedModel: new FormControl<IApplication | null>(null, Validators.required),
+    judgeConfig: new FormControl<LLMProviderConfig | null>(null),
     judgeModel: new FormControl<string>(''),
     judgeModelApi: new FormControl<string>(''),
     judgeModelBaseUrl: new FormControl<string>(''),
+    judgeModelProvider: new FormControl<string>('openai'),
     useSeparateSimulator: new FormControl<boolean>(false),
+    simulatorConfig: new FormControl<LLMProviderConfig | null>(null),
     simulatorModel: new FormControl<string>(''),
     simulatorModelApi: new FormControl<string>(''),
     simulatorModelBaseUrl: new FormControl<string>(''),
+    simulatorModelProvider: new FormControl<string>('openai'),
     useGateway: new FormControl<boolean>(false),
     language: new FormControl<string>('en'),
     project: new FormControl(null),
@@ -852,6 +885,7 @@ export class EvaluationPage implements OnInit {
       maxConcurrent: new FormControl<number>(5),
       purpose: new FormControl<string>(''),
     }),
+    customEvalDatasets: new FormArray<FormGroup>([]),
   });
 
   user = derivedAsync(() => this.accountService.identity(true));
@@ -931,18 +965,64 @@ export class EvaluationPage implements OnInit {
 
   envVarsToForm(envVars: ITaskRunParam[]) {
     const deployedModelId = envVars.find(ev => ev.key === 'DEPLOYED_MODEL_ID')?.value || '';
-    const judgeModel = envVars.find(ev => ev.key === 'JUDGE_MODEL')?.value || '';
-    const judgeModelApi = envVars.find(ev => ev.key === 'JUDGE_MODEL_API')?.value || '';
-    const judgeModelBaseUrl = envVars.find(ev => ev.key === 'JUDGE_MODEL_BASE_URL')?.value || '';
-    const simulatorModel = envVars.find(ev => ev.key === 'SIMULATOR_MODEL')?.value || '';
-    const simulatorModelApi = envVars.find(ev => ev.key === 'SIMULATOR_MODEL_API')?.value || '';
-    const simulatorModelBaseUrl = envVars.find(ev => ev.key === 'SIMULATOR_MODEL_BASE_URL')?.value || '';
     const useGateway = envVars.find(ev => ev.key === 'USE_GATEWAY')?.value === 'true';
     const language = envVars.find(ev => ev.key === 'LANGUAGE')?.value || 'en';
     const notify: string | any[] = envVars.find(ev => ev.key === 'NOTIFY')?.value || [];
 
+    // Judge config
+    const judgeInternalName = envVars.find(ev => ev.key === 'JUDGE_MODEL_INTERNAL_NAME')?.value;
+    const judgeNamespace = envVars.find(ev => ev.key === 'JUDGE_MODEL_NAMESPACE')?.value;
+    const judgeBaseUrl = envVars.find(ev => ev.key === 'JUDGE_MODEL_BASE_URL')?.value || 'https://api.openai.com/v1';
+    const customEvalParam = envVars.find(ev => ev.key === 'CUSTOM_EVAL_DATASETS')?.value;
+
+    if (customEvalParam) {
+      this.parseCustomEvalDatasetsParam(customEvalParam);
+    }
+
+    let judgeProvider: string;
+    if (judgeInternalName || judgeNamespace) {
+      judgeProvider = 'internal';
+    } else if (judgeBaseUrl.includes('api.openai.com')) {
+      judgeProvider = 'openai';
+    } else {
+      judgeProvider = 'vllm';
+    }
+
+    const judgeConfig: LLMProviderConfig = {
+      provider: judgeProvider,
+      model: envVars.find(ev => ev.key === 'JUDGE_MODEL')?.value || '',
+      baseUrl: judgeBaseUrl,
+      apiKey: envVars.find(ev => ev.key === 'JUDGE_MODEL_API')?.value || '',
+      internalName: judgeInternalName,
+      namespace: judgeNamespace,
+    };
+
+    // Simulator config
+    const simulatorInternalName = envVars.find(ev => ev.key === 'SIMULATOR_MODEL_INTERNAL_NAME')?.value;
+    const simulatorNamespace = envVars.find(ev => ev.key === 'SIMULATOR_MODEL_NAMESPACE')?.value;
+    const simulatorBaseUrl = envVars.find(ev => ev.key === 'SIMULATOR_MODEL_BASE_URL')?.value || 'https://api.openai.com/v1';
+    const simulatorModel = envVars.find(ev => ev.key === 'SIMULATOR_MODEL')?.value || '';
+
+    let simulatorProvider: string;
+    if (simulatorInternalName || simulatorNamespace) {
+      simulatorProvider = 'internal';
+    } else if (simulatorBaseUrl.includes('api.openai.com')) {
+      simulatorProvider = 'openai';
+    } else {
+      simulatorProvider = 'vllm';
+    }
+
+    const simulatorConfig: LLMProviderConfig = {
+      provider: simulatorProvider,
+      model: simulatorModel,
+      baseUrl: simulatorBaseUrl,
+      apiKey: envVars.find(ev => ev.key === 'SIMULATOR_MODEL_API')?.value || '',
+      internalName: simulatorInternalName,
+      namespace: simulatorNamespace,
+    };
+
     // Determine if separate simulator is used
-    const useSeparateSimulator = !!simulatorModel && simulatorModel !== judgeModel;
+    const useSeparateSimulator = !!simulatorModel && simulatorModel !== judgeConfig.model;
 
     let notifyValue: string[] = [];
     if (typeof notify === 'string') {
@@ -950,13 +1030,9 @@ export class EvaluationPage implements OnInit {
     }
 
     this.taskForm.patchValue({
-      judgeModel,
-      judgeModelApi,
-      judgeModelBaseUrl,
+      judgeConfig,
+      simulatorConfig,
       useSeparateSimulator,
-      simulatorModel,
-      simulatorModelApi,
-      simulatorModelBaseUrl,
       useGateway,
       language,
       notify: notifyValue,
@@ -1066,6 +1142,10 @@ export class EvaluationPage implements OnInit {
             shots: new FormControl(b.shots ?? currentBenchmark?.defaultShots ?? 0),
             limit: new FormControl(b.limit || null),
             supportsFewshot: new FormControl(b.supportsFewshot ?? currentBenchmark?.supportsFewshot ?? true),
+            useCustomDataset: new FormControl<boolean>(b.useCustomDataset || false),
+            datasetRepo: new FormControl<string | null>(b.datasetRepo || null),
+            datasetRef: new FormControl<RefSelection | null>(b.datasetRef ? { id: b.datasetRef, type: 'branch' } : null),
+            datasetSubset: new FormControl<string>(b.datasetSubset || 'default'), // NEW
           }),
         );
       });
@@ -1109,8 +1189,8 @@ export class EvaluationPage implements OnInit {
               m.datasetRef ? { id: m.datasetRef, type: 'branch' } : null,
               Validators.required,
             ),
-            datasetPath: new FormControl<string | null>(m.datasetPath || null, Validators.required),
             criteria: new FormControl(m.criteria || ''),
+            limit: new FormControl<number | null>(m.limit || null),
           }),
         );
       });
@@ -1174,10 +1254,10 @@ export class EvaluationPage implements OnInit {
               m.datasetRef ? { id: m.datasetRef, type: 'branch' } : null,
               Validators.required,
             ),
-            datasetPath: new FormControl<string | null>(m.datasetPath || null, Validators.required), // ADD THIS
             hasConfig: new FormControl<boolean>(def?.hasConfig || false),
             configValue: new FormControl<number | null>(m.configValue || def?.configDefault || null),
             configLabel: new FormControl<string>(def?.configLabel || ''),
+            limit: new FormControl<number | null>(m.limit || null),
           }),
         );
       });
@@ -1198,7 +1278,6 @@ export class EvaluationPage implements OnInit {
     if (formValues.deployedModel) {
       params.push({ key: 'DEPLOYED_MODEL_ID', value: formValues.deployedModel.id });
 
-      // Model name for vLLM API (from extraConfig)
       let modelName = formValues.deployedModel.internalName;
       if (formValues.deployedModel.extraConfig) {
         try {
@@ -1220,24 +1299,69 @@ export class EvaluationPage implements OnInit {
       params.push({ key: 'INGRESS_HOST_NAME', value: formValues.deployedModel.ingressHostName });
     }
 
-    if (formValues.judgeModel) {
-      params.push({ key: 'JUDGE_MODEL', value: formValues.judgeModel });
-    }
-    if (formValues.judgeModelApi) {
-      params.push({ key: 'JUDGE_MODEL_API', value: formValues.judgeModelApi });
-    }
-    if (formValues.judgeModelBaseUrl) {
-      params.push({ key: 'JUDGE_MODEL_BASE_URL', value: formValues.judgeModelBaseUrl });
+    // Judge config
+    if (formValues.judgeConfig?.model) {
+      params.push({ key: 'JUDGE_MODEL', value: formValues.judgeConfig.model });
+      params.push({
+        key: 'JUDGE_MODEL_PROVIDER',
+        value: formValues.judgeConfig.provider === 'internal' ? 'openai' : formValues.judgeConfig.provider,
+      });
+      if (formValues.judgeConfig.baseUrl) {
+        params.push({ key: 'JUDGE_MODEL_BASE_URL', value: formValues.judgeConfig.baseUrl });
+      }
+      params.push({
+        key: 'JUDGE_MODEL_API',
+        value: formValues.judgeConfig.apiKey || 'sk-no-key-required',
+      });
+      // Add internal model info for service discovery
+      if (formValues.judgeConfig.internalName) {
+        params.push({ key: 'JUDGE_MODEL_INTERNAL_NAME', value: formValues.judgeConfig.internalName });
+      }
+      if (formValues.judgeConfig.namespace) {
+        params.push({ key: 'JUDGE_MODEL_NAMESPACE', value: formValues.judgeConfig.namespace });
+      }
     }
 
-    // Simulator - only if using separate model, otherwise use judge model
-    if (formValues.useSeparateSimulator && formValues.simulatorModel) {
-      params.push({ key: 'SIMULATOR_MODEL', value: formValues.simulatorModel });
-      if (formValues.simulatorModelApi) {
-        params.push({ key: 'SIMULATOR_MODEL_API', value: formValues.simulatorModelApi });
+    // Simulator config - only if using separate model
+    if (formValues.useSeparateSimulator && formValues.simulatorConfig?.model) {
+      // Separate simulator model
+      params.push({ key: 'SIMULATOR_MODEL', value: formValues.simulatorConfig.model });
+      params.push({
+        key: 'SIMULATOR_MODEL_PROVIDER',
+        value: formValues.simulatorConfig.provider === 'internal' ? 'openai' : formValues.simulatorConfig.provider,
+      });
+      if (formValues.simulatorConfig.baseUrl) {
+        params.push({ key: 'SIMULATOR_MODEL_BASE_URL', value: formValues.simulatorConfig.baseUrl });
       }
-      if (formValues.simulatorModelBaseUrl) {
-        params.push({ key: 'SIMULATOR_MODEL_BASE_URL', value: formValues.simulatorModelBaseUrl });
+      params.push({
+        key: 'SIMULATOR_MODEL_API',
+        value: formValues.simulatorConfig.apiKey || 'sk-no-key-required',
+      });
+      if (formValues.simulatorConfig.internalName) {
+        params.push({ key: 'SIMULATOR_MODEL_INTERNAL_NAME', value: formValues.simulatorConfig.internalName });
+      }
+      if (formValues.simulatorConfig.namespace) {
+        params.push({ key: 'SIMULATOR_MODEL_NAMESPACE', value: formValues.simulatorConfig.namespace });
+      }
+    } else if (formValues.judgeConfig?.model) {
+      // Use judge model as simulator (same model for both)
+      params.push({ key: 'SIMULATOR_MODEL', value: formValues.judgeConfig.model });
+      params.push({
+        key: 'SIMULATOR_MODEL_PROVIDER',
+        value: formValues.judgeConfig.provider === 'internal' ? 'openai' : formValues.judgeConfig.provider,
+      });
+      if (formValues.judgeConfig.baseUrl) {
+        params.push({ key: 'SIMULATOR_MODEL_BASE_URL', value: formValues.judgeConfig.baseUrl });
+      }
+      params.push({
+        key: 'SIMULATOR_MODEL_API',
+        value: formValues.judgeConfig.apiKey || 'sk-no-key-required',
+      });
+      if (formValues.judgeConfig.internalName) {
+        params.push({ key: 'SIMULATOR_MODEL_INTERNAL_NAME', value: formValues.judgeConfig.internalName });
+      }
+      if (formValues.judgeConfig.namespace) {
+        params.push({ key: 'SIMULATOR_MODEL_NAMESPACE', value: formValues.judgeConfig.namespace });
       }
     }
 
@@ -1256,7 +1380,6 @@ export class EvaluationPage implements OnInit {
     }
 
     // Benchmarks (accuracy)
-    // In formToParams(), update the BENCHMARKS section:
     if (formValues.benchmarks && formValues.benchmarks.length > 0) {
       params.push({
         key: 'BENCHMARKS',
@@ -1275,6 +1398,10 @@ export class EvaluationPage implements OnInit {
               shots: b.shots,
               limit: b.limit,
               supportsFewshot: b.supportsFewshot,
+              useCustomDataset: b.useCustomDataset || false,
+              datasetRepo: b.useCustomDataset ? b.datasetRepo : null,
+              datasetRef: b.useCustomDataset ? b.datasetRef?.id || null : null,
+              datasetSubset: b.useCustomDataset ? b.datasetSubset || 'default' : null, // NEW
             };
           }),
         ),
@@ -1303,8 +1430,8 @@ export class EvaluationPage implements OnInit {
             name: m.name,
             datasetRepo: m.datasetRepo,
             datasetRef: m.datasetRef?.id || null,
-            datasetPath: m.datasetPath || null, // ADD THIS
             criteria: m.criteria || null,
+            limit: m.limit || null,
           })),
         ),
       });
@@ -1319,9 +1446,9 @@ export class EvaluationPage implements OnInit {
             name: m.name,
             datasetRepo: m.datasetRepo,
             datasetRef: m.datasetRef?.id || null,
-            datasetPath: m.datasetPath || null, // ADD THIS
             configValue: m.configValue,
             configLabel: m.configLabel,
+            limit: m.limit || null,
           })),
         ),
       });
@@ -1354,6 +1481,30 @@ export class EvaluationPage implements OnInit {
           }),
         });
       }
+    }
+
+    if (formValues.customEvalDatasets && formValues.customEvalDatasets.length > 0) {
+      params.push({
+        key: 'CUSTOM_EVAL_DATASETS',
+        value: JSON.stringify(
+          formValues.customEvalDatasets.map((d: any) => ({
+            name: d.name,
+            repoId: d.repoId,
+            ref: d.ref?.id || null,
+            split: d.split || 'test',
+            limit: d.limit || null,
+            columns: {
+              instruction: d.instructionColumn,
+              answer: d.answerColumn,
+              eval_type: d.evalTypeColumn || null,
+              judge_criteria: d.judgeCriteriaColumn || null,
+            },
+            promptTemplate: d.usePromptTemplate ? d.promptTemplate : null,
+            stopSequences: d.usePromptTemplate ? d.stopSequences : null,
+            defaultJudgeCriteria: d.defaultJudgeCriteria,
+          })),
+        ),
+      });
     }
 
     return params;
@@ -1396,6 +1547,33 @@ export class EvaluationPage implements OnInit {
       this.isLaunching.set(false);
     }
     return Promise.reject();
+  }
+
+  parseCustomEvalDatasetsParam(param: string) {
+    try {
+      const datasets = JSON.parse(param);
+      const arr = this.customEvalDatasetsArray;
+      arr.clear();
+      datasets.forEach((d: any) => {
+        const form = newDatasetForm('custom_evaluation', uuidv4(), 'eval');
+        form.patchValue({
+          name: d.name,
+          repoId: d.repoId,
+          ref: d.ref ? { id: d.ref, type: 'branch' } : null,
+          split: d.split || 'test',
+          samples: d.limit?.toString() || null,
+          instructionColumn: d.columns?.instruction || 'instruction',
+          answerColumn: d.columns?.answer || 'answer',
+          evalTypeColumn: d.columns?.eval_type || 'eval_type',
+          judgeCriteriaColumn: d.columns?.judge_criteria || 'judge_criteria',
+          defaultJudgeCriteria:
+            d.defaultJudgeCriteria || 'Evaluate if the response correctly answers the question based on the expected answer.',
+        });
+        arr.push(form);
+      });
+    } catch (e) {
+      console.warn('Custom eval datasets parse error', e);
+    }
   }
 
   // ============================================================================
@@ -1449,6 +1627,10 @@ export class EvaluationPage implements OnInit {
       shots: new FormControl(item.defaultShots ?? 0, [Validators.required, Validators.min(0)]),
       limit: new FormControl(item.defaultLimit || null),
       supportsFewshot: new FormControl(item.supportsFewshot ?? true),
+      useCustomDataset: new FormControl<boolean>(false),
+      datasetRepo: new FormControl<string | null>(null),
+      datasetRef: new FormControl<RefSelection | null>(null),
+      datasetSubset: new FormControl<string>('default'), // NEW
     });
 
     this.benchmarksArray.push(benchmarkGroup);
@@ -1463,8 +1645,8 @@ export class EvaluationPage implements OnInit {
           type: new FormControl('quality'),
           datasetRepo: new FormControl<string | null>(null, Validators.required),
           datasetRef: new FormControl<RefSelection | null>(null, Validators.required),
-          datasetPath: new FormControl<string | null>(null, Validators.required), // ADD THIS
           criteria: new FormControl<string>(''),
+          limit: new FormControl<number | null>(null), // ADD limit
         }),
       );
     }
@@ -1479,11 +1661,11 @@ export class EvaluationPage implements OnInit {
           type: new FormControl('conversation'),
           datasetRepo: new FormControl<string | null>(null, Validators.required),
           datasetRef: new FormControl<RefSelection | null>(null, Validators.required),
-          datasetPath: new FormControl<string | null>(null, Validators.required),
           hasConfig: new FormControl<boolean>(item.hasConfig || false),
           configValue: new FormControl<number | null>(item.configDefault || null),
           configLabel: new FormControl<string>(item.configLabel || ''),
           configTooltip: new FormControl<string>(item.configTooltip || ''),
+          limit: new FormControl<number | null>(null), // ADD limit
         }),
       );
     }
@@ -1510,12 +1692,28 @@ export class EvaluationPage implements OnInit {
     }
   }
 
+  get customEvalDatasetsArray(): FormArray<FormGroup> {
+    return this.taskForm.controls.customEvalDatasets;
+  }
+
   onNotifyChange(values: string[]) {
     this.taskForm.get('notify')?.setValue(values);
   }
 
   isInvalid(control: AbstractControl | null): boolean {
     return !!(control && control.invalid && (control.touched || control.dirty));
+  }
+
+  get judgeConfig(): LLMProviderConfig | null {
+    return this.taskForm.get('judgeConfig')?.value ?? null;
+  }
+
+  get simulatorConfig(): LLMProviderConfig | null {
+    return this.taskForm.get('simulatorConfig')?.value ?? null;
+  }
+
+  get useSeparateSimulator(): boolean {
+    return this.taskForm.get('useSeparateSimulator')?.value ?? false;
   }
 
   // ============================================================================
@@ -1546,4 +1744,5 @@ export class EvaluationPage implements OnInit {
   protected readonly Settings = Settings;
   protected readonly Bot = Bot;
   protected readonly Info = Info;
+  protected readonly Database = Database;
 }

@@ -160,6 +160,10 @@ public class TaskSpecs {
             envVars.add(new V1PipelineRunSpecTaskRunSpecsInnerPodTemplateEnvInner()
                 .name("SECURITY_TESTS").value("$(params.SECURITY_TESTS)"));
         }
+        if (hasParam(task, "CUSTOM_EVAL_DATASETS")) {
+            envVars.add(new V1PipelineRunSpecTaskRunSpecsInnerPodTemplateEnvInner()
+                .name("CUSTOM_EVAL_DATASETS").value("$(params.CUSTOM_EVAL_DATASETS)"));
+        }
 
         if (hasParam(task, "RED_TEAMING_CONFIG")) {
             envVars.add(new V1PipelineRunSpecTaskRunSpecsInnerPodTemplateEnvInner()
@@ -238,6 +242,15 @@ public class TaskSpecs {
         if (hasParam(task, "PERFORMANCE_METRICS")) {
             envVars.add(new V1PipelineRunSpecTaskRunSpecsInnerPodTemplateEnvInner()
                 .name("PERFORMANCE_METRICS").value("$(params.PERFORMANCE_METRICS)"));
+        }
+
+        if (hasParam(task, "JUDGE_MODEL_PROVIDER")) {
+            envVars.add(new V1PipelineRunSpecTaskRunSpecsInnerPodTemplateEnvInner()
+                .name("JUDGE_MODEL_PROVIDER").value("$(params.JUDGE_MODEL_PROVIDER)"));
+        }
+        if (hasParam(task, "SIMULATOR_MODEL_PROVIDER")) {
+            envVars.add(new V1PipelineRunSpecTaskRunSpecsInnerPodTemplateEnvInner()
+                .name("SIMULATOR_MODEL_PROVIDER").value("$(params.SIMULATOR_MODEL_PROVIDER)"));
         }
 
         // Create step with Docker socket volume mount for code benchmark sandbox

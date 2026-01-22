@@ -72,7 +72,7 @@ import {ObjectSelectorComponent} from "../../../shared/components/object-selecto
 import {
   DatasetTableChooserComponent,
   newDatasetForm
-} from "../components/dataset-table-chooser/dataset-table-chooser.component";
+} from "../../../shared/components/dataset-table-chooser/dataset-table-chooser.component";
 import {v4 as uuidv4} from 'uuid';
 import {IDatasetConfig, ITrainingConfig} from "../../../shared/model/training-config.model";
 import {doubleValidator, filterDouble, sciNumberValidator} from "../../../shared/util/validators.util";

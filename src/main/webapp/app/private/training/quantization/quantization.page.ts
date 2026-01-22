@@ -40,7 +40,7 @@ import {
 } from '../tooltips';
 import {LayoutService} from '../../../shared/service/theme/app-layout.service';
 import {FormArray, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
-import {DatasetTableChooserComponent} from '../components/dataset-table-chooser/dataset-table-chooser.component';
+import {DatasetTableChooserComponent} from '../../../shared/components/dataset-table-chooser/dataset-table-chooser.component';
 import {RepoSelectorComponent} from '../../../shared/components/repo-selector/repo-selector.component';
 import {debugForm} from '../../../shared/util/form.util';
 

@@ -1,0 +1,253 @@
+<sm-card [header]="title()" [icon]="Database" iconClass="text-blue-500">
+  <ng-template pTemplate="toolbar">
+    @if (formArray().length === 0 || (formArray().length > 0 && multiple())) {
+      <button pButton type="button" size="small" severity="secondary" (click)="add()">
+        <div class="flex gap-2 align-items-center">
+          <i-lucide [img]="Plus" class="w-1rem h-1rem"></i-lucide>
+          <span>Add dataset</span>
+        </div>
+      </button>
+    }
+  </ng-template>
+
+  @if (task() === 'eval' && formArrayForDisplay().length === 0) {
+    <div class="flex flex-column align-items-center justify-content-center py-5 text-center">
+      <i-lucide [img]="Database" class="w-3rem h-3rem text-400 mb-3"></i-lucide>
+      <p class="text-500 mb-0">Add a custom evaluation dataset to evaluate your model with flexible column mappings.</p>
+      <small class="text-400 mt-2">Supports exact_match and judge (LLM-as-judge) evaluation types.</small>
+    </div>
+  } @else {
+    <div class="card surface-50 border-round-xl border-1 border-300" style="padding: 3px;">
+      <p-table [value]="formArrayForDisplay()" [dataKey]="$any(uniqFormEntry)"
+               rowExpandMode="single" [expandedRowKeys]="expandedRows()"
+               (onRowExpand)="onRowExpand($event)"
+               (onRowCollapse)="onRowCollapse($event)"
+               [tableStyle]="{'table-layout': 'auto', 'width': '100%'}" styleClass="text-sm">
+        <ng-template pTemplate="header">
+          <tr>
+            <th style="width: 5rem"></th>
+            @if (task() === 'eval') {
+              <th class="text-500">Name</th>
+            }
+            <th class="text-500">
+              <sm-label-tooltip [tooltip]="DATASET_REPOSITORY">Repository</sm-label-tooltip>
+            </th>
+            <th class="text-500">
+              <sm-label-tooltip [tooltip]="DATASET_REF">Branch/Tag/Commit</sm-label-tooltip>
+            </th>
+            @if (task() !== 'eval') {
+              <th class="text-500">Format</th>
+              <th class="text-500">Subset</th>
+            }
+            <th class="text-500">
+              <sm-label-tooltip [tooltip]="DATASET_SPLIT">Split</sm-label-tooltip>
+            </th>
+            @if (task() === 'eval') {
+              <th class="text-500">Limit</th>
+            }
+            <th class="text-500">Actions</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-dataset let-expanded="expanded">
+          <tr>
+            <td>
+              <button pButton [pRowToggler]="dataset" size="small" [text]="true" [plain]="true"
+                      [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"></button>
+            </td>
+            @if (task() === 'eval') {
+              <td>{{ dataset?.value.name || 'Unnamed' }}</td>
+            }
+            <td>{{ dataset?.value.repoId || '-' }}</td>
+            <td>{{ dataset?.value.ref?.id || '-' }}</td>
+            @if (task() !== 'eval') {
+              <td>{{ dsFormatLabel(dataset?.value.type) }}</td>
+              <td>{{ dataset?.value.subset }}</td>
+            }
+            <td>{{ dataset?.value.split || (task() === 'eval' ? 'test' : '') }}</td>
+            @if (task() === 'eval') {
+              <td>{{ dataset?.value.samples || 'All' }}</td>
+            }
+            <td style="width: 10%">
+              <a class="text-700 hover:text-red-700 text-red-300 cursor-pointer" (click)="remove(dataset)">
+                <i-lucide [img]="Trash" class="w-1rem h-1rem"></i-lucide>
+              </a>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="rowexpansion">
+          <tr>
+            <td [attr.colspan]="task() === 'eval' ? 8 : 7" class="p-1">
+              @if (currentForm()) {
+                <form class="p-2" [formGroup]="currentForm()">
+                  <div class="formgrid grid text-sm p-fluid">
+                    <!-- Eval: Name field -->
+                    @if (task() === 'eval') {
+                      <div class="field col-12 md:col-4">
+                        <label>Evaluation Name *</label>
+                        <input pInputText type="text" formControlName="name" placeholder="e.g., science-qa-eval">
+                      </div>
+                    }
+                    <!-- Repo -->
+                    <div class="field col-12" [class.md:col-6]="task() !== 'eval'" [class.md:col-4]="task() === 'eval'">
+                      <sm-label-tooltip [tooltip]="DATASET_REPOSITORY">Repository</sm-label-tooltip>
+                      <sm-repo-selector formControlName="repoId" [repoType]="'dataset'" class="col"></sm-repo-selector>
+                    </div>
+                    <!-- Branch -->
+                    <div class="field col-12" [class.md:col-6]="task() !== 'eval'" [class.md:col-4]="task() === 'eval'">
+                      <sm-label-tooltip [tooltip]="DATASET_REF">Branch/Tag/Commit</sm-label-tooltip>
+                      <sm-ref-selector [repoId]="currentForm().get('repoId').value"
+                                       formControlName="ref" [canSelect]="!!currentForm().get('repoId').value"
+                                       type="any" buttonSize="small" class="col"></sm-ref-selector>
+                    </div>
+                    <!-- Type (non-eval only) -->
+                    @if (task() !== 'eval') {
+                      <div class="field col-12 md:col-6">
+                        <sm-label-tooltip [tooltip]="DATASET_FORMAT">Dataset Format</sm-label-tooltip>
+                        <p-dropdown [options]="dsFormats()" formControlName="type" appendTo="body"></p-dropdown>
+                      </div>
+                      <div class="field col-12 md:col-2">
+                        <label>Subset</label>
+                        <input pInputText type="text" formControlName="subset">
+                      </div>
+                    }
+                    <!-- Split -->
+                    <div class="field col-12" [class.md:col-2]="task() !== 'eval'" [class.md:col-6]="task() === 'eval'">
+                      <sm-label-tooltip [tooltip]="DATASET_SPLIT">Split</sm-label-tooltip>
+                      <input pInputText type="text" formControlName="split"
+                             [placeholder]="task() === 'eval' ? 'test' : ''">
+                    </div>
+                    <!-- Samples/Limit -->
+                    <div class="field col-12" [class.md:col-2]="task() !== 'eval'" [class.md:col-6]="task() === 'eval'">
+                      <sm-label-tooltip
+                        [tooltip]="DATASET_MAX_RECORDS">{{ task() === 'eval' ? 'Limit (optional)' : 'Max Records' }}
+                      </sm-label-tooltip>
+                      <input pInputText type="text" formControlName="samples"
+                             [placeholder]="task() === 'eval' ? 'All samples' : ''">
+                    </div>
+
+                    <!-- TEXT FORMAT -->
+                    <!-- FORMAT-SPECIFIC FIELDS -->
+                    @switch (currentForm().value.type) {
+                      @case ('text') {
+                        <div class="field col-12 md:col-6">
+                          <sm-label-tooltip [tooltip]="DATASET_TEXT_COLUMN">Text Field</sm-label-tooltip>
+                          <input pInputText type="text" formControlName="textField">
+                        </div>
+                      }
+                      @case ('instruction') {
+                        <div class="field col-12 md:col-4">
+                          <sm-label-tooltip [tooltip]="DATASET_INSTRUCTION_FIELD">Instruction Field</sm-label-tooltip>
+                          <input pInputText type="text" formControlName="instructionField">
+                        </div>
+                        <div class="field col-12 md:col-4">
+                          <sm-label-tooltip [tooltip]="DATASET_INPUT_FIELD">Input Field</sm-label-tooltip>
+                          <input pInputText type="text" formControlName="inputField">
+                        </div>
+                        <div class="field col-12 md:col-4">
+                          <sm-label-tooltip [tooltip]="DATASET_OUTPUT_FIELD">Output Field</sm-label-tooltip>
+                          <input pInputText type="text" formControlName="outputField">
+                        </div>
+                        <div class="field col-12 md:col-6">
+                          <sm-label-tooltip [tooltip]="DATASET_SYSTEM_PROMPT_TYPE">System prompt type</sm-label-tooltip>
+                          <p-dropdown [options]="systemPromptType" formControlName="systemPromptType"
+                                      appendTo="body"></p-dropdown>
+                        </div>
+                        @if (currentForm().get('systemPromptType').value === 'field') {
+                          <div class="field col-12 md:col-6">
+                            <sm-label-tooltip [tooltip]="DATASET_SYSTEM_PROMPT_FIELD">System prompt field
+                            </sm-label-tooltip>
+                            <input pInputText type="text" formControlName="systemPromptField">
+                          </div>
+                        } @else if (currentForm().get('systemPromptType').value === 'fixed') {
+                          <div class="field col-12 md:col-6">
+                            <label>System prompt</label>
+                            <textarea pInputTextarea formControlName="systemPrompt" rows="5"></textarea>
+                          </div>
+                          <div class="field col-12 md:col-6">
+                            <sm-label-tooltip [tooltip]="DATASET_INSTRUCTION_PROMPT_FORMAT">Prompt format
+                            </sm-label-tooltip>
+                            <textarea pInputTextarea rows="3" formControlName="promptFormat"></textarea>
+                          </div>
+                          <div class="field col-12 md:col-6">
+                            <sm-label-tooltip [tooltip]="DATASET_INSTRUCTION_PROMPT_FORMAT_NO_INPUT">Prompt format (no
+                              input)
+                            </sm-label-tooltip>
+                            <textarea pInputTextarea rows="3" formControlName="promptFormatNoInput"></textarea>
+                          </div>
+                        }
+                      }
+                      @case ('conversation') {
+                        <div class="field col-12 md:col-4">
+                          <sm-label-tooltip [tooltip]="DATASET_CONVERSATION_FIELD_MESSAGES">Messages field
+                          </sm-label-tooltip>
+                          <input pInputText type="text" formControlName="messagesField">
+                        </div>
+                        <div class="field col-12 md:col-4">
+                          <sm-label-tooltip [tooltip]="DATASET_SYSTEM_PROMPT_FIELD">System prompt field
+                          </sm-label-tooltip>
+                          <input pInputText type="text" formControlName="systemField">
+                        </div>
+                        <div class="field col-12 md:col-4">
+                          <sm-label-tooltip [tooltip]="DATASET_CONVERSATION_FIELD_TOOLS">Tools field</sm-label-tooltip>
+                          <input pInputText type="text" formControlName="toolsField">
+                          <small>The field value must be JSON list of objects in the format expected by the chat
+                            template.</small>
+                        </div>
+                        <div class="field col-12 md:col-6">
+                          <label>Message field mappings - Role</label>
+                          <input pInputText type="text" formControlName="messagePropertyMappingsRole">
+                        </div>
+                        <div class="field col-12 md:col-6">
+                          <label>Message field mappings - Content</label>
+                          <input pInputText type="text" formControlName="messagePropertyMappingsContent">
+                        </div>
+                      }
+                      @case ('custom_evaluation') {
+                        <div class="field col-12">
+                          <div class="font-medium text-sm mb-2 text-700">Column Mappings</div>
+                        </div>
+                        <div class="field col-12 md:col-6">
+                          <sm-label-tooltip [tooltip]="TOOLTIP_INSTRUCTION">Instruction Column *</sm-label-tooltip>
+                          <input pInputText type="text" formControlName="instructionColumn" placeholder="instruction">
+                          <small class="text-500">Include MCQ options in text if needed</small>
+                        </div>
+                        <div class="field col-12 md:col-6">
+                          <sm-label-tooltip [tooltip]="TOOLTIP_ANSWER">Answer Column *</sm-label-tooltip>
+                          <input pInputText type="text" formControlName="answerColumn" placeholder="answer">
+                        </div>
+                        <div class="field col-12 md:col-6">
+                          <sm-label-tooltip [tooltip]="TOOLTIP_EVAL_TYPE">Eval Type Column</sm-label-tooltip>
+                          <input pInputText type="text" formControlName="evalTypeColumn"
+                                 placeholder="eval_type (optional)">
+                          <small class="text-500">Values: "exact_match" or "judge"</small>
+                        </div>
+                        <div class="field col-12 md:col-6">
+                          <sm-label-tooltip [tooltip]="TOOLTIP_JUDGE_CRITERIA">Judge Criteria Column</sm-label-tooltip>
+                          <input pInputText type="text" formControlName="judgeCriteriaColumn"
+                                 placeholder="judge_criteria (optional)">
+                        </div>
+                        <div class="field col-12">
+                          <div class="font-medium text-sm mb-2 text-700">Default Judge Criteria</div>
+                          <sm-label-tooltip [tooltip]="TOOLTIP_DEFAULT_CRITERIA">Fallback Criteria</sm-label-tooltip>
+                          <textarea pInputTextarea formControlName="defaultJudgeCriteria" rows="2"
+                                    placeholder="Evaluate if the response correctly answers the question based on the expected answer."></textarea>
+                          <small class="text-500">Used when judge_criteria column is empty or not specified</small>
+                        </div>
+                      }
+                    }
+                  </div>
+                </form>
+              }
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+
+    @if (task() === 'eval' && formArrayForDisplay().length > 0) {
+      <small class="text-500 mt-2 block">
+        Dataset format: JSONL with columns for instruction, answer, and optional eval_type/judge_criteria.
+      </small>
+    }
+  }
+</sm-card>
