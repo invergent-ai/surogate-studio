@@ -206,9 +206,11 @@ public class CreateModelFlow extends BaseApplicationFlow {
             "--max-model-len", modelConfig.getMaxContextSize().toString(),
             "--enable-prefix-caching",
             "--enable-chunked-prefill",
-            "--trust-remote-code",
-            "--gpu_memory_utilization", String.format("%.2f", uniformGpuMemoryUtilization)
+            "--trust-remote-code"
         ));
+        if (uniformGpuMemoryUtilization > 0) {
+            vllmParams.addAll(List.of("--gpu_memory_utilization", String.format("%.2f", uniformGpuMemoryUtilization)));
+        }
 
         if (!StringUtils.isEmpty(modelConfig.getLoraSourceModel())) {
             vllmParams.addAll(List.of(
