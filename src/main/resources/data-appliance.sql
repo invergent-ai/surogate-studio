@@ -541,3 +541,235 @@ Qwen3-VL-30B-A3B-Thinking is a multimodal vision-language model with 30 billion 
         'Qwen3,VL,Vision');
 
 COMMIT;
+
+INSERT INTO public.app_template (id, category, description, icon, long_description, name, template, zorder, provider_id, hashtags)
+VALUES ('a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        'Models',
+        'Qwen3-8B dense model with 8 billion parameters, 32K native context, and thinking capabilities. Single GPU deployment optimized for RTX 5090.',
+        'https://sm-console-assets.s3.eu-central-1.amazonaws.com/model4.webp',
+        '### Overview
+Qwen3-8B is a dense language model with 8 billion parameters, featuring native thinking capabilities and 32K context length.
+
+### Key Specifications
+- **Model**: Qwen/Qwen3-8B
+- **Parameters**: 8 billion
+- **Context Length**: 32,768 tokens (131K with YaRN)
+- **Architecture**: Qwen3ForCausalLM
+- **GPUs**: 1
+
+### Use Cases
+- Complex reasoning and coding
+- Multi-turn dialogue
+- Tool calling and agents
+- Creative writing and role-playing',
+        'Qwen3-8B',
+        '{
+  "name": "qwen3-8b",
+  "fromTemplate": true,
+  "type": "UI",
+  "mode": "MODEL",
+  "status": "CREATED",
+  "workloadType": "DEPLOYMENT",
+  "replicas": 1,
+  "updateStrategy": "ROLLING",
+  "schedulingRule": "DECENTRALIZED",
+  "extraConfig": "{\n  \"modelName\": \"Qwen3-8B/main\",\n  \"hfModelName\": \"Qwen/Qwen3-8B\",\n  \"maxContextSize\": 32768,\n  \"l1Cache\": true,\n  \"l1CacheSize\": 2,\n  \"gpuMemory\": 32768,\n  \"hfTotalSafetensors\": 8000000000,\n  \"hfConfig\": {\n    \"architectures\": [\n      \"Qwen3ForCausalLM\"\n    ],\n    \"attention_bias\": false,\n    \"attention_dropout\": 0.0,\n    \"bos_token_id\": 151643,\n    \"eos_token_id\": 151645,\n    \"head_dim\": 128,\n    \"hidden_act\": \"silu\",\n    \"hidden_size\": 4096,\n    \"initializer_range\": 0.02,\n    \"intermediate_size\": 12288,\n    \"max_position_embeddings\": 40960,\n    \"max_window_layers\": 36,\n    \"model_type\": \"qwen3\",\n    \"num_attention_heads\": 32,\n    \"num_hidden_layers\": 36,\n    \"num_key_value_heads\": 8,\n    \"rms_norm_eps\": 0.000001,\n    \"rope_scaling\": null,\n    \"rope_theta\": 1000000,\n    \"sliding_window\": null,\n    \"tie_word_embeddings\": false,\n    \"torch_dtype\": \"bfloat16\",\n    \"transformers_version\": \"4.51.0\",\n    \"use_cache\": true,\n    \"use_sliding_window\": false,\n    \"vocab_size\": 151936\n  }\n}",
+  "containers": [
+    {
+      "displayName": "Router",
+      "imageName": "lmcache/lmstack-router",
+      "imageTag": "latest",
+      "type": "WORKER",
+      "pullImageMode": "PULL",
+      "cpuRequest": 2,
+      "cpuLimit": 2,
+      "memRequest": "1024",
+      "memLimit": "2048",
+      "envVars": [
+        {
+          "key": "LMCACHE_LOG_LEVEL",
+          "value": "INFO"
+        }
+      ],
+      "ports": [
+        {
+          "name": "router",
+          "containerPort": 8000,
+          "ingressPort": true,
+          "servicePort": 80,
+          "protocol": {
+            "id": "bb7804cd-8818-4c48-b7a6-4f61ae3cefac",
+            "code": "TCP"
+          }
+        },
+        {
+          "name": "cache",
+          "containerPort": 9000,
+          "servicePort": 9000,
+          "protocol": {
+            "id": "bb7804cd-8818-4c48-b7a6-4f61ae3cefac",
+            "code": "TCP"
+          }
+        }
+      ],
+      "probes": [
+        {
+          "type": "LIVENESS",
+          "initialDelaySeconds": 30,
+          "periodSeconds": 5,
+          "failureThreshold": 3,
+          "httpPath": "/health",
+          "httpPort": 8000
+        },
+        {
+          "type": "READINESS",
+          "initialDelaySeconds": 5,
+          "periodSeconds": 5,
+          "failureThreshold": 3,
+          "httpPath": "/health",
+          "httpPort": 8000
+        }
+      ]
+    },
+    {
+      "displayName": "Worker",
+      "imageName": "lmcache/vllm-openai",
+      "imageTag": "nightly-2026-01-14",
+      "type": "WORKER",
+      "pullImageMode": "PULL",
+      "cpuRequest": 1,
+      "cpuLimit": 5,
+      "gpuLimit": 1,
+      "memRequest": "256",
+      "memLimit": "16384",
+      "startCommand": "/opt/venv/bin/vllm",
+      "startParameters": null,
+      "envVars": [
+        {
+          "key": "VLLM_USE_V1",
+          "value": "1"
+        },
+        {
+          "key": "LMCACHE_LOG_LEVEL",
+          "value": "DEBUG"
+        },
+        {
+          "key": "VLLM_LOGGING_LEVEL",
+          "value": "DEBUG"
+        },
+        {
+          "key": "VLLM_MARLIN_USE_ATOMIC_ADD",
+          "value": "1"
+        },
+        {
+          "key": "TORCH_CUDA_ARCH_LIST",
+          "value": "8.9"
+        },
+        {
+          "key": "VLLM_SERVER_DEV_MODE",
+          "value": "1"
+        }
+      ],
+      "volumeMounts": [
+        {
+          "containerPath": "/models",
+          "volume": {
+            "name": "hf-cache",
+            "type": "HOST_PATH",
+            "path": "/models"
+          }
+        },
+        {
+          "containerPath": "/root/.cache/vllm",
+          "volume": {
+            "name": "torch-cache",
+            "type": "HOST_PATH",
+            "path": "/torch"
+          }
+        }
+      ],
+      "ports": [
+        {
+          "name": "llm",
+          "containerPort": 8000,
+          "servicePort": 80,
+          "protocol": {
+            "id": "bb7804cd-8818-4c48-b7a6-4f61ae3cefac",
+            "code": "TCP"
+          }
+        },
+        {
+          "name": "zmq",
+          "containerPort": 55555,
+          "servicePort": 55555,
+          "protocol": {
+            "id": "bb7804cd-8818-4c48-b7a6-4f61ae3cefac",
+            "code": "TCP"
+          }
+        },
+        {
+          "name": "ucx",
+          "containerPort": 9999,
+          "servicePort": 9999,
+          "protocol": {
+            "id": "bb7804cd-8818-4c48-b7a6-4f61ae3cefac",
+            "code": "TCP"
+          }
+        }
+      ],
+      "probes": [
+        {
+          "type": "LIVENESS",
+          "initialDelaySeconds": 300,
+          "periodSeconds": 20,
+          "timeoutSeconds": 3,
+          "successThreshold": 1,
+          "failureThreshold": 10,
+          "httpPath": "/health",
+          "httpPort": 8000
+        },
+        {
+          "type": "READINESS",
+          "initialDelaySeconds": 30,
+          "periodSeconds": 20,
+          "timeoutSeconds": 5,
+          "successThreshold": 1,
+          "failureThreshold": 10,
+          "httpPath": "/health",
+          "httpPort": 8000
+        }
+      ]
+    },
+    {
+      "displayName": "Cache",
+      "imageName": "lmcache/vllm-openai",
+      "imageTag": "nightly-2025-08-27",
+      "type": "WORKER",
+      "pullImageMode": "PULL",
+      "cpuRequest": 1,
+      "cpuLimit": 4,
+      "memRequest": "256",
+      "memLimit": "2048",
+      "startCommand": "/opt/venv/bin/lmcache_server",
+      "startParameters": null,
+      "envVars": [],
+      "volumeMounts": [],
+      "ports": [
+        {
+          "name": "cache",
+          "containerPort": 9090,
+          "servicePort": 81,
+          "protocol": {
+            "id": "bb7804cd-8818-4c48-b7a6-4f61ae3cefac",
+            "code": "TCP"
+          }
+        }
+      ]
+    }
+  ]
+}',
+        0,
+        null,
+        'Qwen3');
+
+COMMIT;

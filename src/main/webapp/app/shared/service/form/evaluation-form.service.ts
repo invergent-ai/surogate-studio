@@ -85,6 +85,11 @@ export class EvaluationFormService {
       if (config.baseUrl) params.push({ key: 'DEPLOYED_MODEL_BASE_URL', value: config.baseUrl });
       if (config.apiKey) params.push({ key: 'DEPLOYED_MODEL_API', value: config.apiKey });
     }
+
+    // ADD THIS
+    if (config.tokenizer) {
+      params.push({ key: 'MODEL_TOKENIZER', value: config.tokenizer });
+    }
   }
 
   private addJudgeParams(params: ITaskRunParam[], formValues: any): void {

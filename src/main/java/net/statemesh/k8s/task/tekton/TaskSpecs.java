@@ -170,6 +170,11 @@ public class TaskSpecs {
                 .name("RED_TEAMING_CONFIG").value("$(params.RED_TEAMING_CONFIG)"));
         }
 
+        if (hasParam(task, "MODEL_TOKENIZER")) {
+            envVars.add(new V1PipelineRunSpecTaskRunSpecsInnerPodTemplateEnvInner()
+                .name("MODEL_TOKENIZER").value("$(params.MODEL_TOKENIZER)"));
+        }
+
         // Model endpoints - internal (preferred) and ingress (fallback)
         if (modelEndpoint != null) {
             envVars.add(new V1PipelineRunSpecTaskRunSpecsInnerPodTemplateEnvInner()

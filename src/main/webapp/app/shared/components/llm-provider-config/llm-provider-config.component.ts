@@ -18,10 +18,12 @@ export interface LLMProviderConfig {
   apiKey: string;
   internalName?: string;
   namespace?: string;
+  tokenizer?: string; // Add
 }
 
 interface DeployedModelOption extends IApplication {
   apiModelName: string;
+  hfModelName?: string; // Add
 }
 
 @Component({
@@ -128,6 +130,7 @@ export class LlmProviderConfigComponent implements ControlValueAccessor {
     deployedModel: new FormControl<DeployedModelOption | null>(null),
     internalName: new FormControl<string>(''),
     namespace: new FormControl<string>(''),
+    tokenizer: new FormControl<string>(''), // Add
   });
 
   private onChange: (value: LLMProviderConfig) => void = () => {};
@@ -143,14 +146,16 @@ export class LlmProviderConfigComponent implements ControlValueAccessor {
   private withApiModelName(app: IApplication): DeployedModelOption {
     const config = app.extraConfig ? JSON.parse(app.extraConfig) : {};
 
-    // If LoRA is configured, use the adapter name
     if (config.loraSourceModel) {
-      return { ...app, apiModelName: 'serve-lora' };
+      return { ...app, apiModelName: 'serve-lora', hfModelName: config.hfModelName };
     }
 
-    // Otherwise use base model name
+    if (config.source === 'hub') {
+      return { ...app, apiModelName: `/models/${config.branchToDeploy}`, hfModelName: config.hfModelName };
+    }
+
     const apiModelName = config.source === 'hf' ? config.hfModelName : config.branchToDeploy ?? config.modelName;
-    return { ...app, apiModelName };
+    return { ...app, apiModelName, hfModelName: config.hfModelName };
   }
 
   get isInternal(): boolean {
@@ -192,6 +197,7 @@ export class LlmProviderConfigComponent implements ControlValueAccessor {
           apiKey: 'sk-no-key-required',
           internalName: deployedModel.internalName,
           namespace: deployedModel.deployedNamespace,
+          tokenizer: deployedModel.hfModelName || '', // ADD
         },
         { emitEvent: false },
       );
