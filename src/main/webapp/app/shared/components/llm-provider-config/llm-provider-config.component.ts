@@ -1,4 +1,4 @@
-// src/main/webapp/app/shared/components/llm-provider-config/llm-provider-config.component.ts
+// src/app/shared/components/llm-provider-config/llm-provider-config.component.ts
 
 import { Component, forwardRef, inject, Input } from '@angular/core';
 import { ControlValueAccessor, FormControl, FormGroup, NG_VALUE_ACCESSOR, ReactiveFormsModule } from '@angular/forms';
@@ -6,9 +6,10 @@ import { DropdownModule } from 'primeng/dropdown';
 import { InputTextModule } from 'primeng/inputtext';
 import { LabelTooltipComponent } from '../label-tooltip/label-tooltip.component';
 import { NgIf } from '@angular/common';
-import { DeployedModelSelectorComponent } from '../deployed-model-selector/deployed-model-selector.component';
 import { IApplication } from '../../model/application.model';
 import { ApplicationService } from '../../service/application.service';
+import { derivedAsync } from 'ngxtension/derived-async';
+import { map } from 'rxjs/operators';
 
 export interface LLMProviderConfig {
   provider: string;
@@ -18,10 +19,15 @@ export interface LLMProviderConfig {
   internalName?: string;
   namespace?: string;
 }
+
+interface DeployedModelOption extends IApplication {
+  apiModelName: string;
+}
+
 @Component({
   standalone: true,
   selector: 'sm-llm-provider-config',
-  imports: [ReactiveFormsModule, DropdownModule, InputTextModule, LabelTooltipComponent, NgIf, DeployedModelSelectorComponent],
+  imports: [ReactiveFormsModule, DropdownModule, InputTextModule, LabelTooltipComponent, NgIf],
   template: `
     <div class="formgrid grid text-sm p-fluid" [formGroup]="form">
       <div class="field" [class]="fieldClass">
@@ -31,8 +37,30 @@ export interface LLMProviderConfig {
       </div>
       <div class="field" [class]="fieldClass" *ngIf="isInternal">
         <sm-label-tooltip tooltip="Select a deployed model from your platform">Deployed Model</sm-label-tooltip>
-        <sm-deployed-model-selector formControlName="deployedModel" [returnFull]="true" (ngModelChange)="onDeployedModelChange($event)">
-        </sm-deployed-model-selector>
+        <p-dropdown
+          [options]="deployedModels() ?? []"
+          formControlName="deployedModel"
+          optionLabel="name"
+          [placeholder]="'Select deployed model'"
+          [showClear]="true"
+          [filter]="true"
+          filterBy="name"
+          appendTo="body"
+          (onChange)="onDeployedModelChange($event.value)"
+        >
+          <ng-template pTemplate="selectedItem" let-item>
+            <div class="flex align-items-center gap-2" *ngIf="item">
+              <span>{{ item.name }}</span>
+              <span class="text-xs text-500">({{ item.deployedNamespace }})</span>
+            </div>
+          </ng-template>
+          <ng-template pTemplate="item" let-item>
+            <div class="flex align-items-center justify-content-between w-full">
+              <span>{{ item.name }}</span>
+              <span class="text-xs text-500">{{ item.deployedNamespace }}</span>
+            </div>
+          </ng-template>
+        </p-dropdown>
       </div>
       <div class="field" [class]="fieldClass" *ngIf="showModel && !isInternal">
         <sm-label-tooltip tooltip="Model name or identifier">Model</sm-label-tooltip>
@@ -59,6 +87,7 @@ export interface LLMProviderConfig {
 export class LlmProviderConfigComponent implements ControlValueAccessor {
   @Input() showModel = true;
   @Input() fieldClass = 'col-12 md:col-3';
+
   private applicationService = inject(ApplicationService);
 
   providers = [
@@ -96,13 +125,26 @@ export class LlmProviderConfigComponent implements ControlValueAccessor {
     model: new FormControl<string>(''),
     baseUrl: new FormControl<string>('https://api.openai.com/v1'),
     apiKey: new FormControl<string>(''),
-    deployedModel: new FormControl<IApplication | null>(null),
+    deployedModel: new FormControl<DeployedModelOption | null>(null),
     internalName: new FormControl<string>(''),
     namespace: new FormControl<string>(''),
   });
 
   private onChange: (value: LLMProviderConfig) => void = () => {};
   private onTouched: () => void = () => {};
+
+  // Load deployed models for internal provider
+  deployedModels = derivedAsync(() =>
+    this.applicationService
+      .query({ 'mode.equals': 'MODEL', 'status.equals': 'DEPLOYED' })
+      .pipe(map(response => (response.body ?? []).map(app => this.withApiModelName(app)))),
+  );
+
+  private withApiModelName(app: IApplication): DeployedModelOption {
+    const config = app.extraConfig ? JSON.parse(app.extraConfig) : {};
+    const apiModelName = config.source === 'hf' ? config.hfModelName : config.branchToDeploy ?? config.modelName;
+    return { ...app, apiModelName };
+  }
 
   get isInternal(): boolean {
     return this.form.get('provider')?.value === 'internal';
@@ -130,32 +172,18 @@ export class LlmProviderConfigComponent implements ControlValueAccessor {
       this.form.get('baseUrl')?.setValue(this.defaultUrls[provider]);
     }
     if (provider === 'internal') {
-      this.form.patchValue({ model: '', baseUrl: '', apiKey: '' });
+      this.form.patchValue({ model: '', baseUrl: '', apiKey: '', deployedModel: null });
     }
   }
 
-  onDeployedModelChange(deployedModel: IApplication | null) {
+  onDeployedModelChange(deployedModel: DeployedModelOption | null) {
     if (deployedModel) {
-      // Get the actual model name from extraConfig
-      let modelName = deployedModel.internalName || '';
-      if (deployedModel.extraConfig) {
-        try {
-          const extraConfig =
-            typeof deployedModel.extraConfig === 'string' ? JSON.parse(deployedModel.extraConfig) : deployedModel.extraConfig;
-          if (extraConfig.modelName) {
-            modelName = extraConfig.modelName;
-          }
-        } catch (e) {
-          console.warn('Failed to parse extraConfig', e);
-        }
-      }
-
       this.form.patchValue(
         {
-          model: modelName, // Use actual model name
+          model: deployedModel.apiModelName,
           baseUrl: '',
           apiKey: 'sk-no-key-required',
-          internalName: deployedModel.internalName, // Keep for service discovery
+          internalName: deployedModel.internalName,
           namespace: deployedModel.deployedNamespace,
         },
         { emitEvent: false },
@@ -169,13 +197,12 @@ export class LlmProviderConfigComponent implements ControlValueAccessor {
       const models = response.body || [];
       let match = models.find(m => m.internalName === internalName);
 
-      // If namespace provided, try to match more precisely
       if (namespace && models.length > 1) {
         match = models.find(m => m.internalName === internalName && m.deployedNamespace === namespace) || match;
       }
 
       if (match) {
-        this.form.patchValue({ deployedModel: match }, { emitEvent: false });
+        this.form.patchValue({ deployedModel: this.withApiModelName(match) }, { emitEvent: false });
       }
     });
   }
@@ -184,7 +211,6 @@ export class LlmProviderConfigComponent implements ControlValueAccessor {
     if (value) {
       this.form.patchValue(value, { emitEvent: false });
 
-      // If internal provider with internalName, we need to find and set the deployed model
       if (value.provider === 'internal' && value.internalName) {
         this.loadDeployedModelByInternalName(value.internalName, value.namespace);
       }

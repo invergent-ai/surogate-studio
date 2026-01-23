@@ -26,20 +26,6 @@
                   <div class="error-msg">Required field</div>
                 }
               </div>
-              <div class="field col-12 md:col-6">
-                <sm-label-tooltip [tooltip]="EVAL_MODEL_REPOSITORY">Deployed Model *</sm-label-tooltip>
-                <sm-deployed-model-selector formControlName="deployedModel"
-                                            [returnFull]="true"></sm-deployed-model-selector>
-                @if (isInvalid(taskForm.get("deployedModel"))) {
-                  <div class="error-msg">Required field</div>
-                }
-              </div>
-              <div class="field col-12 md:col-3">
-                <sm-label-tooltip [tooltip]="EVAL_USE_GATEWAY_MODEL">Use Gateway Model</sm-label-tooltip>
-                <div class="flex h-2rem">
-                  <p-checkbox [binary]="true" formControlName="useGateway"></p-checkbox>
-                </div>
-              </div>
               <div class="field col-12 md:col-3">
                 <sm-label-tooltip [tooltip]="EVAL_LANGUAGE">Language (optional)</sm-label-tooltip>
                 <p-dropdown formControlName="language" [options]="languages" optionLabel="name"
@@ -51,6 +37,17 @@
                           formControlName="description"></textarea>
               </div>
             </div>
+
+            <!-- Model Under Test Section -->
+            <p-divider></p-divider>
+            <div class="flex align-items-center gap-2 mb-3">
+              <i-lucide [img]="Bot" class="w-1rem h-1rem text-500"></i-lucide>
+              <span class="font-medium text-sm">Model Under Test *</span>
+            </div>
+            <sm-llm-provider-config formControlName="modelUnderTest"></sm-llm-provider-config>
+            @if (isInvalid(taskForm.get("modelUnderTest"))) {
+              <div class="error-msg">Required field</div>
+            }
 
             <!-- Judge & Simulator Models Section -->
             <p-divider></p-divider>
@@ -310,7 +307,6 @@
             <div class="mt-3" formArrayName="benchmarks" *ngIf="accuracyBenchmarks.length > 0">
               <p-table [value]="accuracyBenchmarks" [tableStyle]="{'table-layout': 'auto', 'width': '100%'}"
                        styleClass="text-sm">
-                <!-- In the accuracy benchmarks p-table header -->
                 <ng-template pTemplate="header">
                   <tr>
                     <th class="text-500">Benchmark</th>
@@ -366,7 +362,6 @@
                               </sm-ref-selector>
                             }
                           </div>
-                          <!-- Subset chips for custom datasets -->
                           <div class="flex align-items-center gap-2">
                             <label class="text-xs text-500 white-space-nowrap">Subset:</label>
                             <input pInputText formControlName="datasetSubset" placeholder="default" class="w-full text-sm">
@@ -435,7 +430,6 @@
 
             <!-- Selected security tests table -->
             <div class="mt-3" *ngIf="securityTestsArray.length > 0">
-              <!-- Warning if no judge model configured -->
               @if (!judgeConfig?.model) {
                 <p-message severity="warn" styleClass="mb-3 w-full">
                   <span class="font-medium">Judge Model required:</span> Red teaming needs an external model to generate

@@ -17,9 +17,11 @@ import { TaskRunProvisioningStatus } from '../../../shared/model/enum/task-run-p
 import { revalidateForm } from '../../../shared/util/form.util';
 import { displayError, displayErrorAndRethrow } from '../../../shared/util/error.util';
 import { displaySuccess } from '../../../shared/util/success.util';
-import { LLMProviderConfig, LlmProviderConfigComponent } from '../../../shared/components/llm-provider-config/llm-provider-config.component';
+import {
+  LLMProviderConfig,
+  LlmProviderConfigComponent,
+} from '../../../shared/components/llm-provider-config/llm-provider-config.component';
 import { RefSelection, RefSelectorComponent } from '../../hub/components/ref-selector.component';
-
 
 // Icons
 import {
@@ -28,7 +30,8 @@ import {
   Database,
   Flame,
   GalleryVerticalEnd,
-  Info, LucideAngularModule,
+  Info,
+  LucideAngularModule,
   MessageSquare,
   Save,
   Settings,
@@ -43,12 +46,9 @@ import {
   EVAL_CONVERSATION_DATASET,
   EVAL_CUSTOM_CRITERIA,
   EVAL_LANGUAGE,
-  EVAL_LATENCY,
-  EVAL_MODEL_REPOSITORY,
   EVAL_QUALITY_DATASET,
   EVAL_SHOTS,
   EVAL_TASKS,
-  EVAL_USE_GATEWAY_MODEL,
 } from '../tooltips';
 import { EvaluationFormService } from '../../../shared/service/form/evaluation-form.service';
 import { LabelTooltipComponent } from '../../../shared/components/label-tooltip/label-tooltip.component';
@@ -62,13 +62,8 @@ import { RepoSelectorComponent } from '../../../shared/components/repo-selector/
 import { CheckboxModule } from 'primeng/checkbox';
 import { CommonModule, NgTemplateOutlet } from '@angular/common';
 import { TooltipModule } from 'primeng/tooltip';
-import {
-  DatasetTableChooserComponent
-} from '../../../shared/components/dataset-table-chooser/dataset-table-chooser.component';
+import { DatasetTableChooserComponent } from '../../../shared/components/dataset-table-chooser/dataset-table-chooser.component';
 import { DividerModule } from 'primeng/divider';
-import {
-  DeployedModelSelectorComponent
-} from '../../../shared/components/deployed-model-selector/deployed-model-selector.component';
 import { EvaluationResultsComponent } from '../../../shared/components/evaluation-results/evaluation-results.component';
 import { PageLoadComponent } from '../../../shared/components/page-load/page-load.component';
 import { PageComponent } from '../../../shared/components/page/page.component';
@@ -113,7 +108,6 @@ import { BENCHMARKS } from './constants/benchmarks';
     DatasetTableChooserComponent,
     DividerModule,
     LlmProviderConfigComponent,
-    DeployedModelSelectorComponent,
     EvaluationResultsComponent,
     PageLoadComponent,
     PageComponent,
@@ -249,6 +243,9 @@ export class EvaluationPage implements OnInit {
   }
 
   // Config getters
+  get modelUnderTest(): LLMProviderConfig | null {
+    return this.taskForm.get('modelUnderTest')?.value ?? null;
+  }
   get judgeConfig(): LLMProviderConfig | null {
     return this.taskForm.get('judgeConfig')?.value ?? null;
   }
@@ -370,10 +367,7 @@ export class EvaluationPage implements OnInit {
   protected readonly Info = Info;
   protected readonly Database = Database;
   protected readonly BASE_RUN_NAME = BASE_RUN_NAME;
-  protected readonly EVAL_MODEL_REPOSITORY = EVAL_MODEL_REPOSITORY;
-  protected readonly EVAL_USE_GATEWAY_MODEL = EVAL_USE_GATEWAY_MODEL;
   protected readonly EVAL_LANGUAGE = EVAL_LANGUAGE;
-  protected readonly EVAL_LATENCY = EVAL_LATENCY;
   protected readonly EVAL_TASKS = EVAL_TASKS;
   protected readonly EVAL_SHOTS = EVAL_SHOTS;
   protected readonly EVAL_CONVERSATION_DATASET = EVAL_CONVERSATION_DATASET;

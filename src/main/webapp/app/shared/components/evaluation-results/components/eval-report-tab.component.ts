@@ -48,6 +48,24 @@ import { EvaluationResultService } from '../../../service/evaluation-result.serv
           padding: 0.125rem 0.375rem;
           border-radius: 4px;
         }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 1rem 0;
+        }
+        th,
+        td {
+          border: 1px solid var(--surface-300);
+          padding: 0.5rem 0.75rem;
+          text-align: left;
+        }
+        th {
+          background: var(--surface-100);
+          font-weight: 600;
+        }
+        tr:nth-child(even) {
+          background: var(--surface-50);
+        }
       }
     `,
   ],

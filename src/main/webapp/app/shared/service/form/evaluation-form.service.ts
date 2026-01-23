@@ -23,11 +23,10 @@ export class EvaluationFormService {
       id: new FormControl<string | null>(null),
       name: new FormControl<string>('', [Validators.required, Validators.minLength(3)]),
       description: new FormControl<string>(''),
-      deployedModel: new FormControl<IApplication | null>(null, Validators.required),
+      modelUnderTest: new FormControl<LLMProviderConfig | null>(null, Validators.required), // Changed
       judgeConfig: new FormControl<LLMProviderConfig | null>(null),
       useSeparateSimulator: new FormControl<boolean>(false),
       simulatorConfig: new FormControl<LLMProviderConfig | null>(null),
-      useGateway: new FormControl<boolean>(false),
       language: new FormControl<string>('en'),
       project: new FormControl(null),
       benchmarks: new FormArray<FormGroup>([]),
@@ -56,28 +55,7 @@ export class EvaluationFormService {
   formToParams(formValues: any): ITaskRunParam[] {
     const params: ITaskRunParam[] = [];
 
-    if (formValues.deployedModel) {
-      params.push({ key: 'DEPLOYED_MODEL_ID', value: formValues.deployedModel.id });
-
-      let modelName = formValues.deployedModel.internalName;
-      if (formValues.deployedModel.extraConfig) {
-        try {
-          const extraConfig =
-            typeof formValues.deployedModel.extraConfig === 'string'
-              ? JSON.parse(formValues.deployedModel.extraConfig)
-              : formValues.deployedModel.extraConfig;
-          modelName = extraConfig.source === 'hf' ? extraConfig.hfModelName : extraConfig.branchToDeploy ?? extraConfig.modelName;
-        } catch (e) {
-          console.warn('Failed to parse extraConfig', e);
-        }
-      }
-
-      params.push({ key: 'DEPLOYED_MODEL_NAME', value: modelName });
-      params.push({ key: 'DEPLOYED_MODEL_INTERNAL_NAME', value: formValues.deployedModel.internalName });
-      params.push({ key: 'DEPLOYED_MODEL_NAMESPACE', value: formValues.deployedModel.deployedNamespace });
-      params.push({ key: 'INGRESS_HOST_NAME', value: formValues.deployedModel.ingressHostName });
-    }
-
+    this.addModelUnderTestParams(params, formValues);
     this.addJudgeParams(params, formValues);
     this.addSimulatorParams(params, formValues);
     this.addBasicParams(params, formValues);
@@ -89,7 +67,28 @@ export class EvaluationFormService {
     return params;
   }
 
+  private addModelUnderTestParams(params: ITaskRunParam[], formValues: any): void {
+    const config = formValues.modelUnderTest as LLMProviderConfig;
+    if (!config?.model) return;
+
+    params.push({ key: 'DEPLOYED_MODEL_NAME', value: config.model });
+    params.push({
+      key: 'DEPLOYED_MODEL_PROVIDER',
+      value: config.provider === 'internal' ? 'openai' : config.provider,
+    });
+
+    if (config.provider === 'internal') {
+      if (config.internalName) params.push({ key: 'DEPLOYED_MODEL_INTERNAL_NAME', value: config.internalName });
+      if (config.namespace) params.push({ key: 'DEPLOYED_MODEL_NAMESPACE', value: config.namespace });
+      params.push({ key: 'DEPLOYED_MODEL_API', value: 'sk-no-key-required' });
+    } else {
+      if (config.baseUrl) params.push({ key: 'DEPLOYED_MODEL_BASE_URL', value: config.baseUrl });
+      if (config.apiKey) params.push({ key: 'DEPLOYED_MODEL_API', value: config.apiKey });
+    }
+  }
+
   private addJudgeParams(params: ITaskRunParam[], formValues: any): void {
+    console.log('addJudgeParams - judgeConfig:', formValues.judgeConfig);
     if (!formValues.judgeConfig?.model) return;
 
     params.push({ key: 'JUDGE_MODEL', value: formValues.judgeConfig.model });
@@ -250,10 +249,11 @@ export class EvaluationFormService {
   envVarsToForm(form: FormGroup, envVars: ITaskRunParam[]): void {
     const getValue = (key: string) => envVars.find(ev => ev.key === key)?.value;
 
-    // Basic fields
-    const useGateway = getValue('USE_GATEWAY') === 'true';
     const language = getValue('LANGUAGE') || 'en';
     const notify = getValue('NOTIFY') || '';
+
+    // Model under test config
+    const modelUnderTest = this.buildLLMConfig(envVars, 'DEPLOYED_MODEL');
 
     // Judge config
     const judgeConfig = this.buildLLMConfig(envVars, 'JUDGE');
@@ -261,21 +261,13 @@ export class EvaluationFormService {
     const useSeparateSimulator = !!getValue('SIMULATOR_MODEL') && getValue('SIMULATOR_MODEL') !== judgeConfig.model;
 
     form.patchValue({
+      modelUnderTest,
       judgeConfig,
       simulatorConfig,
       useSeparateSimulator,
-      useGateway,
       language,
       notify: typeof notify === 'string' && notify ? notify.split(',') : [],
     });
-
-    // Load deployed model
-    const deployedModelId = getValue('DEPLOYED_MODEL_ID');
-    if (deployedModelId) {
-      this.applicationService.find(deployedModelId).subscribe(response => {
-        if (response.body) form.patchValue({ deployedModel: response.body });
-      });
-    }
 
     // Parse arrays
     this.parseBenchmarks(form, getValue('BENCHMARKS'));
