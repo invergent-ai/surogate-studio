@@ -21,14 +21,15 @@ import org.yaml.snakeyaml.Yaml;
 import java.util.*;
 import java.util.stream.IntStream;
 
+import static net.statemesh.config.Constants.USE_AXOLOTL_TRAINING_LIBRARY;
 import static net.statemesh.k8s.util.K8SConstants.*;
 import static net.statemesh.k8s.util.NamingUtils.pvcName;
 
 public class RayJobTask extends BaseMutationTask<String> {
     private final Logger log = LoggerFactory.getLogger(RayJobTask.class);
     private final Map<RayJobType, String> entrypoints = Map.of(
-        RayJobType.FINE_TUNE, "job-entry train train",
-        RayJobType.TRAIN, "job-entry train train"
+        RayJobType.FINE_TUNE, "job-entry " + (USE_AXOLOTL_TRAINING_LIBRARY ? "train-axolotl" : "train") + " train",
+        RayJobType.TRAIN, "job-entry " + (USE_AXOLOTL_TRAINING_LIBRARY ? "train-axolotl" : "train") + " train"
     );
     private final Map<RayJobType, String> conda = Map.of(
         RayJobType.FINE_TUNE, "train",
@@ -102,7 +103,7 @@ public class RayJobTask extends BaseMutationTask<String> {
                             Collections.singletonList(
                                 new V1RayJobSpecRayClusterSpecHeadGroupSpecTemplateSpecContainersInner()
                                     .name(RAY_JOB_SUBMITTER_CONTAINER_NAME)
-                                    .image(RAY_JOB_SUBMITTER_CONTAINER_IMAGE)
+                                    .image(DENSEMAX_IMAGE)
                                     .resources(
                                         new V1RayJobSpecRayClusterSpecAutoscalerOptionsResources()
                                             .requests(Map.of(CPU_METRIC_KEY, "100m", MEMORY_METRIC_KEY, "256Mi"))

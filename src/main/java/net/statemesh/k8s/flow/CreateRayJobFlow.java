@@ -59,6 +59,8 @@ public class CreateRayJobFlow extends ResourceCreationFlow<RayJobDTO> {
         final ClusterDTO cluster = setCluster(rayJob, kubernetesController, clusterService);
         TaskResult<String> result;
         String ingressHostname = null;
+
+        ensureNamespace(rayJob, cluster);
         try {
             var rayClusterShape = objectMapper.readValue(rayJob.getRayClusterShape(), RayClusterShape.class);
             addSystemEnvVars(rayJob, rayClusterShape);

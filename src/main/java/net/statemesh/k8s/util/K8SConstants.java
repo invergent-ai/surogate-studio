@@ -176,7 +176,6 @@ public class K8SConstants {
     public static final String EXTERNAL_RAY_CLUSTER_DEFAULT_NAMESPACE = "default";
     public static final String RAY_CLUSTER_SELECTOR_LABEL = "ray.io/cluster";
     public static final String RAY_JOB_SUBMITTER_CONTAINER_NAME = "rayjob-submitter";
-    public static final String RAY_JOB_SUBMITTER_CONTAINER_IMAGE = "statemesh/axolotl-ray:1.0.0";
     public static final String RAY_NFS_STORAGE_CLASS = "nfs-csi-densemax-v2";
     public static final String RAY_WORKDIR_VOLUME_NAME = "ray-work-dir";
     public static final String RAY_WORK_DIR = "/opt/work";
