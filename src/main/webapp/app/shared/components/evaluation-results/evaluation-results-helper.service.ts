@@ -69,8 +69,14 @@ export class EvaluationResultsHelperService {
   // QUALITY METRICS
   // ============================================================================
 
+  hasConversationalMetrics(result: IEvaluationResult | null): boolean {
+    if (!result?.targets) return false;
+    return result.targets.some(t => t.evaluations?.some(e => e.dataset_type === 'multi_turn'));
+  }
+
   hasQualityMetrics(result: IEvaluationResult | null): boolean {
-    return result?.targets?.some(t => t.evaluations?.some(e => e.metrics_summary && Object.keys(e.metrics_summary).length > 0)) || false;
+    if (!result?.targets) return false;
+    return result.targets.some(t => t.evaluations?.some(e => e.dataset_type === 'single_turn'));
   }
 
   getTotalEvaluations(result: IEvaluationResult | null): number {

@@ -68,6 +68,12 @@ import { EvalAnalyticsTabComponent } from './components/eval-analytics-tab.compo
             </p-tabPanel>
           }
 
+          @if (helper.hasConversationalMetrics(result())) {
+            <p-tabPanel header="Conversational">
+              <sm-eval-quality-tab [result]="result()" mode="conversational"></sm-eval-quality-tab>
+            </p-tabPanel>
+          }
+
           @if (helper.hasBenchmarks(result())) {
             <p-tabPanel header="Benchmarks">
               <sm-eval-benchmarks-tab [result]="result()"></sm-eval-benchmarks-tab>
