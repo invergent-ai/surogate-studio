@@ -9,6 +9,10 @@ import { map } from 'rxjs/operators';
 import { FormsModule } from '@angular/forms';
 import { NgIf } from '@angular/common';
 
+interface DeployedModelOption extends IApplication {
+  apiModelName: string;
+}
+
 @Component({
   selector: 'sm-deployed-model-selector',
   standalone: true,
@@ -19,7 +23,7 @@ import { NgIf } from '@angular/common';
       [ngModel]="value"
       (ngModelChange)="onChange($event)"
       optionLabel="name"
-      [optionValue]="returnFull ? null : 'id'"
+      [optionValue]="returnFull ? null : 'apiModelName'"
       [placeholder]="placeholder"
       [showClear]="true"
       [filter]="true"
@@ -51,17 +55,25 @@ import { NgIf } from '@angular/common';
 })
 export class DeployedModelSelectorComponent implements ControlValueAccessor {
   @Input() placeholder = 'Select deployed model';
-  @Input() returnFull = false; // If true, returns full IApplication object
+  @Input() returnFull = false;
 
   private applicationService = inject(ApplicationService);
 
-  value: IApplication | string | null = null;
+  value: DeployedModelOption | string | null = null;
   private onChangeFn: (value: any) => void = () => {};
   private onTouchedFn: () => void = () => {};
 
   deployedModels = derivedAsync(() =>
-    this.applicationService.query({ 'mode.equals': 'MODEL', 'status.equals': 'DEPLOYED' }).pipe(map(response => response.body ?? [])),
+    this.applicationService
+      .query({ 'mode.equals': 'MODEL', 'status.equals': 'DEPLOYED' })
+      .pipe(map(response => (response.body ?? []).map(app => this.withApiModelName(app)))),
   );
+
+  private withApiModelName(app: IApplication): DeployedModelOption {
+    const config = app.extraConfig ? JSON.parse(app.extraConfig) : {};
+    const apiModelName = config.source === 'hf' ? config.hfModelName : config.branchToDeploy ?? config.modelName;
+    return { ...app, apiModelName };
+  }
 
   writeValue(value: any): void {
     this.value = value;
