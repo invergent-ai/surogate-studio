@@ -115,7 +115,7 @@ export class TestChatComponent implements OnDestroy {
     if (messageRaw) {
       const messageJson = JSON.parse(messageRaw);
       if (messageJson) {
-        let message = messageJson.payload;
+        const message = messageJson.payload;
         if (message) {
           if (this.STREAMING_MODE) {
             if (message === '[DONE]') {

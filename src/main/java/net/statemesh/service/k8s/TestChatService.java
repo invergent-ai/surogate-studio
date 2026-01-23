@@ -105,7 +105,7 @@ public class TestChatService {
                 CHAT_ENDPOINT
             );
             final VLLMMessage message = VLLMMessage.builder()
-                .model(isLoRA(messageLine.getJobId()) ? LORA_ADAPTER : null)
+                .model(isLoRA(messageLine.getJobId()) ? LORA_ADAPTER : null) // TODO - Test and fix merged model (test hf)
                 .maxTokens(MAX_TOKENS)
                 .temperature(TEMPERATURE)
                 .topP(TOP_P)

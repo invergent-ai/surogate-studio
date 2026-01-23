@@ -488,7 +488,7 @@ public class CreateModelFlow extends BaseApplicationFlow {
             .memLimit("1024")
             .startCommand("sh")
             .startParameters(String.format(
-                "-c,set -euxo pipefail 2>/dev/null || set -eu;" +
+                "-c,set -eu;" +
                     "lakectl fs download -r lakefs://%s/ /mnt/%s; " +
                     (StringUtils.isEmpty(loraAdapter) ? "%s%s" : "lakectl fs download -r lakefs://%s/ /mnt/%s;"),
                 baseModel, baseModel,
