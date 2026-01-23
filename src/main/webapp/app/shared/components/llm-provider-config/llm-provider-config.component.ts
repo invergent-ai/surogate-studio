@@ -142,6 +142,13 @@ export class LlmProviderConfigComponent implements ControlValueAccessor {
 
   private withApiModelName(app: IApplication): DeployedModelOption {
     const config = app.extraConfig ? JSON.parse(app.extraConfig) : {};
+
+    // If LoRA is configured, use the adapter name
+    if (config.loraSourceModel) {
+      return { ...app, apiModelName: 'serve-lora' };
+    }
+
+    // Otherwise use base model name
     const apiModelName = config.source === 'hf' ? config.hfModelName : config.branchToDeploy ?? config.modelName;
     return { ...app, apiModelName };
   }
