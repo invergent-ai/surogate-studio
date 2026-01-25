@@ -28,12 +28,8 @@ import static net.statemesh.k8s.util.NamingUtils.pvcName;
 public class RayJobTask extends BaseMutationTask<String> {
     private final Logger log = LoggerFactory.getLogger(RayJobTask.class);
     private final Map<RayJobType, String> entrypoints = Map.of(
-        RayJobType.FINE_TUNE, "job-entry " + (USE_AXOLOTL_TRAINING_LIBRARY ? "train-axolotl" : "train") + " train",
-        RayJobType.TRAIN, "job-entry " + (USE_AXOLOTL_TRAINING_LIBRARY ? "train-axolotl" : "train") + " train"
-    );
-    private final Map<RayJobType, String> conda = Map.of(
-        RayJobType.FINE_TUNE, "train",
-        RayJobType.TRAIN, "train"
+        RayJobType.FINE_TUNE, "job-entry " + (USE_AXOLOTL_TRAINING_LIBRARY ? "train-axolotl train-axolotl" : "train train"),
+        RayJobType.TRAIN, "job-entry " + (USE_AXOLOTL_TRAINING_LIBRARY ? "train-axolotl train-axolotl" : "train train")
     );
 
     private final RayJobDTO rayJob;
@@ -342,7 +338,8 @@ public class RayJobTask extends BaseMutationTask<String> {
         rayJob.getEnvVars().forEach(
             envVar -> envVars.put(envVar.getKey(), envVar.getValue()));
         root.put("env_vars", envVars);
-//        root.put("conda", conda.get(rayJob.getType()));
+        root.put("py_executable",
+            "/opt/densemax/" + (USE_AXOLOTL_TRAINING_LIBRARY ? "train-axolotl" : "train") + "/.venv/bin/python");
 
         DumperOptions options = new DumperOptions();
         options.setPrettyFlow(true);
