@@ -68,10 +68,11 @@ export const newDatasetForm = (id: string, type: string, task: DatasetTask = 'sf
     messagePropertyMappingsRole: new FormControl<string>(null),
     messagePropertyMappingsContent: new FormControl<string>(null),
     // eval format
-    name: new FormControl<string>(isEval ? '' : null, isEval ? [Validators.required] : []),
+    name: new FormControl<string>(null),
     instructionColumn: new FormControl<string>('instruction'),
     answerColumn: new FormControl<string>('answer'),
-    evalTypeColumn: new FormControl<string>('eval_type'),
+    evalTypeColumn: new FormControl<string>('eval_type'), // keep this
+    evalType: new FormControl<string>('exact_match'),
     judgeCriteriaColumn: new FormControl<string>('judge_criteria'),
     defaultJudgeCriteria: new FormControl<string>('Evaluate if the response correctly answers the question based on the expected answer.'),
   });
@@ -138,6 +139,11 @@ export class DatasetTableChooserComponent implements OnInit, OnChanges {
   readonly TOOLTIP_JUDGE_CRITERIA = 'Column containing per-row judge criteria (optional)';
   readonly TOOLTIP_DEFAULT_CRITERIA = 'Default judge criteria when not specified per-row in dataset';
 
+  readonly evalTypes = [
+    { label: 'Exact Match', value: 'exact_match' },
+    { label: 'Judge (LLM-as-judge)', value: 'judge' },
+    { label: 'Hybrid', value: 'hybrid' },
+  ];
 
   ngOnInit() {
     this.initFormArraySubscription();

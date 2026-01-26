@@ -37,35 +37,55 @@ public class CreateTaskRunTask extends BaseMutationTask<String> {
     protected void execute(TaskResult.TaskResultBuilder<String> taskResult) throws Exception {
         log.info("Running Task...");
 
-        if (!taskRunExists()) {
+        // If task run exists, delete it first (for relaunch)
+        if (taskRunExists()) {
+            log.info("Task run {} exists, deleting for relaunch", taskRun.getName());
+            deleteTaskRun();
+        }
 
-            if (taskRun.getType() == TaskRunType.EVALUATION) {
-                resolveAndOverrideJudgeEndpoint();
-                resolveAndOverrideSimulatorEndpoint();
-            }
+        if (taskRun.getType() == TaskRunType.EVALUATION) {
+            resolveAndOverrideJudgeEndpoint();
+            resolveAndOverrideSimulatorEndpoint();
+        }
 
-            log.debug("Create task run {}", taskRun.getName());
+        log.debug("Create task run {}", taskRun.getName());
 
-            // Resolve model endpoints for evaluation tasks
-            String modelEndpoint = resolveModelEndpoint();
-            String ingressEndpoint = resolveIngressEndpoint();
+        // Resolve model endpoints for evaluation tasks
+        String modelEndpoint = resolveModelEndpoint();
+        String ingressEndpoint = resolveIngressEndpoint();
 
-            var response = getApiStub().getTaskRun().create(
+        var response = getApiStub().getTaskRun().create(
+            getNamespace(),
+            new V1TaskRun()
+                .apiVersion(TEKTON_GROUP + "/" + TEKTON_API_VERSION)
+                .kind(TEKTON_TASK_RUN_KIND)
+                .metadata(new V1ObjectMeta()
+                    .name(taskRun.getInternalName())
+                    .namespace(getNamespace()))
+                .spec(this.taskSpecs.createTaskSpec(this.taskRun, modelEndpoint, ingressEndpoint)),
+            new CreateOptions()
+        ).throwsApiException();
+
+        taskResult.value(Objects.requireNonNull(response.getObject().getMetadata()).getUid());
+    }
+
+    private void deleteTaskRun() {
+        try {
+            getApiStub().getTaskRun().delete(
                 getNamespace(),
-                new V1TaskRun()
-                    .apiVersion(TEKTON_GROUP + "/" + TEKTON_API_VERSION)
-                    .kind(TEKTON_TASK_RUN_KIND)
-                    .metadata(new V1ObjectMeta()
-                        .name(taskRun.getInternalName())
-                        .namespace(getNamespace()))
-                    .spec(this.taskSpecs.createTaskSpec(this.taskRun, modelEndpoint, ingressEndpoint)),
-                new CreateOptions()
+                taskRun.getInternalName()
             ).throwsApiException();
+            log.info("Deleted existing task run {}", taskRun.getInternalName());
 
-            taskResult.value(Objects.requireNonNull(response.getObject().getMetadata()).getUid());
-        } else {
-            log.debug("Skipping task run {} creation as it exists", taskRun.getName());
-            throw new SkippedExistsException();
+            int maxWait = 10;
+            while (taskRunExists() && maxWait-- > 0) {
+                Thread.sleep(500);
+            }
+        } catch (ApiException e) {
+            log.warn("Failed to delete task run {}: {}", taskRun.getInternalName(), e.getMessage());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.warn("Interrupted while waiting for task run deletion");
         }
     }
 

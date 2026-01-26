@@ -71,7 +71,7 @@ import { InputTextareaModule } from 'primeng/inputtextarea';
 import { InputTextModule } from 'primeng/inputtext';
 import { DropdownModule } from 'primeng/dropdown';
 import { InputNumberModule } from 'primeng/inputnumber';
-import { CONVERSATION_METRICS, QUALITY_METRICS } from './constants/metrics';
+import { CONVERSATION_METRICS } from './constants/metrics';
 import { ATTACKS, SECURITY_TESTS } from './constants/security';
 import { BENCHMARKS } from './constants/benchmarks';
 
@@ -131,7 +131,6 @@ export class EvaluationPage implements OnInit {
   readonly benchmarks = BENCHMARKS;
   readonly security = SECURITY_TESTS;
   readonly attacks = ATTACKS;
-  readonly quality = QUALITY_METRICS;
   readonly conversation = CONVERSATION_METRICS;
   readonly languages = [
     { name: 'Romanian', code: 'ro' },
@@ -189,19 +188,21 @@ export class EvaluationPage implements OnInit {
     const existing = this.taskRun();
 
     try {
-      this.isSaving.set(true);
+      if (launch) {
+        this.isLaunching.set(true);
+      } else {
+        this.isSaving.set(true);
+      }
+
       taskRunValue.params = this.formService.formToParams(taskRunValue);
       taskRunValue.benchmarks = [];
       taskRunValue.project = existing.project;
 
-      const saved = await lastValueFrom(this.taskRunService.submit(taskRunValue));
-
       if (launch) {
-        this.isSaving.set(false);
-        this.isLaunching.set(true);
-        await lastValueFrom(this.taskRunService.submit(saved));
+        await lastValueFrom(this.taskRunService.submit(taskRunValue));
         displaySuccess(this.store, 'Job launched successfully');
       } else {
+        await lastValueFrom(this.taskRunService.save(taskRunValue));
         displaySuccess(this.store, 'Job saved successfully');
       }
 
@@ -222,9 +223,6 @@ export class EvaluationPage implements OnInit {
   }
   get performanceMetricsArray(): FormArray {
     return this.taskForm.get('performanceMetrics') as FormArray;
-  }
-  get qualityMetricsArray(): FormArray {
-    return this.taskForm.get('qualityMetrics') as FormArray;
   }
   get conversationMetricsArray(): FormArray {
     return this.taskForm.get('conversationMetrics') as FormArray;
@@ -281,25 +279,6 @@ export class EvaluationPage implements OnInit {
   removeBenchmarkByName(name: string) {
     const index = this.benchmarksArray.value.findIndex((b: any) => b.name === name);
     if (index !== -1) this.benchmarksArray.removeAt(index);
-  }
-
-  addQualityMetric(item: any) {
-    if (this.qualityMetricsArray.value.some((m: any) => m.name === item.name)) return;
-    this.qualityMetricsArray.push(
-      new FormGroup({
-        name: new FormControl(item.name),
-        type: new FormControl('quality'),
-        datasetRepo: new FormControl<string | null>(null, Validators.required),
-        datasetRef: new FormControl<RefSelection | null>(null, Validators.required),
-        criteria: new FormControl<string>(''),
-        limit: new FormControl<number | null>(null),
-      }),
-    );
-  }
-
-  removeQualityMetric(name: string) {
-    const index = this.qualityMetricsArray.value.findIndex((m: any) => m.name === name);
-    if (index !== -1) this.qualityMetricsArray.removeAt(index);
   }
 
   addConversationMetric(item: any) {
@@ -360,7 +339,6 @@ export class EvaluationPage implements OnInit {
   protected readonly ShieldCheck = ShieldCheck;
   protected readonly Save = Save;
   protected readonly ArrowRight = ArrowRight;
-  protected readonly Sparkles = Sparkles;
   protected readonly MessageSquare = MessageSquare;
   protected readonly Settings = Settings;
   protected readonly Bot = Bot;

@@ -19,6 +19,7 @@ export interface LLMProviderConfig {
   internalName?: string;
   namespace?: string;
   tokenizer?: string; // Add
+  maxTokens?: number;
 }
 
 interface DeployedModelOption extends IApplication {
@@ -130,7 +131,8 @@ export class LlmProviderConfigComponent implements ControlValueAccessor {
     deployedModel: new FormControl<DeployedModelOption | null>(null),
     internalName: new FormControl<string>(''),
     namespace: new FormControl<string>(''),
-    tokenizer: new FormControl<string>(''), // Add
+    tokenizer: new FormControl<string>(''),
+    maxTokens: new FormControl<number | null>(null),
   });
 
   private onChange: (value: LLMProviderConfig) => void = () => {};
@@ -190,6 +192,17 @@ export class LlmProviderConfigComponent implements ControlValueAccessor {
 
   onDeployedModelChange(deployedModel: DeployedModelOption | null) {
     if (deployedModel) {
+      const config = deployedModel.extraConfig ? JSON.parse(deployedModel.extraConfig) : {};
+
+      const tokenizer =
+        config.source === 'hub' && config.branchToDeploy
+          ? `lakefs://${config.branchToDeploy}/tokenizer.json`
+          : deployedModel.hfModelName || '';
+
+      // Calculate 90% of max context for max_tokens
+      const maxContextSize = config.maxContextSize || 4096;
+      const maxTokens = Math.floor(maxContextSize * 0.9);
+
       this.form.patchValue(
         {
           model: deployedModel.apiModelName,
@@ -197,7 +210,8 @@ export class LlmProviderConfigComponent implements ControlValueAccessor {
           apiKey: 'sk-no-key-required',
           internalName: deployedModel.internalName,
           namespace: deployedModel.deployedNamespace,
-          tokenizer: deployedModel.hfModelName || '', // ADD
+          tokenizer,
+          maxTokens,
         },
         { emitEvent: false },
       );
