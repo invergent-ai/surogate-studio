@@ -93,6 +93,7 @@ export interface IRedTeamingResult {
   timestamp: string;
   vulnerabilities: IVulnerabilityResult[];
   overview?: string;
+  detailed_results?: IRedTeamingDetailedResult[];
 }
 
 export interface IVulnerabilityResult {
@@ -105,3 +106,17 @@ export interface IVulnerabilityResult {
   severity: string;
   attack_breakdown?: { [key: string]: number };
 }
+
+export interface IRedTeamingDetailedResult {
+  idx: number;
+  vulnerability: string;
+  vulnerability_type: string;
+  attack_method: string;
+  input: string;
+  actual_output: string;
+  expected_output: string | null;
+  score: number;
+  success: boolean;
+  reason: string | null;
+}
+
