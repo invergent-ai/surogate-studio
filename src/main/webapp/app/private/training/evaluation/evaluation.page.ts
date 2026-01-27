@@ -74,6 +74,9 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { CONVERSATION_METRICS } from './constants/metrics';
 import { ATTACKS, SECURITY_TESTS } from './constants/security';
 import { BENCHMARKS } from './constants/benchmarks';
+import {
+  DatasetFormatHelperComponent
+} from '../../../shared/components/dataset-format-helper/dataset-format-helper.component';
 
 @Component({
   standalone: true,
@@ -116,6 +119,7 @@ import { BENCHMARKS } from './constants/benchmarks';
     DropdownModule,
     InputTextModule,
     InputTextareaModule,
+    DatasetFormatHelperComponent,
   ],
 })
 export class EvaluationPage implements OnInit {

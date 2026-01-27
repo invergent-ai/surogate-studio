@@ -185,6 +185,11 @@ public class TaskSpecs {
                 .name("MODEL_ENDPOINT_FALLBACK").value(ingressEndpoint));
         }
 
+        if (hasParam(task, "CUSTOM_EVAL_DATASETS")) {
+            envVars.add(new V1PipelineRunSpecTaskRunSpecsInnerPodTemplateEnvInner()
+                .name("CUSTOM_EVAL_DATASETS").value("$(params.CUSTOM_EVAL_DATASETS)"));
+        }
+
         // Keep for logging/metadata
         envVars.add(new V1PipelineRunSpecTaskRunSpecsInnerPodTemplateEnvInner()
             .name("DEPLOYED_MODEL_NAME").value("$(params.DEPLOYED_MODEL_NAME)"));

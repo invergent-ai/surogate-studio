@@ -244,16 +244,11 @@ export class EvaluationFormService {
             answer: d.answerColumn || 'answer',
           };
 
-          // Only include eval_type column for hybrid mode
+          // Only include eval_type and judge_criteria columns for hybrid mode
           if (evalType === 'hybrid') {
             columns.eval_type = d.evalTypeColumn || 'eval_type';
             columns.judge_criteria = d.judgeCriteriaColumn || 'judge_criteria';
           }
-          // Only include judge_criteria column for judge mode
-          else if (evalType === 'judge') {
-            columns.judge_criteria = d.judgeCriteriaColumn || 'judge_criteria';
-          }
-          // exact_match: no additional columns
 
           return {
             name: d.repoId,
@@ -261,10 +256,10 @@ export class EvaluationFormService {
             ref: d.ref?.id || null,
             split: d.split || 'test',
             limit: d.samples || null,
+            evalType,  // ADD THIS
             columns,
             promptTemplate: d.usePromptTemplate ? d.promptTemplate : null,
             stopSequences: d.usePromptTemplate ? d.stopSequences : null,
-            // Only include defaultJudgeCriteria for judge/hybrid
             defaultJudgeCriteria: evalType !== 'exact_match' ? d.defaultJudgeCriteria : null,
           };
         }),

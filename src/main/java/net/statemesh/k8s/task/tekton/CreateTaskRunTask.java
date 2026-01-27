@@ -17,6 +17,7 @@ import net.statemesh.service.dto.TaskRunParamDTO;
 import java.util.Objects;
 
 import static net.statemesh.k8s.util.K8SConstants.*;
+import static net.statemesh.k8s.util.NamingUtils.serviceName;
 
 @Slf4j
 public class CreateTaskRunTask extends BaseMutationTask<String> {
@@ -72,33 +73,9 @@ public class CreateTaskRunTask extends BaseMutationTask<String> {
             return null;
         }
 
-        String serviceLabel = internalName + "-router";
-        String labelSelector = "app.kubernetes.io/instance=" + serviceLabel;
-
-        try {
-            var services = getApiStub().getCoreV1Api()
-                .listNamespacedService(namespace)
-                .labelSelector(labelSelector)
-                .execute();
-
-            for (var svc : services.getItems()) {
-                if (svc.getSpec() == null || svc.getSpec().getPorts() == null) {
-                    continue;
-                }
-                for (var port : svc.getSpec().getPorts()) {
-                    if (port.getPort() == 80) {
-                        // Use short name - same namespace as eval pod
-                        String endpoint = String.format("http://%s/v1", svc.getMetadata().getName());
-                        log.info("Resolved internal model endpoint: {}", endpoint);
-                        return endpoint;
-                    }
-                }
-            }
-            log.warn("No service with port 80 found for label {}", labelSelector);
-        } catch (ApiException e) {
-            log.error("Failed to find service with label {}", labelSelector, e);
-        }
-        return null;
+        String endpoint = String.format("http://%s/v1", serviceName(internalName, "80"));
+        log.info("Resolved internal model endpoint: {}", endpoint);
+        return endpoint;
     }
 
     private void resolveAndOverrideJudgeEndpoint() {

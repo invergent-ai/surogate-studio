@@ -36,6 +36,7 @@ import {NgIf} from '@angular/common';
 import {CheckboxModule} from 'primeng/checkbox';
 import {ChipsModule} from 'primeng/chips';
 import {TooltipModule} from 'primeng/tooltip';
+import { DatasetFormatHelperComponent } from '../dataset-format-helper/dataset-format-helper.component';
 
 export type DatasetTask = 'pretrain' | 'sft' | 'eval';
 
@@ -104,6 +105,7 @@ export const newDatasetForm = (id: string, type: string, task: DatasetTask = 'sf
     CheckboxModule,
     ChipsModule,
     TooltipModule,
+    DatasetFormatHelperComponent,
   ],
 })
 export class DatasetTableChooserComponent implements OnInit, OnChanges {

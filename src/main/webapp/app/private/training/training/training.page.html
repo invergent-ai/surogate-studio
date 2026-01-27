@@ -14,7 +14,8 @@
                 <label>Run name</label>
                 <input pInputText type="text" class="" id="name" formControlName="name"
                        [class.ng-dirty]="jobForm.dirty">
-                <small *ngIf="jobForm.dirty" [class.text-red-500]="jobForm.dirty && jobForm.get('name')?.errors?.required">
+                <small *ngIf="jobForm.dirty"
+                       [class.text-red-500]="jobForm.dirty && jobForm.get('name')?.errors?.required">
                   Name is required</small>
                 <small *ngIf="jobForm.dirty" [class.text-red-500]="jobForm.dirty &&
                   (jobForm.get('name')?.errors?.minlength || jobForm.get('name')?.errors?.maxlength)">
@@ -23,7 +24,8 @@
               <div class="field col-12 md:col-6">
                 <sm-label-tooltip [tooltip]="BASE_MODEL_REPOSITORY">Base model repository</sm-label-tooltip>
                 <div class="flex gap-3 grid-nogutter pr-3">
-                  <sm-repo-selector class="col-6" [repoType]="'model'" formControlName="baseModelRepo" [maxDisplayLength]="20"></sm-repo-selector>
+                  <sm-repo-selector class="col-6" [repoType]="'model'" formControlName="baseModelRepo"
+                                    [maxDisplayLength]="20"></sm-repo-selector>
                   <sm-ref-selector class="col-6"
                                    type="branch"
                                    [repoId]="jobForm.get('baseModelRepo').value"
@@ -55,7 +57,8 @@
               </div>
               <div class="field col-12 md:col-6">
                 <label>Description</label>
-                <textarea pInputTextarea type="text" id="description" formControlName="description" class="" rows="3"></textarea>
+                <textarea pInputTextarea type="text" id="description" formControlName="description" class=""
+                          rows="3"></textarea>
               </div>
             </div>
           </sm-card>
@@ -63,19 +66,21 @@
           <p-tabView>
             <p-tabPanel header="Training datasets">
               <ng-container formArrayName="datasets">
-                <sm-dataset-table-chooser [task]="dsType()" [formArray]="datasets" [multiple]="true" title="Training datasets"></sm-dataset-table-chooser>
+                <sm-dataset-table-chooser [task]="dsType()" [formArray]="datasets" [multiple]="true"
+                                          title="Training datasets"></sm-dataset-table-chooser>
               </ng-container>
             </p-tabPanel>
             <p-tabPanel header="Validation datasets">
               <ng-container formArrayName="testDatasets">
-                <sm-dataset-table-chooser [task]="dsType()" [formArray]="testDatasets" [multiple]="true" title="Validation datasets"></sm-dataset-table-chooser>
+                <sm-dataset-table-chooser [task]="dsType()" [formArray]="testDatasets" [multiple]="true"
+                                          title="Validation datasets"></sm-dataset-table-chooser>
               </ng-container>
             </p-tabPanel>
           </p-tabView>
 
           <sm-training-recipe [trainingForm]="trainingForm"></sm-training-recipe>
 
-<!--          LoRA / QLoRA-->
+          <!--          LoRA / QLoRA-->
           <sm-card header="LoRA" [icon]="Plug" [padContent]="false" iconClass="text-purple-500">
             <ng-template pTemplate="toolbar">
               <div class="flex gap-2">
@@ -193,7 +198,7 @@
             </div>
           </sm-card>
 
-<!--          Ray cluster shape-->
+          <!--          Ray cluster shape-->
           <sm-card header="Ray cluster shape" [icon]="Cpu" [padContent]="false">
             <ng-template pTemplate="toolbar">
               <div class="flex align-items-center gap-2">
@@ -262,7 +267,7 @@
             </div>
           </sm-card>
 
-<!--          Action buttons-->
+          <!--Action buttons-->
           <div class="flex justify-content-between align-items-center">
             <p class="text-500">Config is saved as a draft until launch.</p>
             <div class="flex gap-2">

@@ -11,10 +11,10 @@
   </ng-template>
 
   @if (task() === 'eval' && formArrayForDisplay().length === 0) {
-    <div class="flex flex-column align-items-center justify-content-center py-5 text-center">
-      <i-lucide [img]="Database" class="w-3rem h-3rem text-400 mb-3"></i-lucide>
-      <p class="text-500 mb-0">Add a custom evaluation dataset to evaluate your model with flexible column mappings.</p>
-      <small class="text-400 mt-2">Supports exact_match and judge (LLM-as-judge) evaluation types.</small>
+    <div class="flex flex-column align-items-center justify-content-center py-4 text-center">
+      <i-lucide [img]="Database" class="w-2rem h-2rem text-400 mb-2"></i-lucide>
+      <p class="text-500 mb-2">Add a custom evaluation dataset to evaluate your model.</p>
+      <sm-dataset-format-helper [formatType]="'custom_evaluation'"></sm-dataset-format-helper>
     </div>
   } @else {
     <div class="card surface-50 border-round-xl border-1 border-300" style="padding: 3px;">
@@ -202,17 +202,19 @@
                           <sm-label-tooltip [tooltip]="TOOLTIP_ANSWER">Answer Column *</sm-label-tooltip>
                           <input pInputText type="text" formControlName="answerColumn" placeholder="answer">
                         </div>
-                        @if (currentForm().get('evalType')?.value !== 'exact_match') {
+                        @if (currentForm().get('evalType')?.value === 'hybrid') {
                           <div class="field col-12 md:col-6">
                             <sm-label-tooltip [tooltip]="TOOLTIP_JUDGE_CRITERIA">Judge Criteria Column</sm-label-tooltip>
                             <input pInputText type="text" formControlName="judgeCriteriaColumn"
                                    placeholder="judge_criteria (optional)">
                           </div>
+                        }
+                        @if (currentForm().get('evalType')?.value !== 'exact_match') {
                           <div class="field col-12">
                             <sm-label-tooltip [tooltip]="TOOLTIP_DEFAULT_CRITERIA">Default Judge Criteria</sm-label-tooltip>
                             <textarea pInputTextarea formControlName="defaultJudgeCriteria" rows="2"
                                       placeholder="Evaluate if the response correctly answers the question based on the expected answer."></textarea>
-                            <small class="text-500">Used when judge_criteria column is empty or not specified</small>
+                            <small class="text-500">Used for all rows evaluated by judge</small>
                           </div>
                         }
                       }
