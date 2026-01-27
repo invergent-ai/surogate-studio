@@ -51,6 +51,7 @@ import { serviceNameForPort } from '../../shared/util/naming.util';
 import { AppHeaderCardComponent } from './components/app-header-card.component';
 import { Activity, LucideAngularModule } from 'lucide-angular';
 import { LayoutService } from '../../shared/service/theme/app-layout.service';
+import {ChatVllmComponent} from "../training/components/chat-vllm/chat-vllm.component";
 
 @Component({
   standalone: true,
@@ -82,7 +83,8 @@ import { LayoutService } from '../../shared/service/theme/app-layout.service';
     RouterMetricsComponent,
     WorkerMetricsComponent,
     AppHeaderCardComponent,
-    LucideAngularModule
+    LucideAngularModule,
+    ChatVllmComponent
   ]
 })
 export class ModelPage implements OnInit, OnDestroy {

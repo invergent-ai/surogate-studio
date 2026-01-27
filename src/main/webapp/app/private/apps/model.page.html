@@ -66,6 +66,7 @@
                 <i class="pi pi-spinner pi-spin" style="font-size: 1rem"></i>
               </ng-template>
             </div>
+
           </p-card>
         </div>
 <!--        Worker-->
@@ -227,9 +228,14 @@
                            (terminalDisconnect)="handleDisconnect($event)"
                            [application]="application"
                            component="Cache"></sm-app-status>
-
           </ng-template>
         </p-tabPanel>
+        <p-tabPanel header="Chat" [disabled]="statusTabDisabled('Worker')">
+          <ng-template pTemplate="content">
+            <sm-chat-vllm [acceptedFileTypes]="['image']" [supportsFiles]="true" [applicationId]="application.id" [internalEndpoint]="internalRouterEndpoint()"></sm-chat-vllm>
+          </ng-template>
+        </p-tabPanel>
+
       </p-tabView>
     </ng-template>
   </sm-page-loader>

@@ -6,6 +6,7 @@ import lombok.*;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Setter
 @Getter
@@ -31,6 +32,9 @@ public class VLLMMessage implements Serializable {
     @JsonProperty("chat_template_kwargs")
     private ChatTemplateKwArgs chatTemplateKwargs;
 
+    @JsonProperty("stream_options")
+    private Map<String, Object> streamOptions;
+
     @Builder.Default
     private List<Message> messages = new ArrayList<>();
 
@@ -38,7 +42,7 @@ public class VLLMMessage implements Serializable {
     @Builder
     public static class Message {
         private String role;
-        private String content;
+        private Object content;
     }
 
     @Data

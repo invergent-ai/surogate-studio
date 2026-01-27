@@ -6,11 +6,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.statemesh.config.ApplicationProperties;
+import net.statemesh.domain.Application;
+import net.statemesh.repository.ApplicationRepository;
 import net.statemesh.service.RayJobService;
 import net.statemesh.service.dto.ChatMetaDTO;
 import net.statemesh.service.dto.LineDTO;
 import net.statemesh.service.dto.VLLMMessage;
 import net.statemesh.service.dto.VLLMResponse;
+import net.statemesh.service.dto.vllm.*;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.*;
 import org.springframework.http.client.ClientHttpRequest;
@@ -24,6 +27,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -62,7 +66,8 @@ public class TestChatService {
     private final ApplicationProperties applicationProperties;
 
     private final Map<String, String> urls = new ConcurrentHashMap<>();
-
+    private final Map<String, Boolean> vllmActiveStreams = new ConcurrentHashMap<>();
+    private final ApplicationRepository applicationRepository;
     public void startChat(String jobId) {
         final String url = chatUrl(jobId);
         if (url == null) {
@@ -272,5 +277,362 @@ public class TestChatService {
                 VLLM_CONTROLLER_PORT.toString()
             ) :
             StringUtils.join("https://", rayJob.getChatHostName());
+    }
+
+    /**
+     * Process VLLM chat request via WebSocket
+     */
+    public void sendVllmMessage(VllmChatRequestDTO request) {
+        String applicationId = request.getApplicationId();
+        String topic = "/topic/message/" + applicationId;
+
+
+        vllmActiveStreams.put(applicationId, true);
+        Application app = applicationRepository.findById(request.getApplicationId()).orElseThrow(() -> new RuntimeException("Application not found: " + applicationId));
+
+        try {
+            String url = chatVllmUrl(request, app) + CHAT_ENDPOINT;
+            String modelName = extractAppModelName(app);
+            log.debug("sendVllmMessage() - modelName: {}", modelName);
+            request.setModel(modelName);
+            VLLMMessage vllmRequest = buildVllmRequest(request);
+
+            streamVllm(url, vllmRequest, applicationId, topic);
+
+        } catch (Exception e) {
+            log.error("Failed to send VLLM chat message for application {}", applicationId, e);
+            sendVllmError(topic, applicationId, e.getMessage());
+        } finally {
+            vllmActiveStreams.remove(applicationId);
+        }
+    }
+
+    private String chatVllmUrl(VllmChatRequestDTO request, Application app){
+
+        return Optional.ofNullable(applicationProperties.getK8sAccessMode()).orElse(Boolean.FALSE) ?
+            StringUtils.join(
+                "http://",request.getInternalEndpoint()
+            ) :
+            StringUtils.join("https://", app.getIngressHostName());
+    }
+
+    /**
+     * Abort an active VLLM stream
+     */
+    public void abortVllmStream(String applicationId) {
+        vllmActiveStreams.put(applicationId, false);
+        String topic = "/topic/message/" + applicationId;
+        try {
+            VllmChatResponseDTO response = VllmChatResponseDTO.builder()
+                .applicationId(applicationId)
+                .payload("[ABORTED]")
+                .build();
+            messagingTemplate.convertAndSend(topic, objectMapper.writeValueAsString(response));
+        } catch (Exception e) {
+            log.error("Failed to send abort confirmation", e);
+        }
+    }
+
+    /**
+     * Build VLLM request from frontend DTO
+     */
+    private VLLMMessage buildVllmRequest(VllmChatRequestDTO request) {
+        VLLMMessage.VLLMMessageBuilder builder = VLLMMessage.builder()
+            .model(request.getModel())
+            .messages(convertToVllmMessages(request.getMessages(), request.getSystemPrompt()))
+            .streamOptions(Map.of("include_usage", true))
+            .stream(true);
+        if (Boolean.TRUE.equals(request.getEnableThinking())) {
+            builder.chatTemplateKwargs(
+                VLLMMessage.ChatTemplateKwArgs.builder()
+                    .enableThinking(true)
+                    .build()
+            );
+        }else {
+            builder.chatTemplateKwargs(
+                VLLMMessage.ChatTemplateKwArgs.builder()
+                    .enableThinking(false)
+                    .build()
+            );
+        }
+
+
+        if (request.getAdvancedParams() != null) {
+            Map<String, Object> params = request.getAdvancedParams();
+            if (params.containsKey("temperature")) {
+                builder.temperature(((Number) params.get("temperature")).doubleValue());
+            }
+            if (params.containsKey("top_p")) {
+                builder.topP(((Number) params.get("top_p")).doubleValue());
+            }
+            if (params.containsKey("top_k")) {
+                builder.topK(((Number) params.get("top_k")).intValue());
+            }
+            if (params.containsKey("max_tokens")) {
+                builder.maxTokens(((Number) params.get("max_tokens")).intValue());
+            }
+        }
+
+
+
+        return builder.build();
+    }
+
+    /**
+     * Convert frontend messages to VLLM format
+     */
+    private List<VLLMMessage.Message> convertToVllmMessages(List<ChatMessageDTO> messages, String systemPrompt) {
+        List<VLLMMessage.Message> vllmMessages = new ArrayList<>();
+
+        if (systemPrompt != null && !systemPrompt.trim().isEmpty()) {
+            vllmMessages.add(VLLMMessage.Message.builder()
+                .role("system")
+                .content(systemPrompt)
+                .build());
+        }
+
+        for (ChatMessageDTO msg : messages) {
+            if ("system".equals(msg.getRole()) && systemPrompt != null && !systemPrompt.trim().isEmpty()) {
+                continue;
+            }
+
+            if (msg.getFiles() != null && !msg.getFiles().isEmpty()) {
+                List<Object> content = new ArrayList<>();
+
+                if (msg.getContent() != null && !msg.getContent().toString().trim().isEmpty()) {
+                    content.add(Map.of("type", "text", "text", msg.getContent()));
+                }
+
+                for (AttachedFileDTO file : msg.getFiles()) {
+                    if ("image".equals(file.getType())) {
+                        content.add(Map.of(
+                            "type", "image_url",
+                            "image_url", Map.of("url", "data:" + file.getMimeType() + ";base64," + file.getBase64())
+                        ));
+                    }
+                }
+
+                vllmMessages.add(VLLMMessage.Message.builder()
+                    .role(msg.getRole())
+                    .content(content)
+                    .build());
+            } else {
+                vllmMessages.add(VLLMMessage.Message.builder()
+                    .role(msg.getRole())
+                    .content(msg.getContent())
+                    .build());
+            }
+        }
+
+        return vllmMessages;
+    }
+
+    /**
+     * Stream VLLM response (similar to existing stream() method)
+     */
+    private void streamVllm(String url, VLLMMessage message, String applicationId, String topic) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setAccept(List.of(MediaType.TEXT_EVENT_STREAM, MediaType.APPLICATION_JSON));
+
+        try {
+            byte[] json = objectMapper.writeValueAsBytes(message);
+            headers.setContentLength(json.length);
+
+            restTemplate.execute(
+                url,
+                HttpMethod.POST,
+                (ClientHttpRequest req) -> {
+                    req.getHeaders().putAll(headers);
+                    try (OutputStream os = req.getBody()) {
+                        os.write(json);
+                    }
+                },
+                response -> {
+                    MediaType ct = response.getHeaders().getContentType();
+                    if (ct == null || !MediaType.TEXT_EVENT_STREAM.isCompatibleWith(ct)) {
+                        throw new IllegalStateException("Expected text/event-stream, got: " + ct);
+                    }
+
+                    try (InputStream is = response.getBody();
+                         BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+                        processVllmStream(reader, applicationId, topic);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                    return null;
+                }
+            );
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Process VLLM SSE stream
+     */
+    private void processVllmStream(BufferedReader reader, String applicationId, String topic) throws Exception {
+        String line;
+        boolean isInThinking = false;
+        Integer inputTokens = null;
+        Integer outputTokens = null;
+        Integer totalTokens = null;
+        String finishReason = null;
+
+        while ((line = reader.readLine()) != null) {
+            if (!vllmActiveStreams.getOrDefault(applicationId, false)) {
+                log.info("VLLM stream aborted for {}", applicationId);
+                break;
+            }
+
+            line = line.trim();
+
+            if (!line.startsWith("data:")) continue;
+            String payload = line.substring(5).trim();
+            if ("[DONE]".equals(payload)) {
+                sendVllmDone(topic, applicationId, finishReason, inputTokens, outputTokens, totalTokens);
+                break;
+            }
+
+            try {
+                JsonNode root = objectMapper.readTree(payload);
+                JsonNode choice = root.path("choices").path(0);
+                String content = choice.path("delta").path("content").asText(null);
+
+                if (content != null && !content.isEmpty()) {
+                    if (content.contains("<think>")) {
+                        isInThinking = true;
+                        String[] parts = content.split("<think>", 2);
+                        if (!parts[0].isEmpty()) {
+                            sendVllmChunk(topic, applicationId, parts[0], false);
+                        }
+                        if (parts.length > 1) {
+                            sendVllmChunk(topic, applicationId, parts[1], true);
+                        }
+                    } else if (content.contains("</think>")) {
+                        isInThinking = false;
+                        String[] parts = content.split("</think>", 2);
+                        if (!parts[0].isEmpty()) {
+                            sendVllmChunk(topic, applicationId, parts[0], true);
+                        }
+                        if (parts.length > 1) {
+                            sendVllmChunk(topic, applicationId, parts[1], false);
+                        }
+                    } else {
+                        sendVllmChunk(topic, applicationId, content, isInThinking);
+                    }
+                }
+
+                String currentFinish = choice.path("finish_reason").asText(null);
+                if (currentFinish != null && !"null".equals(currentFinish)) {
+                    finishReason = currentFinish;
+                }
+
+                JsonNode usage = root.path("usage");
+                if (!usage.isMissingNode()) {
+                    inputTokens = usage.path("prompt_tokens").asInt(0);
+                    outputTokens = usage.path("completion_tokens").asInt(0);
+                    totalTokens = usage.path("total_tokens").asInt(0);
+                }
+            } catch (Exception e) {
+                log.warn("Failed to parse VLLM SSE line: {}", payload);
+            }
+        }
+    }
+
+    /**
+     * Send chunk to VLLM WebSocket topic
+     */
+    private void sendVllmChunk(String topic, String applicationId, String content, boolean isThinking) {
+        try {
+            VllmChatResponseDTO response = VllmChatResponseDTO.builder()
+                .applicationId(applicationId)
+                .payload(content)
+                .isThinking(isThinking)
+                .build();
+
+            messagingTemplate.convertAndSend(topic, objectMapper.writeValueAsString(response));
+        } catch (Exception e) {
+            log.error("Failed to send VLLM chunk for {}", applicationId, e);
+        }
+    }
+
+    /**
+     * Send [DONE] with metadata
+     */
+    private void sendVllmDone(String topic, String applicationId, String finishReason,
+                              Integer inputTokens, Integer outputTokens, Integer totalTokens) {
+        try {
+            UsageDTO usage = null;
+            if (inputTokens != null || outputTokens != null || totalTokens != null) {
+                usage = UsageDTO.builder()
+                    .inputTokens(inputTokens)
+                    .outputTokens(outputTokens)
+                    .totalTokens(totalTokens)
+                    .build();
+            }
+
+            MessageInfoDTO info = MessageInfoDTO.builder()
+                .finishReason(finishReason != null ? finishReason : "stop")
+                .usage(usage)
+                .provider("vllm")
+                .build();
+
+            VllmChatResponseDTO response = VllmChatResponseDTO.builder()
+                .applicationId(applicationId)
+                .payload("[DONE]")
+                .info(info)
+                .build();
+
+            messagingTemplate.convertAndSend(topic, objectMapper.writeValueAsString(response));
+        } catch (Exception e) {
+            log.error("Failed to send VLLM [DONE] for {}", applicationId, e);
+        }
+    }
+
+    /**
+     * Send error to VLLM WebSocket topic
+     */
+    private void sendVllmError(String topic, String applicationId, String errorMessage) {
+        try {
+            VllmChatResponseDTO response = VllmChatResponseDTO.builder()
+                .applicationId(applicationId)
+                .error(errorMessage)
+                .build();
+
+            messagingTemplate.convertAndSend(topic, objectMapper.writeValueAsString(response));
+        } catch (Exception e) {
+            log.error("Failed to send VLLM error for {}", applicationId, e);
+        }
+    }
+
+    private String extractAppModelName(Application application) {
+        if (application == null || application.getExtraConfig() == null) {
+            return null;
+        }
+
+        try {
+            JsonNode config = objectMapper.readTree(application.getExtraConfig());
+
+            String source = config.has("source") ? config.get("source").asText() : null;
+
+            if ("hf".equals(source)) {
+                return config.has("hfModelName") ? config.get("hfModelName").asText() : null;
+            }
+
+            if (config.has("branchToDeploy")) {
+                return config.get("branchToDeploy").asText();
+            }
+
+            if (config.has("modelName")) {
+                return config.get("modelName").asText();
+            }
+
+            return null;
+
+        } catch (JsonProcessingException e) {
+            log.error("Failed to parse extraConfig for application {}", application.getId(), e);
+            return null;
+        }
     }
 }

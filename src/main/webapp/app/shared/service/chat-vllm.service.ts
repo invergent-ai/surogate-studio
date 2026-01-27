@@ -1,6 +1,7 @@
 import {Injectable} from '@angular/core';
 import {HttpClient, HttpHeaders} from '@angular/common/http';
 import {Observable} from 'rxjs';
+import {TrackerService} from "./tracker.service";
 
 export interface AttachedFile {
   name: string;
@@ -45,177 +46,48 @@ export interface MessageInfo {
 })
 export class ChatVllmService {
 
-  constructor(private http: HttpClient) {
+  constructor(private http: HttpClient, private trackerService: TrackerService) {
   }
 
-  streamChat$(
+  connectToVllmChat(applicationId: string): Observable<any> {
+    const topic = `/topic/message/${applicationId}`;
+    return this.trackerService.stomp.watch(topic);
+  }
+
+  sendChatMessage(
+    applicationId: string,
     baseUrl: string,
     model: string,
     messages: ChatMessage[],
     advancedParams: AdvancedParam[],
     systemPrompt: string,
-    enableThinking: boolean = false
-  ): Observable<{ chunk: string; thinking?: string; info?: any; isThinking?: boolean }> {
-    return new Observable(observer => {
-      const abortController = new AbortController();
+    enableThinking: boolean = false,
+    internalEndpoint: string
+  ): void {
+    const payload = {
+      applicationId: applicationId,
+      baseUrl: baseUrl,
+      model: model,
+      messages: this.buildMessages(messages, systemPrompt),
+      advancedParams: this.buildAdvancedOptions(advancedParams),
+      systemPrompt: systemPrompt,
+      enableThinking: enableThinking,
+      internalEndpoint: internalEndpoint
+    };
+    this.trackerService.stomp.publish({
+      destination: '/job/message',
+      body: JSON.stringify(payload)
+    });
+  }
 
-      (async () => {
-        try {
+  abortStream(applicationId: string): void {
 
-          const apiUrl = `${baseUrl}/chat/completions`;
-
-          const body: any = {
-            model: model,
-            messages: this.buildMessages(messages, systemPrompt),
-            stream: true,
-            stream_options: {include_usage: true},
-            chat_template_kwargs: {
-              enable_thinking: enableThinking
-            },
-            ...this.buildAdvancedOptions(advancedParams)
-          };
-
-          console.log("body: " + JSON.stringify(body));
-          console.log("apiUrl: " + apiUrl);
-
-          const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(body),
-            signal: abortController.signal,
-          });
-
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-
-          if (!response.body) {
-            throw new Error('No response body');
-          }
-
-          const reader = response.body.getReader();
-          const decoder = new TextDecoder();
-          let buffer = '';
-          let usageInfo: any = null;
-          let finishReason: string | undefined;
-          let chunkCount = 0;
-          let isInThinking = false;
-          let thinkingBuffer = '';
-          let completeContent = '';
-
-
-          while (true) {
-            const {done, value} = await reader.read();
-
-            if (done) {
-              break;
-            }
-
-            buffer += decoder.decode(value, {stream: true});
-            const lines = buffer.split('\n');
-
-            buffer = lines.pop() || '';
-
-            for (const line of lines) {
-              const trimmed = line.trim();
-              if (!trimmed || !trimmed.startsWith('data: ')) continue;
-
-              const data = trimmed.slice(6);
-
-              if (data === '[DONE]') {
-                continue;
-              }
-
-              try {
-                const parsed = JSON.parse(data);
-                let content = parsed.choices?.[0]?.delta?.content;
-
-                if (content !== undefined && content !== null && content !== '') {
-                  chunkCount++;
-                  completeContent += content;
-                  const thinkStartMatch = content.match(/<think>/i);
-                  const thinkEndMatch = content.match(/<\/think>/i);
-
-                  if (thinkStartMatch) {
-                    isInThinking = true;
-                    const parts = content.split(/<think>/i);
-                    if (parts[0]) {
-                      observer.next({chunk: parts[0], isThinking: false});
-                    }
-                    thinkingBuffer = parts[1] || '';
-                    content = '';
-                  } else if (thinkEndMatch) {
-                    isInThinking = false;
-                    const parts = content.split(/<\/think>/i);
-                    thinkingBuffer += parts[0];
-
-                    thinkingBuffer = '';  // Clear buffer
-                    if (parts[1]) {
-                      observer.next({chunk: parts[1], isThinking: false});
-                    }
-                    content = '';
-                  } else if (isInThinking) {
-                    thinkingBuffer += content;
-                    observer.next({chunk: '', thinking: content, isThinking: true});
-                    content = '';
-                  }
-
-                  if (content) {
-                    observer.next({chunk: content, isThinking: false});
-                  }
-                }
-
-                const currentFinishReason = parsed.choices?.[0]?.finish_reason;
-                if (currentFinishReason) {
-                  finishReason = currentFinishReason;
-                }
-
-                if (parsed.usage) {
-                  usageInfo = {
-                    inputTokens: parsed.usage.prompt_tokens || 0,
-                    outputTokens: parsed.usage.completion_tokens || 0,
-                    totalTokens: parsed.usage.total_tokens || 0,
-                  };
-                }
-
-              } catch (parseError) {
-                console.error('❌ Parse error:', parseError);
-              }
-            }
-          }
-
-
-          if (enableThinking && completeContent.includes('<think>')) {
-            console.log('⚠️ Think tags found in complete content - post-processing');
-          }
-
-          const finalInfo: MessageInfo = {
-            finishReason: finishReason || 'stop',
-            model: model,
-            timestamp: new Date(),
-            usage: usageInfo || undefined,
-            provider: 'vllm'
-          };
-
-          console.log('📋 Final info:', finalInfo);
-          observer.next({chunk: '', info: finalInfo});
-          observer.complete();
-
-        } catch (error: any) {
-          console.error('❌ Error:', error);
-          if (error.name === 'AbortError') {
-            observer.complete();
-          } else {
-            observer.error(this.enhanceError(error));
-          }
-        }
-      })();
-
-      return () => {
-        abortController.abort();
-      };
+    this.trackerService.stomp.publish({
+      destination: '/job/message',
+      body: JSON.stringify({
+        applicationId: applicationId,
+        abort: true
+      })
     });
   }
 

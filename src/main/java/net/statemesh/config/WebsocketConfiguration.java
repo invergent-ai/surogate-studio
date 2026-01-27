@@ -14,6 +14,7 @@ import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
+import org.springframework.web.socket.config.annotation.WebSocketTransportRegistration;
 import org.springframework.web.socket.server.HandshakeInterceptor;
 import org.springframework.web.socket.server.support.DefaultHandshakeHandler;
 import tech.jhipster.config.JHipsterProperties;
@@ -81,6 +82,14 @@ public class WebsocketConfiguration implements WebSocketMessageBrokerConfigurer 
             ) {}
         };
     }
+
+    @Override
+    public void configureWebSocketTransport(WebSocketTransportRegistration registration) {
+        registration.setMessageSizeLimit(10 * 1024 * 1024)     // inbound STOMP message size (10MB)
+            .setSendBufferSizeLimit(10 * 1024 * 1024)
+            .setSendTimeLimit(20_000);
+    }
+
 
     private DefaultHandshakeHandler defaultHandshakeHandler() {
         return new DefaultHandshakeHandler() {

@@ -5,7 +5,7 @@ import {
   ElementRef,
   inject,
   input,
-  OnDestroy,
+  OnDestroy, OnInit,
   signal,
   ViewChild
 } from '@angular/core';
@@ -23,7 +23,8 @@ import {MarkdownComponent} from "ngx-markdown";
 import {TooltipModule} from 'primeng/tooltip';
 import {MessageModule} from "primeng/message";
 import {InputSwitchModule} from 'primeng/inputswitch';
-import {Subscription} from "rxjs";
+import {Subject, Subscription} from "rxjs";
+import {takeUntil} from "rxjs/operators";
 
 @Component({
   selector: 'sm-chat-vllm',
@@ -49,7 +50,7 @@ import {Subscription} from "rxjs";
   templateUrl: './chat-vllm.component.html',
   styleUrl: './chat-vllm.component.scss'
 })
-export class ChatVllmComponent implements OnDestroy {
+export class ChatVllmComponent implements OnDestroy, OnInit {
 
   readonly chatService = inject(ChatVllmService);
 
@@ -82,6 +83,11 @@ export class ChatVllmComponent implements OnDestroy {
   private streamSub: Subscription | undefined;
   private scrollTimeout: any;
 
+  applicationId = input.required<string>();
+  internalEndpoint = input.required<string>();
+  private wsSubscription? : Subscription;
+  private destroy$ = new Subject<void>();
+
   constructor() {
     effect(() => {
       const inputValue = this.advancedParamsInput();
@@ -99,6 +105,118 @@ export class ChatVllmComponent implements OnDestroy {
     });
   }
 
+  ngOnInit() {
+    this.wsSubscription = this.chatService.connectToVllmChat(this.applicationId())
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (message) => {
+          if (message && message.body) {
+            try {
+              const body = JSON.parse(message.body);
+              if (body?.error) {
+                this.streaming.set(false);
+                this.errorMessage.set(String(body.error));
+                this.live.set('');
+                this.liveThinking.set('');
+                return;
+              }
+            } catch (e) {
+              // Ignore parse errors for body
+            }
+          }
+
+          this.streaming.set(true);
+          this.processMessage(message.binaryBody);
+        },
+        error: (err) => {
+          console.error('WebSocket error:', err);
+          this.streaming.set(false);
+          this.errorMessage.set('WebSocket connection error');
+        }
+      });
+  }
+
+  private processMessage(binaryBody: Uint8Array): void {
+    const messageRaw = new TextDecoder().decode(binaryBody);
+
+    if (!messageRaw) {
+      return;
+    }
+
+    try {
+      const messageJson = JSON.parse(messageRaw);
+
+      if (!messageJson) {
+        return;
+      }
+
+      const payload = messageJson.payload;
+
+      if (!payload) {
+        return;
+      }
+      if (payload === '[ABORTED]') {
+        this.streaming.set(false);
+        return;
+      }
+      if (payload === '[DONE]') {
+        if (messageJson.info) {
+          this.info.set(messageJson.info);
+        }
+        this.finalizeMessage();
+        return;
+      }
+      if (!this.streaming()) {
+        console.log('⚠️ Received chunk after stop, ignoring:', payload);
+        return;
+      }
+
+      const isThinking = messageJson.isThinking || false;
+
+      if (isThinking) {
+        this.liveThinking.update(v => v + payload);
+      } else {
+        this.live.update(v => v + payload);
+      }
+
+      this.scrollToBottom();
+
+    } catch (e) {
+      console.error('Failed to parse message:', messageRaw, e);
+    }
+  }
+
+  private finalizeMessage() {
+    let finalContent = this.live();
+    let finalThinking = this.liveThinking();
+
+    if (!finalThinking && finalContent.includes('<think>')) {
+      const thinkMatch = finalContent.match(/<think>([\s\S]*?)<\/think>/i);
+      if (thinkMatch) {
+        finalThinking = thinkMatch[1].trim();
+        finalContent = finalContent.replace(/<think>[\s\S]*?<\/think>/i, '').trim();
+      }
+    }
+
+    if (finalContent || finalThinking) {
+      this.messages.update(ms => [
+        ...ms,
+        {
+          role: 'assistant',
+          content: finalContent,
+          thinking: finalThinking || undefined,
+          thinkingExpanded: false,
+          info: this.info()
+        }
+      ]);
+    }
+
+    this.live.set('');
+    this.liveThinking.set('');
+    this.info.set(null);
+    this.streaming.set(false);
+    this.scrollToBottom();
+  }
   private getEnableThinking(): boolean {
     const inputValue = this.enableThinkingInput();
     return inputValue !== undefined ? inputValue : this.enableThinkingSignal();
@@ -139,14 +257,12 @@ export class ChatVllmComponent implements OnDestroy {
       return;
     }
 
-    // ✅ Validate max files
     const maxFiles = this.maxFiles();
     if (maxFiles && this.attachedFiles().length >= maxFiles) {
       this.errorMessage.set(`Maximum ${maxFiles} files allowed`);
       return;
     }
 
-    // ✅ Validate file size
     const maxSize = this.maxFileSize();
     if (maxSize && file.size > maxSize * 1024 * 1024) {
       this.errorMessage.set(
@@ -155,7 +271,6 @@ export class ChatVllmComponent implements OnDestroy {
       return;
     }
 
-    // Process file...
     try {
       const attachedFile: AttachedFile = {
         name: file.name,
@@ -252,80 +367,20 @@ export class ChatVllmComponent implements OnDestroy {
     const model = this.modelName() || 'Qwen/Qwen2-VL-7B-Instruct-AWQ';
     const thinking = this.getEnableThinking();
 
-    this.streamSub = this.chatService.streamChat$(
+    this.chatService.sendChatMessage(
+      this.applicationId(),
       baseUrl,
       model,
       this.messages(),
       this.advancedParams,
       this.systemPrompt,
-      thinking
-    ).subscribe({
-      next: (data) => {
-        if (data.isThinking) {
-          this.liveThinking.update(v => v + (data.thinking || ''));
-        } else {
-          this.live.update(v => v + data.chunk);
-        }
-
-        this.scrollToBottom();
-
-        if (data.info) {
-          this.info.set(data.info);
-        }
-      },
-      complete: () => {
-        let finalContent = this.live();
-        let finalThinking = this.liveThinking();
-
-        // Check if think tags are still in the content
-        if (!finalThinking && finalContent.includes('<think>')) {
-          const thinkMatch = finalContent.match(/<think>([\s\S]*?)<\/think>/i);
-          if (thinkMatch) {
-            finalThinking = thinkMatch[1].trim();
-            finalContent = finalContent.replace(/<think>[\s\S]*?<\/think>/i, '').trim();
-          }
-        }
-
-        if (finalContent || finalThinking) {
-          this.messages.update(ms => [
-            ...ms,
-            {
-              role: 'assistant',
-              content: finalContent,
-              thinking: finalThinking || undefined,
-              thinkingExpanded: false,
-              info: this.info()
-            }
-          ]);
-        }
-
-        this.live.set('');
-        this.liveThinking.set('');
-        this.info.set(null);
-        this.streaming.set(false);
-        this.scrollToBottom();
-      },
-      error: (err) => {
-        console.error('Error in component subscription:', err);
-        this.streaming.set(false);
-        this.live.set('');
-        this.liveThinking.set('');
-
-        let errorMsg = err.message || 'An error occurred while processing your request.';
-        this.errorMessage.set(errorMsg);
-
-        setTimeout(() => {
-          this.errorMessage.set(null);
-        }, 5000);
-      }
-    });
+      thinking,
+      this.internalEndpoint()
+    );
   }
 
   stop() {
-    if (this.streamSub) {
-      this.streamSub.unsubscribe();
-      this.streamSub = undefined;
-    }
+    this.chatService.abortStream(this.applicationId());
 
     if (this.live()) {
       this.messages.update(ms => [
@@ -344,6 +399,8 @@ export class ChatVllmComponent implements OnDestroy {
     this.live.set('');
     this.liveThinking.set('');
     this.info.set(null);
+    this.draft = '';
+
   }
 
   toggleThinking(msg: ChatMessage) {
@@ -448,9 +505,13 @@ export class ChatVllmComponent implements OnDestroy {
   }
 
   ngOnDestroy() {
-    if (this.streamSub) {
-      this.streamSub.unsubscribe();
+    this.destroy$.next();
+    this.destroy$.complete();
+
+    if (this.wsSubscription) {
+      this.wsSubscription.unsubscribe();
     }
+
     this.streaming.set(false);
   }
 
