@@ -222,6 +222,7 @@ public class RayJobService {
                 .numNodes(rayClusterShape.getNumNodes())
                 .gpusPerNode(rayClusterShape.getGpusPerWorker())
                 .build())
+            .withLossScale(Optional.ofNullable(trainingConfig.getTrainOnInputs()).orElse(Boolean.FALSE) ? "all" : null)
             .withReportTo("aim")
             .withAimRepo(AIM_DIR)
             .withAimExperiment(jobId);

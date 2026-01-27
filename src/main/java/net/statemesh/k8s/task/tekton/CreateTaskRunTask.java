@@ -67,27 +67,6 @@ public class CreateTaskRunTask extends BaseMutationTask<String> {
         taskResult.value(Objects.requireNonNull(response.getObject().getMetadata()).getUid());
     }
 
-    private void deleteTaskRun() {
-        try {
-            getApiStub().getTaskRun().delete(
-                getNamespace(),
-                taskRun.getInternalName()
-            ).throwsApiException();
-            log.info("Deleted existing task run {}", taskRun.getInternalName());
-
-            int maxWait = 10;
-            while (taskRunExists() && maxWait-- > 0) {
-                Thread.sleep(500);
-            }
-        } catch (ApiException e) {
-            log.warn("Failed to delete task run {}: {}", taskRun.getInternalName(), e.getMessage());
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            log.warn("Interrupted while waiting for task run deletion");
-        }
-    }
-
-
     private String resolveInternalModelEndpoint(String internalName, String namespace) {
         if (internalName == null || namespace == null) {
             return null;

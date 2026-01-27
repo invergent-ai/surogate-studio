@@ -42,8 +42,8 @@ public abstract class SurogateTrainingConfigMixin {
     @JsonProperty("gradient_accumulation_steps")
     private Integer gradientAccumulationSteps;
 
-    @JsonProperty("train_on_inputs")
-    private Boolean trainOnInputs;
+    @JsonProperty("loss_scale")
+    private String lossScale;
 
     @JsonProperty("learning_rate")
     private Double learningRate;

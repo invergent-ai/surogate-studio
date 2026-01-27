@@ -53,9 +53,9 @@ export const newDatasetForm = (id: string, type: string, task: DatasetTask = 'sf
     // text format
     textField: new FormControl<string>(null),
     // instruction format
-    instructionField: new FormControl<string>(null),
-    inputField: new FormControl<string>(null),
-    outputField: new FormControl<string>(null),
+    instructionField: new FormControl<string>('instruction'),
+    inputField: new FormControl<string>('input'),
+    outputField: new FormControl<string>('output'),
     systemPromptType: new FormControl<string>(null),
     systemPromptField: new FormControl<string>(null),
     systemPrompt: new FormControl<string>(null),

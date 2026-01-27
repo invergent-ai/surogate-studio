@@ -33,7 +33,8 @@ public class TrainingConfigDTO {
     private Integer numEpochs;
     private Integer microBatchSize; // Better small for memorization tasks and/or small datasets
     private Integer gradientAccumulationSteps; // Better small for memorization tasks and/or small datasets
-    private Boolean trainOnInputs; // Very important to be true for memorization tasks (and alpaca prompter)
+    private Boolean trainOnInputs; // In Axolotl - Very important to be true for memorization tasks (and alpaca prompter)
+    private String lossScale; // In Surogate
     private String learningRate;
     private Double valSetSize;
     private Integer evalSteps;
@@ -107,6 +108,11 @@ public class TrainingConfigDTO {
 
     public TrainingConfigDTO withOutputDir(String outputDir) {
         this.outputDir = outputDir;
+        return this;
+    }
+
+    public TrainingConfigDTO withLossScale(String lossScale) {
+        this.lossScale = lossScale;
         return this;
     }
 
