@@ -199,8 +199,14 @@ export class EvaluationPage implements OnInit {
       taskRunValue.project = existing.project;
 
       if (launch) {
-        await lastValueFrom(this.taskRunService.submit(taskRunValue));
-        displaySuccess(this.store, 'Job launched successfully');
+        if (this.mustRelaunch()) {
+          taskRunValue.id = existing.id;
+          await lastValueFrom(this.taskRunService.redeploy(taskRunValue));
+          displaySuccess(this.store, 'Job relaunched successfully');
+        } else {
+          await lastValueFrom(this.taskRunService.submit(taskRunValue));
+          displaySuccess(this.store, 'Job launched successfully');
+        }
       } else {
         await lastValueFrom(this.taskRunService.save(taskRunValue));
         displaySuccess(this.store, 'Job saved successfully');

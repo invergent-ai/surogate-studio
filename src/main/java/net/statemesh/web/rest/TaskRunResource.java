@@ -40,10 +40,6 @@ public class TaskRunResource {
         taskRunService.cancel(taskId);
     }
 
-    @DeleteMapping("/delete/{id}")
-    public void delete(@PathVariable("id") String taskId) {
-        taskRunService.delete(taskId);
-    }
 
     @GetMapping
     public ResponseEntity<List<TaskRunDTO>> queryTasks(
@@ -59,6 +55,16 @@ public class TaskRunResource {
     @PostMapping("/submit")
     public ResponseEntity<TaskRunDTO> submitTask(@RequestBody TaskRunDTO task, Principal principal) {
         return ResponseEntity.ok(taskRunService.submit(task, principal.getName()));
+    }
+
+    @PostMapping("/redeploy")
+    public ResponseEntity<TaskRunDTO> redeploy(@RequestBody TaskRunDTO task, Principal principal) {
+        return ResponseEntity.ok(taskRunService.redeploy(task, principal.getName()));
+    }
+
+    @DeleteMapping("/delete/{id}")
+    public void delete(@PathVariable("id") String taskId, Principal principal) {
+        taskRunService.delete(taskId, principal.getName());
     }
 
     @GetMapping("/{id}")

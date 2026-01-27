@@ -183,11 +183,13 @@
                           <label>Evaluation Type *</label>
                           <p-dropdown [options]="evalTypes" formControlName="evalType" appendTo="body"></p-dropdown>
                         </div>
-                        <div class="field col-12 md:col-6">
-                          <sm-label-tooltip [tooltip]="TOOLTIP_EVAL_TYPE">Eval Type Column</sm-label-tooltip>
-                          <input pInputText type="text" formControlName="evalTypeColumn" placeholder="eval_type (optional)">
-                          <small class="text-500">Column name in dataset for per-row eval type</small>
-                        </div>
+                        @if (currentForm().get('evalType')?.value === 'hybrid') {
+                          <div class="field col-12 md:col-6">
+                            <sm-label-tooltip [tooltip]="TOOLTIP_EVAL_TYPE">Eval Type Column</sm-label-tooltip>
+                            <input pInputText type="text" formControlName="evalTypeColumn" placeholder="eval_type">
+                            <small class="text-500">Column name in dataset for per-row eval type</small>
+                          </div>
+                        }
                         <div class="field col-12">
                           <div class="font-medium text-sm mb-2 text-700">Column Mappings</div>
                         </div>

@@ -7,6 +7,7 @@ import net.statemesh.domain.enumeration.ProcessEvent;
 import net.statemesh.domain.enumeration.TaskRunProvisioningStatus;
 import net.statemesh.domain.enumeration.TaskRunType;
 import net.statemesh.k8s.KubernetesController;
+import net.statemesh.k8s.flow.DeleteTaskRunFlow;
 import net.statemesh.k8s.flow.TaskRunFlow;
 import net.statemesh.k8s.util.NamingUtils;
 import net.statemesh.repository.TaskRunRepository;
@@ -54,6 +55,7 @@ public class TaskRunService {
     private final LakeFsService lakeFsService;
     private final KubernetesController kubernetesController;
     private final AsyncTaskExecutor smTaskExecutor;
+    private final DeleteTaskRunFlow deleteTaskRunFlow;
 
     public TaskRunDTO save(TaskRunDTO taskRunDTO, String login) {
         if (StringUtils.isEmpty(taskRunDTO.getInternalName())) {
@@ -116,6 +118,20 @@ public class TaskRunService {
                 });
         }
     }
+
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public TaskRunDTO redeploy(TaskRunDTO taskRun, String login) {
+        taskRun.setProvisioningStatus(TaskRunProvisioningStatus.COMPLETED);
+        updateProvisioningStatus(taskRun.getId(), TaskRunProvisioningStatus.COMPLETED);
+
+        deleteTaskRunFlow.execute(taskRun);
+
+        taskRun.setProvisioningStatus(TaskRunProvisioningStatus.CREATED);
+        updateProvisioningStatus(taskRun.getId(), TaskRunProvisioningStatus.CREATED);
+
+        return submit(taskRun, login);
+    }
+
 
     private void ensurePrerequisites(TaskRunDTO taskRunDTO, String login) {
         if (TaskRunType.IMPORT_HF_MODEL.equals(taskRunDTO.getType()) || TaskRunType.IMPORT_HF_DATASET.equals(taskRunDTO.getType())) {
@@ -232,31 +248,24 @@ public class TaskRunService {
         }
     }
 
-    @Transactional
-    public void delete(String taskId) {
-        final var optTask = taskRunRepository.findById(taskId)
-            .map(t -> taskRunMapper.toDto(t, new CycleAvoidingMappingContext()));
-
-        if (optTask.isEmpty())
-            return;
-
-        taskRunRepository.deleteById(taskId);
-
-        // delete in separate thread so clients don't wait for the delete to finish.
-        // Tekton might take a loooong time to delete a task.....
-        smTaskExecutor.submit(() -> {
-            var task = optTask.get();
-            try {
-                kubernetesController.deleteTaskRun(
-                    Objects.isNull(task.getDeployedNamespace()) ? task.getProject().getNamespace() : task.getDeployedNamespace(),
-                    task.getProject().getCluster(),
-                    task
-                ).get(DELETE_DEPLOYMENT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-            } catch (ExecutionException | InterruptedException | TimeoutException e) {
-                log.error("Could not delete task run {}", task, e);
-                throw new RuntimeException("Could not delete task run " + task.getName(), e);
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public void delete(String taskId, String login) {
+        var taskRunDTO = transactionTemplate.execute(tx -> {
+            Optional<TaskRun> optTask = taskRunRepository.findById(taskId);
+            if (optTask.isEmpty()) {
+                return null;
             }
+            return taskRunMapper.toDto(optTask.get(), new CycleAvoidingMappingContext());
         });
+        if (taskRunDTO == null) {
+            return;
+        }
+
+        deleteTaskRunFlow.execute(taskRunDTO);
+        transactionTemplate.executeWithoutResult(tx -> taskRunRepository.deleteById(taskId));
+
+        notifyUser(taskRunDTO, login, MessageDTO.MessageType.DELETE);
+        notificationService.notifyUser(taskRunDTO, login, ProcessEvent.DELETED, null, false);
     }
 
     @Transactional(readOnly = true)

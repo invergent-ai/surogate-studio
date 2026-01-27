@@ -37,10 +37,9 @@ public class CreateTaskRunTask extends BaseMutationTask<String> {
     protected void execute(TaskResult.TaskResultBuilder<String> taskResult) throws Exception {
         log.info("Running Task...");
 
-        // If task run exists, delete it first (for relaunch)
         if (taskRunExists()) {
-            log.info("Task run {} exists, deleting for relaunch", taskRun.getName());
-            deleteTaskRun();
+            log.debug("Skipping task run {} creation as it exists", taskRun.getName());
+            throw new SkippedExistsException();
         }
 
         if (taskRun.getType() == TaskRunType.EVALUATION) {
@@ -50,7 +49,6 @@ public class CreateTaskRunTask extends BaseMutationTask<String> {
 
         log.debug("Create task run {}", taskRun.getName());
 
-        // Resolve model endpoints for evaluation tasks
         String modelEndpoint = resolveModelEndpoint();
         String ingressEndpoint = resolveIngressEndpoint();
 

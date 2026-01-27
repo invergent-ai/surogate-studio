@@ -71,7 +71,7 @@ export const newDatasetForm = (id: string, type: string, task: DatasetTask = 'sf
     name: new FormControl<string>(null),
     instructionColumn: new FormControl<string>('instruction'),
     answerColumn: new FormControl<string>('answer'),
-    evalTypeColumn: new FormControl<string>('eval_type'), // keep this
+    evalTypeColumn: new FormControl<string>('eval_type'),
     evalType: new FormControl<string>('exact_match'),
     judgeCriteriaColumn: new FormControl<string>('judge_criteria'),
     defaultJudgeCriteria: new FormControl<string>('Evaluate if the response correctly answers the question based on the expected answer.'),

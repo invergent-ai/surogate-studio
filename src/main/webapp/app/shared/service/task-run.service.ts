@@ -15,9 +15,9 @@ export class TaskRunService {
 
   constructor(
     protected http: HttpClient,
-    protected store: Store
+    protected store: Store,
   ) {
-    store.select(Selectors.getEndpointFor('/api/tasks')).subscribe((url) => {
+    store.select(Selectors.getEndpointFor('/api/tasks')).subscribe(url => {
       this.resourceUrl = url;
     });
   }
@@ -40,30 +40,39 @@ export class TaskRunService {
 
   query(req?: any): Observable<IJob[]> {
     const options = createRequestOption(req);
-    return this.http.get<ITaskRun[]>(this.resourceUrl, { params: options })
-      .pipe(map((jobs) => jobs.map(job => ({
-        id: job.id,
-        jobId: job.jobId,
-        name: job.name,
-        type: job.type,
-        provisioningStatus: job.provisioningStatus,
-        completedStatus: job.completedStatus,
-        podName: job.podName,
-        container: job.container,
-        stage: job.stage,
-        createdDate: job.createdDate,
-        startTime: job.startTime,
-        endTime: job.endTime
-      } as IJob))));
+    return this.http.get<ITaskRun[]>(this.resourceUrl, { params: options }).pipe(
+      map(jobs =>
+        jobs.map(
+          job =>
+            ({
+              id: job.id,
+              jobId: job.jobId,
+              name: job.name,
+              type: job.type,
+              provisioningStatus: job.provisioningStatus,
+              completedStatus: job.completedStatus,
+              podName: job.podName,
+              container: job.container,
+              stage: job.stage,
+              createdDate: job.createdDate,
+              startTime: job.startTime,
+              endTime: job.endTime,
+            }) as IJob,
+        ),
+      ),
+    );
   }
 
-  find(id: string): Observable<ITaskRun>{
-    return this.http.get<ITaskRun>(`${this.resourceUrl}/${id}`, {observe : 'response'}).pipe((map(res=> res.body)));
+  find(id: string): Observable<ITaskRun> {
+    return this.http.get<ITaskRun>(`${this.resourceUrl}/${id}`, { observe: 'response' }).pipe(map(res => res.body));
+  }
+
+  redeploy(task: ITaskRun): Observable<ITaskRun> {
+    return this.http.post<ITaskRun>(`${this.resourceUrl}/redeploy`, task);
   }
 
   findMyTasks(type: TaskRunType): Observable<ITaskRun[]> {
-    let params = new HttpParams()
-      .set("type", type);
+    let params = new HttpParams().set('type', type);
     return this.http.get<ITaskRun[]>(`${this.resourceUrl}/my`, { params });
   }
 }
