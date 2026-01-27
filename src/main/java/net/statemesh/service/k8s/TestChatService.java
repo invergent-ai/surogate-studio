@@ -614,13 +614,26 @@ public class TestChatService {
         try {
             JsonNode config = objectMapper.readTree(application.getExtraConfig());
 
+            if (config.has("loraSourceModel") && !config.get("loraSourceModel").isNull()) {
+                String loraModel = config.get("loraSourceModel").asText();
+                if (!loraModel.isEmpty()) {
+                    return "serve-lora";  // Fixed name for LoRA adapters
+                }
+            }
+
             String source = config.has("source") ? config.get("source").asText() : null;
+
+            if ("hub".equals(source)) {
+                if (config.has("branchToDeploy") && !config.get("branchToDeploy").isNull()) {
+                    return "/models/" + config.get("branchToDeploy").asText();
+                }
+            }
 
             if ("hf".equals(source)) {
                 return config.has("hfModelName") ? config.get("hfModelName").asText() : null;
             }
 
-            if (config.has("branchToDeploy")) {
+            if (config.has("branchToDeploy") && !config.get("branchToDeploy").isNull()) {
                 return config.get("branchToDeploy").asText();
             }
 
