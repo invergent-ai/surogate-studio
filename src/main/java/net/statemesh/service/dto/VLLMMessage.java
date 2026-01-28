@@ -40,6 +40,8 @@ public class VLLMMessage implements Serializable {
 
     @Data
     @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class Message {
         private String role;
         private Object content;

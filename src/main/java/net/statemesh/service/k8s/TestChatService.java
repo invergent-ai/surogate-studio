@@ -27,7 +27,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -286,7 +285,6 @@ public class TestChatService {
         String applicationId = request.getApplicationId();
         String topic = "/topic/message/" + applicationId;
 
-
         vllmActiveStreams.put(applicationId, true);
         Application app = applicationRepository.findById(request.getApplicationId()).orElseThrow(() -> new RuntimeException("Application not found: " + applicationId));
 
@@ -296,7 +294,6 @@ public class TestChatService {
             log.debug("sendVllmMessage() - modelName: {}", modelName);
             request.setModel(modelName);
             VLLMMessage vllmRequest = buildVllmRequest(request);
-
             streamVllm(url, vllmRequest, applicationId, topic);
 
         } catch (Exception e) {
@@ -339,7 +336,7 @@ public class TestChatService {
     private VLLMMessage buildVllmRequest(VllmChatRequestDTO request) {
         VLLMMessage.VLLMMessageBuilder builder = VLLMMessage.builder()
             .model(request.getModel())
-            .messages(convertToVllmMessages(request.getMessages(), request.getSystemPrompt()))
+            .messages(request.getMessages())
             .streamOptions(Map.of("include_usage", true))
             .stream(true);
         if (Boolean.TRUE.equals(request.getEnableThinking())) {
@@ -376,55 +373,6 @@ public class TestChatService {
 
 
         return builder.build();
-    }
-
-    /**
-     * Convert frontend messages to VLLM format
-     */
-    private List<VLLMMessage.Message> convertToVllmMessages(List<ChatMessageDTO> messages, String systemPrompt) {
-        List<VLLMMessage.Message> vllmMessages = new ArrayList<>();
-
-        if (systemPrompt != null && !systemPrompt.trim().isEmpty()) {
-            vllmMessages.add(VLLMMessage.Message.builder()
-                .role("system")
-                .content(systemPrompt)
-                .build());
-        }
-
-        for (ChatMessageDTO msg : messages) {
-            if ("system".equals(msg.getRole()) && systemPrompt != null && !systemPrompt.trim().isEmpty()) {
-                continue;
-            }
-
-            if (msg.getFiles() != null && !msg.getFiles().isEmpty()) {
-                List<Object> content = new ArrayList<>();
-
-                if (msg.getContent() != null && !msg.getContent().toString().trim().isEmpty()) {
-                    content.add(Map.of("type", "text", "text", msg.getContent()));
-                }
-
-                for (AttachedFileDTO file : msg.getFiles()) {
-                    if ("image".equals(file.getType())) {
-                        content.add(Map.of(
-                            "type", "image_url",
-                            "image_url", Map.of("url", "data:" + file.getMimeType() + ";base64," + file.getBase64())
-                        ));
-                    }
-                }
-
-                vllmMessages.add(VLLMMessage.Message.builder()
-                    .role(msg.getRole())
-                    .content(content)
-                    .build());
-            } else {
-                vllmMessages.add(VLLMMessage.Message.builder()
-                    .role(msg.getRole())
-                    .content(msg.getContent())
-                    .build());
-            }
-        }
-
-        return vllmMessages;
     }
 
     /**
