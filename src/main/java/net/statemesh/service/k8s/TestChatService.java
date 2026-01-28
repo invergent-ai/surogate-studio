@@ -1,18 +1,18 @@
 package net.statemesh.service.k8s;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.statemesh.config.ApplicationProperties;
 import net.statemesh.domain.Application;
 import net.statemesh.repository.ApplicationRepository;
 import net.statemesh.service.RayJobService;
-import net.statemesh.service.dto.ChatMetaDTO;
-import net.statemesh.service.dto.LineDTO;
-import net.statemesh.service.dto.VLLMMessage;
-import net.statemesh.service.dto.VLLMResponse;
+import net.statemesh.service.dto.*;
 import net.statemesh.service.dto.vllm.*;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.*;
@@ -53,7 +53,7 @@ public class TestChatService {
 //    ----------------
 
     private static final Integer MAX_TOKENS = 2048;
-    private static final String LORA_ADAPTER = "test-lora"; // Generic adapter name used when starting vLLM
+    private static final String TEST_LORA_ADAPTER = "test-lora"; // Generic adapter name used when starting vLLM after training
     private static final VLLMMessage.Message systemMessage =
         VLLMMessage.Message.builder().role("system").content("You are a helpful assistant.").build();
     private static final Boolean STREAM = Boolean.TRUE;
@@ -62,11 +62,19 @@ public class TestChatService {
     private final SimpMessagingTemplate messagingTemplate;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final ApplicationRepository applicationRepository;
     private final ApplicationProperties applicationProperties;
+    private final ObjectMapper yamlMapper = new ObjectMapper(
+        YAMLFactory.builder()
+            .disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER)
+            .build()
+    )
+        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
 
     private final Map<String, String> urls = new ConcurrentHashMap<>();
     private final Map<String, Boolean> vllmActiveStreams = new ConcurrentHashMap<>();
-    private final ApplicationRepository applicationRepository;
+
     public void startChat(String jobId) {
         final String url = chatUrl(jobId);
         if (url == null) {
@@ -109,7 +117,7 @@ public class TestChatService {
                 CHAT_ENDPOINT
             );
             final VLLMMessage message = VLLMMessage.builder()
-                .model(isLoRA(messageLine.getJobId()) ? LORA_ADAPTER : null) // TODO - Test and fix merged model (test hf)
+                .model(isLoRA(messageLine.getJobId()) ? TEST_LORA_ADAPTER : null)
                 .maxTokens(MAX_TOKENS)
                 .temperature(TEMPERATURE)
                 .topP(TOP_P)
@@ -253,13 +261,25 @@ public class TestChatService {
         if (rayJob == null) {
             return Boolean.TRUE;
         }
+        try {
+            yamlMapper.configure(
+                DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
+                false
+            );
+            TrainingConfigDTO trainingConfig =
+                yamlMapper.readValue(rayJob.getTrainingConfig(), TrainingConfigDTO.class);
+            var mergeLora = rayJob.getEnvVars().stream()
+                .filter(envVar -> "MERGE_LORA".equals(envVar.getKey()))
+                .filter(envVar -> "true".equals(envVar.getValue()))
+                .findAny()
+                .map(envVar -> Boolean.TRUE)
+                .orElse(Boolean.FALSE);
 
-        return rayJob.getEnvVars().stream()
-            .filter(envVar -> "MERGE_LORA".equals(envVar.getKey()))
-            .filter(envVar -> "true".equals(envVar.getValue()))
-            .findAny()
-            .map(envVar -> Boolean.FALSE)
-            .orElse(Boolean.TRUE);
+            return Optional.ofNullable(trainingConfig.getLora()).orElse(Boolean.FALSE) && !mergeLora;
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            return Boolean.TRUE;
+        }
     }
 
     private String chatUrl(String jobId) {

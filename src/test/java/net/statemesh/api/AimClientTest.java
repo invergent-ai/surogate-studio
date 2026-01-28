@@ -9,6 +9,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.client.RestTemplate;
 
+import static net.statemesh.k8s.api.AimClient.DEFAULT_CONTEXT;
+
 @IntegrationTest
 @Slf4j
 public class AimClientTest {
@@ -34,7 +36,7 @@ public class AimClientTest {
         );
 
         log.info("Experiment Metric {}",
-            aimClient.getExperimentMetric(EXPERIMENT_NAME, AimClient.DEFAULT_METRICS)
+            aimClient.getExperimentMetric(EXPERIMENT_NAME, AimClient.DEFAULT_METRICS, DEFAULT_CONTEXT)
         );
     }
 

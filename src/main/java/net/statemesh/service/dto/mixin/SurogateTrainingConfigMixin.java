@@ -126,6 +126,15 @@ public abstract class SurogateTrainingConfigMixin {
     @JsonProperty("zero_level")
     private Integer zeroLevel;
 
+    @JsonProperty("report_to")
+    private String reportTo;
+
+    @JsonProperty("aim_experiment")
+    private String aimExperiment;
+
+    @JsonProperty("aim_repo")
+    private String aimRepo;
+
     @JsonProperty("validation_datasets")
     private List<TrainingConfigDTO.Dataset> testDatasets;
 }

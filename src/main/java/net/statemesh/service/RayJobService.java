@@ -232,8 +232,8 @@ public class RayJobService {
         return trainingConfig
             .withBaseModel(RAY_WORK_DIR + "/model")
             .withOutputDir(RAY_WORK_DIR + "/outputs" +
-                (isMerged(trainingConfig) ? "/merged" : "/lora")
-            )
+                (USE_AXOLOTL_TRAINING_LIBRARY &&
+                    Optional.ofNullable(trainingConfig.getLora()).orElse(Boolean.FALSE) ? "/lora" : ""))
             .withDatasetsPath(RAY_WORK_DIR);
     }
 
@@ -438,11 +438,6 @@ public class RayJobService {
     private boolean is4bit(TrainingConfigDTO trainingConfig) {
         return Optional.ofNullable(trainingConfig.getQloraFp4()).orElse(Boolean.FALSE) ||
             Optional.ofNullable(trainingConfig.getQloraBnb()).orElse(Boolean.FALSE);
-    }
-
-    private boolean isMerged(TrainingConfigDTO trainingConfig) {
-        return Optional.ofNullable(trainingConfig.getMergeLora()).orElse(Boolean.FALSE) ||
-            !Optional.ofNullable(trainingConfig.getLora()).orElse(Boolean.FALSE);
     }
 
     private RayClusterShape defaultRayClusterShape() {

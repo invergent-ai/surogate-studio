@@ -1,10 +1,19 @@
 package net.statemesh.k8s.api.model;
 
-import lombok.Builder;
-import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonValue;
 
-@Data
-@Builder
+import java.util.HashMap;
+import java.util.Map;
+
 public class AimContext {
-    private String phase;
+    private final Map<String, Object> values;
+
+    public AimContext(Map<String, Object> values) {
+        this.values = values != null ? values : new HashMap<>();
+    }
+
+    @JsonValue
+    public Map<String, Object> asJson() {
+        return values;
+    }
 }

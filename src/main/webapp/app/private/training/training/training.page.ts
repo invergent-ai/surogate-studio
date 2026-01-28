@@ -406,11 +406,12 @@ export class TrainingPage implements OnInit {
 
   formToEnvVars(formValues: any): IJobEnvironmentVariable[] {
     const envVars: IJobEnvironmentVariable[] = [];
-    const { baseModelRepo, baseModelBranch, branch, datasets, testDatasets, mergeLora, mergeIteratively } = formValues;
+    const { baseModelRepo, baseModelBranch, branch, datasets, testDatasets, lora, mergeLora, mergeIteratively } = formValues;
 
     envVars.push({id: null, key: 'BASE_MODEL', value: `${baseModelRepo}/${baseModelBranch.id}`});
     envVars.push({id: null, key: 'BRANCH', value: branch ?? null});
     envVars.push({id: null, key: 'MERGE_LORA', value: mergeLora ?? null});
+    envVars.push({id: null, key: 'LORA', value: lora ?? null});
     envVars.push({id: null, key: 'MERGE_ITERATIVELY', value: mergeIteratively ?? null});
 
     if (datasets?.length || testDatasets?.length) {

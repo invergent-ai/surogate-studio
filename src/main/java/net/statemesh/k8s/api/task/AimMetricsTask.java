@@ -15,6 +15,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import static net.statemesh.config.Constants.USE_AXOLOTL_TRAINING_LIBRARY;
+import static net.statemesh.k8s.api.AimClient.*;
+
 @Slf4j
 public class AimMetricsTask {
     private final ApiStub apiStub;
@@ -34,24 +37,42 @@ public class AimMetricsTask {
             throw new APIException("Aim client for ray cluster " + rayCluster + " was not configured");
         }
         final AimClient client = this.apiStub.getAimClients().get(rayCluster);
-        final List<AimMetric> metrics = client.getExperimentMetric(jobId, AimClient.DEFAULT_METRICS);
+        final List<AimMetric> metrics = client.getExperimentMetric(jobId,
+            USE_AXOLOTL_TRAINING_LIBRARY ? DEFAULT_METRICS : DEFAULT_SUROGATE_METRICS,
+            USE_AXOLOTL_TRAINING_LIBRARY ? DEFAULT_CONTEXT : DEFAULT_SUROGATE_CONTEXT);
 
         return CompletableFuture.completedFuture(
             TaskResult.<Metrics>builder()
                 .success(true)
                 .value(
-                    Metrics.builder()
-                        .epoch(parseMetricData(metrics, "epoch"))
-                        .loss(parseMetricData(metrics, "loss"))
-                        .evalLoss(parseMetricData(metrics, "eval_loss"))
-                        .gradNorm(parseMetricData(metrics, "grad_norm"))
-                        .learningRate(parseMetricData(metrics, "learning_rate"))
-                        .tokensPerSecondPerGpu(parseMetricData(metrics, "tokens_per_second_per_gpu"))
-                        .created(Instant.now())
-                        .build()
+                    USE_AXOLOTL_TRAINING_LIBRARY ? metrics(metrics) : surogateMetrics(metrics)
                 )
                 .build()
         );
+    }
+
+    private Metrics metrics(List<AimMetric> metrics) {
+       return Metrics.builder()
+           .epoch(parseMetricData(metrics, "epoch"))
+           .loss(parseMetricData(metrics, "loss"))
+           .evalLoss(parseMetricData(metrics, "eval_loss"))
+           .gradNorm(parseMetricData(metrics, "grad_norm"))
+           .learningRate(parseMetricData(metrics, "learning_rate"))
+           .tokensPerSecondPerGpu(parseMetricData(metrics, "tokens_per_second_per_gpu"))
+           .created(Instant.now())
+           .build();
+    }
+
+    private Metrics surogateMetrics(List<AimMetric> metrics) {
+        return Metrics.builder()
+            .epoch(parseMetricData(metrics, "train/epoch"))
+            .loss(parseMetricData(metrics, "train/loss"))
+            .evalLoss(parseMetricData(metrics, "eval/loss"))
+            .gradNorm(parseMetricData(metrics, "train/norm"))
+            .learningRate(parseMetricData(metrics, "train/lr"))
+            .tokensPerSecondPerGpu(parseMetricData(metrics, "train/tokens_per_second"))
+            .created(Instant.now())
+            .build();
     }
 
     private Map<Double, BigDecimal> parseMetricData(List<AimMetric> metrics, String name) {

@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import net.statemesh.service.dto.LineDTO;
-import net.statemesh.service.dto.vllm.VllmAbortDTO;
 import net.statemesh.service.dto.vllm.VllmChatRequestDTO;
 import net.statemesh.service.k8s.TestChatService;
 import org.slf4j.Logger;

@@ -11,6 +11,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,7 +21,8 @@ public class AimClient {
     private static final String EXPERIMENTS_RUNS_PATH = "/runs/";
     private static final String BATCH_METRICS_ENDPOINT = "/api/runs/";
     private static final String BATCH_METRICS_PATH = "/metric/get-batch/";
-    private static final AimContext DEFAULT_CONTEXT = AimContext.builder().phase("train").build();
+    public static final AimContext DEFAULT_CONTEXT = new AimContext(Collections.singletonMap("phase", "train"));
+    public static final AimContext DEFAULT_SUROGATE_CONTEXT = new AimContext(Collections.emptyMap());
     public static final List<String> DEFAULT_METRICS = List.of(
         "epoch",
         "grad_norm",
@@ -28,6 +30,14 @@ public class AimClient {
         "loss",
         "tokens_per_second_per_gpu",
         "eval_loss"
+    );
+    public static final List<String> DEFAULT_SUROGATE_METRICS = List.of(
+        "train/epoch",
+        "train/norm",
+        "train/lr",
+        "train/loss",
+        "train/tokens_per_second",
+        "eval/loss"
     );
 
     private final RestTemplate restTemplate;
@@ -42,7 +52,7 @@ public class AimClient {
         return config.getName();
     }
 
-    public List<AimMetric> getExperimentMetric(String experimentName, List<String> metricNames) {
+    public List<AimMetric> getExperimentMetric(String experimentName, List<String> metricNames, AimContext context) {
         final String experimentId = getExperiments().stream()
             .filter(aimExperiment -> experimentName.equals(aimExperiment.getName()))
             .map(AimExperiment::getId)
@@ -62,10 +72,10 @@ public class AimClient {
             return null;
         }
 
-        return getRunBatchMetric(runId, metricNames);
+        return getRunBatchMetric(runId, metricNames, context);
     }
 
-    public List<AimMetric> getRunBatchMetric(String runId, List<String> metricNames) {
+    public List<AimMetric> getRunBatchMetric(String runId, List<String> metricNames, AimContext context) {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Accept", "application/json");
         HttpEntity<?> entity = new HttpEntity<>(
@@ -73,7 +83,7 @@ public class AimClient {
                 .map(metric ->
                     AimMetricRequest.builder()
                         .name(metric)
-                        .context(DEFAULT_CONTEXT)
+                        .context(context)
                         .build()
                 )
                 .collect(Collectors.toList()),
