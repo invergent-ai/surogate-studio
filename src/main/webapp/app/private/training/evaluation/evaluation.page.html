@@ -44,7 +44,7 @@
               <i-lucide [img]="Bot" class="w-1rem h-1rem text-500"></i-lucide>
               <span class="font-medium text-sm">Model Under Test *</span>
             </div>
-            <sm-llm-provider-config formControlName="modelUnderTest"></sm-llm-provider-config>
+            <sm-llm-provider-config formControlName="modelUnderTest" [showAdvancedToggle]="true"></sm-llm-provider-config>
             @if (isInvalid(taskForm.get("modelUnderTest"))) {
               <div class="error-msg">Required field</div>
             }

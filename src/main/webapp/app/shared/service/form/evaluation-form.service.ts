@@ -69,7 +69,6 @@ export class EvaluationFormService {
 
   private addModelUnderTestParams(params: ITaskRunParam[], formValues: any): void {
     const config = formValues.modelUnderTest as LLMProviderConfig;
-    console.log('modelUnderTest config:', JSON.stringify(config, null, 2)); // Debug
     if (!config?.model) return;
 
     params.push({ key: 'DEPLOYED_MODEL_NAME', value: config.model });
@@ -91,9 +90,28 @@ export class EvaluationFormService {
       params.push({ key: 'MODEL_TOKENIZER', value: config.tokenizer });
     }
 
-    // Add maxTokens
     if (config.maxTokens) {
       params.push({ key: 'MODEL_MAX_TOKENS', value: String(config.maxTokens) });
+    }
+
+    // Generation parameters
+    if (config.temperature != null) {
+      params.push({ key: 'MODEL_TEMPERATURE', value: String(config.temperature) });
+    }
+    if (config.topP != null) {
+      params.push({ key: 'MODEL_TOP_P', value: String(config.topP) });
+    }
+    if (config.topK != null) {
+      params.push({ key: 'MODEL_TOP_K', value: String(config.topK) });
+    }
+    if (config.minP != null) {
+      params.push({ key: 'MODEL_MIN_P', value: String(config.minP) });
+    }
+    if (config.presencePenalty != null) {
+      params.push({ key: 'MODEL_PRESENCE_PENALTY', value: String(config.presencePenalty) });
+    }
+    if (config.enableThinking != null) {
+      params.push({ key: 'MODEL_ENABLE_THINKING', value: String(config.enableThinking) });
     }
   }
 
@@ -250,17 +268,24 @@ export class EvaluationFormService {
             columns.judge_criteria = d.judgeCriteriaColumn || 'judge_criteria';
           }
 
+          // Add system_prompt column if specified
+          if (d.systemPromptColumn) {
+            columns.system_prompt = d.systemPromptColumn;
+          }
+
           return {
             name: d.repoId,
             repoId: d.repoId,
             ref: d.ref?.id || null,
             split: d.split || 'test',
             limit: d.samples || null,
-            evalType,  // ADD THIS
+            evalType,
             columns,
             promptTemplate: d.usePromptTemplate ? d.promptTemplate : null,
             stopSequences: d.usePromptTemplate ? d.stopSequences : null,
             defaultJudgeCriteria: evalType !== 'exact_match' ? d.defaultJudgeCriteria : null,
+            // NEW: Add default system prompt
+            defaultSystemPrompt: d.defaultSystemPrompt || 'You are a helpful assistant.',
           };
         }),
       ),
@@ -302,9 +327,6 @@ export class EvaluationFormService {
 
   private buildLLMConfig(envVars: ITaskRunParam[], prefix: string): LLMProviderConfig {
     const getValue = (key: string) => envVars.find(ev => ev.key === key)?.value;
-    const internalName = getValue(`${prefix}_INTERNAL_NAME`);
-    const namespace = getValue(`${prefix}_NAMESPACE`);
-    const baseUrl = getValue(`${prefix}_BASE_URL`) || 'https://api.openai.com/v1';
 
     // Handle the inconsistent naming for DEPLOYED_MODEL
     const modelKey = prefix === 'DEPLOYED_MODEL' ? `${prefix}_NAME` : `${prefix}_MODEL`;
@@ -312,7 +334,6 @@ export class EvaluationFormService {
     const baseUrlKey = prefix === 'DEPLOYED_MODEL' ? `${prefix}_BASE_URL` : `${prefix}_MODEL_BASE_URL`;
     const internalNameKey = prefix === 'DEPLOYED_MODEL' ? `${prefix}_INTERNAL_NAME` : `${prefix}_MODEL_INTERNAL_NAME`;
     const namespaceKey = prefix === 'DEPLOYED_MODEL' ? `${prefix}_NAMESPACE` : `${prefix}_MODEL_NAMESPACE`;
-    const maxTokensVal = getValue('MODEL_MAX_TOKENS');
 
     const internalNameVal = getValue(internalNameKey);
     const namespaceVal = getValue(namespaceKey);
@@ -323,7 +344,7 @@ export class EvaluationFormService {
     else if (baseUrlVal.includes('api.openai.com')) provider = 'openai';
     else provider = 'vllm';
 
-    return {
+    const config: LLMProviderConfig = {
       provider,
       model: getValue(modelKey) || '',
       baseUrl: baseUrlVal,
@@ -331,8 +352,28 @@ export class EvaluationFormService {
       internalName: internalNameVal,
       namespace: namespaceVal,
       tokenizer: getValue('MODEL_TOKENIZER'),
-      maxTokens: maxTokensVal ? parseInt(maxTokensVal, 10) : undefined,
     };
+
+    // Only parse generation params for DEPLOYED_MODEL
+    if (prefix === 'DEPLOYED_MODEL') {
+      const maxTokensVal = getValue('MODEL_MAX_TOKENS');
+      const temperatureVal = getValue('MODEL_TEMPERATURE');
+      const topPVal = getValue('MODEL_TOP_P');
+      const topKVal = getValue('MODEL_TOP_K');
+      const minPVal = getValue('MODEL_MIN_P');
+      const presencePenaltyVal = getValue('MODEL_PRESENCE_PENALTY');
+      const enableThinkingVal = getValue('MODEL_ENABLE_THINKING');
+
+      if (maxTokensVal) config.maxTokens = parseInt(maxTokensVal, 10);
+      if (temperatureVal) config.temperature = parseFloat(temperatureVal);
+      if (topPVal) config.topP = parseFloat(topPVal);
+      if (topKVal) config.topK = parseInt(topKVal, 10);
+      if (minPVal) config.minP = parseFloat(minPVal);
+      if (presencePenaltyVal) config.presencePenalty = parseFloat(presencePenaltyVal);
+      if (enableThinkingVal) config.enableThinking = enableThinkingVal === 'true';
+    }
+
+    return config;
   }
 
   private parseBenchmarks(form: FormGroup, param: string | undefined): void {
@@ -495,6 +536,7 @@ export class EvaluationFormService {
           ref: d.ref ? { id: d.ref, type: 'branch' } : null,
           split: d.split || 'test',
           samples: d.limit?.toString() || null,
+          evalType: d.evalType || 'exact_match', // ADD THIS
           instructionColumn: d.columns?.instruction || 'instruction',
           answerColumn: d.columns?.answer || 'answer',
           evalTypeColumn: d.columns?.eval_type || 'eval_type',

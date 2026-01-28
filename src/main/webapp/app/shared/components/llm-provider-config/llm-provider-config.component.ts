@@ -1,5 +1,4 @@
 // src/app/shared/components/llm-provider-config/llm-provider-config.component.ts
-
 import { Component, forwardRef, inject, Input } from '@angular/core';
 import { ControlValueAccessor, FormControl, FormGroup, NG_VALUE_ACCESSOR, ReactiveFormsModule } from '@angular/forms';
 import { DropdownModule } from 'primeng/dropdown';
@@ -10,6 +9,11 @@ import { IApplication } from '../../model/application.model';
 import { ApplicationService } from '../../service/application.service';
 import { derivedAsync } from 'ngxtension/derived-async';
 import { map } from 'rxjs/operators';
+import { PaginatorModule } from 'primeng/paginator';
+import { AccordionModule } from 'primeng/accordion';
+import { ButtonDirective } from 'primeng/button';
+import { ChevronDown, ChevronUp, LucideAngularModule, SlidersHorizontal } from 'lucide-angular';
+import { TooltipModule } from 'primeng/tooltip';
 
 export interface LLMProviderConfig {
   provider: string;
@@ -18,8 +22,15 @@ export interface LLMProviderConfig {
   apiKey: string;
   internalName?: string;
   namespace?: string;
-  tokenizer?: string; // Add
+  tokenizer?: string;
   maxTokens?: number;
+  // Generation parameters
+  temperature?: number;
+  topP?: number;
+  topK?: number;
+  minP?: number;
+  presencePenalty?: number;
+  enableThinking?: boolean;
 }
 
 interface DeployedModelOption extends IApplication {
@@ -30,7 +41,18 @@ interface DeployedModelOption extends IApplication {
 @Component({
   standalone: true,
   selector: 'sm-llm-provider-config',
-  imports: [ReactiveFormsModule, DropdownModule, InputTextModule, LabelTooltipComponent, NgIf],
+  imports: [
+    ReactiveFormsModule,
+    DropdownModule,
+    InputTextModule,
+    LabelTooltipComponent,
+    NgIf,
+    PaginatorModule,
+    AccordionModule,
+    ButtonDirective,
+    LucideAngularModule,
+    TooltipModule,
+  ],
   template: `
     <div class="formgrid grid text-sm p-fluid" [formGroup]="form">
       <div class="field" [class]="fieldClass">
@@ -77,6 +99,81 @@ interface DeployedModelOption extends IApplication {
         <sm-label-tooltip tooltip="API key for authentication">API Key</sm-label-tooltip>
         <input pInputText type="password" formControlName="apiKey" placeholder="sk-..." />
       </div>
+
+      <!-- Advanced toggle - only for model under test -->
+      <div class="field flex align-items-end" [class]="fieldClass" *ngIf="showAdvancedToggle">
+        <a
+          (click)="showAdvanced = !showAdvanced"
+          class="text-sm text-500 cursor-pointer hover:text-primary flex align-items-center gap-2 mb-2"
+        >
+          <i-lucide [img]="SlidersHorizontal" class="w-1rem h-1rem"></i-lucide>
+          Advanced
+        </a>
+      </div>
+
+      <!-- Advanced Generation Parameters - new row below -->
+      <div class="col-12" *ngIf="showAdvanced && showAdvancedToggle">
+        <div class="formgrid grid">
+          <div class="field col-6 md:col-2">
+            <sm-label-tooltip tooltip="Controls randomness (0.0-2.0)">Temperature</sm-label-tooltip>
+            <p-inputNumber
+              formControlName="temperature"
+              [min]="0"
+              [max]="2"
+              [minFractionDigits]="1"
+              [maxFractionDigits]="2"
+              placeholder="0.7"
+            ></p-inputNumber>
+          </div>
+          <div class="field col-6 md:col-2">
+            <sm-label-tooltip tooltip="Nucleus sampling (0.0-1.0)">Top P</sm-label-tooltip>
+            <p-inputNumber
+              formControlName="topP"
+              [min]="0"
+              [max]="1"
+              [minFractionDigits]="1"
+              [maxFractionDigits]="2"
+              placeholder="0.8"
+            ></p-inputNumber>
+          </div>
+          <div class="field col-6 md:col-2">
+            <sm-label-tooltip tooltip="Limits vocabulary to top K">Top K</sm-label-tooltip>
+            <p-inputNumber formControlName="topK" [min]="1" [max]="100" placeholder="20"></p-inputNumber>
+          </div>
+          <div class="field col-6 md:col-2">
+            <sm-label-tooltip tooltip="Min probability (0.0-1.0)">Min P</sm-label-tooltip>
+            <p-inputNumber
+              formControlName="minP"
+              [min]="0"
+              [max]="1"
+              [minFractionDigits]="1"
+              [maxFractionDigits]="2"
+              placeholder="0.0"
+            ></p-inputNumber>
+          </div>
+          <div class="field col-6 md:col-2">
+            <sm-label-tooltip tooltip="Penalizes repetition (-2.0 to 2.0)">Presence</sm-label-tooltip>
+            <p-inputNumber
+              formControlName="presencePenalty"
+              [min]="-2"
+              [max]="2"
+              [minFractionDigits]="1"
+              [maxFractionDigits]="2"
+              placeholder="0.0"
+            ></p-inputNumber>
+          </div>
+          <div class="field col-6 md:col-2">
+            <sm-label-tooltip tooltip="Thinking mode for Qwen3">Thinking</sm-label-tooltip>
+            <p-dropdown
+              formControlName="enableThinking"
+              [options]="thinkingOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Default"
+            ></p-dropdown>
+          </div>
+        </div>
+      </div>
     </div>
   `,
   providers: [
@@ -90,9 +187,13 @@ interface DeployedModelOption extends IApplication {
 export class LlmProviderConfigComponent implements ControlValueAccessor {
   @Input() showModel = true;
   @Input() fieldClass = 'col-12 md:col-3';
+  @Input() showAdvancedToggle = false;
 
   private applicationService = inject(ApplicationService);
-
+  showAdvanced = false;
+  protected readonly SlidersHorizontal = SlidersHorizontal;
+  protected readonly ChevronDown = ChevronDown;
+  protected readonly ChevronUp = ChevronUp;
   providers = [
     { name: 'Internal', code: 'internal' },
     { name: 'OpenAI', code: 'openai' },
@@ -101,6 +202,12 @@ export class LlmProviderConfigComponent implements ControlValueAccessor {
     { name: 'Azure OpenAI', code: 'azure' },
     { name: 'vLLM', code: 'vllm' },
     { name: 'Ollama', code: 'ollama' },
+  ];
+
+  thinkingOptions = [
+    { label: 'Default', value: null },
+    { label: 'Enabled', value: true },
+    { label: 'Disabled', value: false },
   ];
 
   private defaultUrls: Record<string, string> = {
@@ -133,6 +240,13 @@ export class LlmProviderConfigComponent implements ControlValueAccessor {
     namespace: new FormControl<string>(''),
     tokenizer: new FormControl<string>(''),
     maxTokens: new FormControl<number | null>(null),
+    // Generation parameters
+    temperature: new FormControl<number | null>(null),
+    topP: new FormControl<number | null>(null),
+    topK: new FormControl<number | null>(null),
+    minP: new FormControl<number | null>(null),
+    presencePenalty: new FormControl<number | null>(null),
+    enableThinking: new FormControl<boolean | null>(null),
   });
 
   private onChange: (value: LLMProviderConfig) => void = () => {};
@@ -199,9 +313,11 @@ export class LlmProviderConfigComponent implements ControlValueAccessor {
           ? `lakefs://${config.branchToDeploy}/tokenizer.json`
           : deployedModel.hfModelName || '';
 
-      // Calculate 90% of max context for max_tokens
       const maxContextSize = config.maxContextSize || 4096;
       const maxTokens = Math.floor(maxContextSize * 0.9);
+
+      // Check if it's a Qwen model to set thinking default
+      const isQwen = (deployedModel.hfModelName || '').toLowerCase().includes('qwen');
 
       this.form.patchValue(
         {
@@ -212,6 +328,13 @@ export class LlmProviderConfigComponent implements ControlValueAccessor {
           namespace: deployedModel.deployedNamespace,
           tokenizer,
           maxTokens,
+          // Set defaults for internal models
+          temperature: 0.7,
+          topP: 0.8,
+          topK: 20,
+          minP: 0.0,
+          presencePenalty: 1.0,
+          enableThinking: isQwen ? false : null,
         },
         { emitEvent: false },
       );

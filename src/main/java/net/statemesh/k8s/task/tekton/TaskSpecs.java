@@ -175,6 +175,31 @@ public class TaskSpecs {
                 .name("MODEL_TOKENIZER").value("$(params.MODEL_TOKENIZER)"));
         }
 
+        if (hasParam(task, "MODEL_TEMPERATURE")) {
+            envVars.add(new V1PipelineRunSpecTaskRunSpecsInnerPodTemplateEnvInner()
+                .name("MODEL_TEMPERATURE").value("$(params.MODEL_TEMPERATURE)"));
+        }
+        if (hasParam(task, "MODEL_TOP_P")) {
+            envVars.add(new V1PipelineRunSpecTaskRunSpecsInnerPodTemplateEnvInner()
+                .name("MODEL_TOP_P").value("$(params.MODEL_TOP_P)"));
+        }
+        if (hasParam(task, "MODEL_TOP_K")) {
+            envVars.add(new V1PipelineRunSpecTaskRunSpecsInnerPodTemplateEnvInner()
+                .name("MODEL_TOP_K").value("$(params.MODEL_TOP_K)"));
+        }
+        if (hasParam(task, "MODEL_MIN_P")) {
+            envVars.add(new V1PipelineRunSpecTaskRunSpecsInnerPodTemplateEnvInner()
+                .name("MODEL_MIN_P").value("$(params.MODEL_MIN_P)"));
+        }
+        if (hasParam(task, "MODEL_PRESENCE_PENALTY")) {
+            envVars.add(new V1PipelineRunSpecTaskRunSpecsInnerPodTemplateEnvInner()
+                .name("MODEL_PRESENCE_PENALTY").value("$(params.MODEL_PRESENCE_PENALTY)"));
+        }
+        if (hasParam(task, "MODEL_ENABLE_THINKING")) {
+            envVars.add(new V1PipelineRunSpecTaskRunSpecsInnerPodTemplateEnvInner()
+                .name("MODEL_ENABLE_THINKING").value("$(params.MODEL_ENABLE_THINKING)"));
+        }
+
         // Model endpoints - internal (preferred) and ingress (fallback)
         if (modelEndpoint != null) {
             envVars.add(new V1PipelineRunSpecTaskRunSpecsInnerPodTemplateEnvInner()
@@ -266,7 +291,7 @@ public class TaskSpecs {
         // Create step with Docker socket volume mount for code benchmark sandbox
         V1TaskSpecStepsInner evalStep = new V1TaskSpecStepsInner()
             .name("run-job")
-            .image("registry.densemax.local/statemesh/densemax:1.0.0")
+            .image("registry.densemax.local/statemesh/densemax:eval")
             .imagePullPolicy("Always")
             .command(List.of("/usr/bin/eval"))
             .env(envVars)
