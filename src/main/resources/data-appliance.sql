@@ -174,10 +174,10 @@ Qwen3-0.6B is a compact and efficient language model deployment featuring 600 mi
       "type": "WORKER",
       "pullImageMode": "PULL",
       "cpuRequest": 1,
-      "cpuLimit": 5,
+      "cpuLimit": 4,
       "gpuLimit": 1,
-      "memRequest": "256",
-      "memLimit": "4096",
+      "memRequest": "1024",
+      "memLimit": "8192",
       "startCommand": "/opt/venv/bin/vllm",
       "startParameters": null,
       "envVars": [

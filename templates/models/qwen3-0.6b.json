@@ -73,10 +73,10 @@
       "type": "WORKER",
       "pullImageMode": "PULL",
       "cpuRequest": 1,
-      "cpuLimit": 5,
+      "cpuLimit": 8,
       "gpuLimit": 1,
-      "memRequest": "256",
-      "memLimit": "4096",
+      "memRequest": "1024",
+      "memLimit": "8192",
       "startCommand": "/opt/venv/bin/vllm",
       "startParameters": null,
       "envVars": [
