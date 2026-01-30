@@ -1,1 +1,1 @@
-Application URL https://surogate.densemax.local
+Application URL https://demo.surogate.ai
