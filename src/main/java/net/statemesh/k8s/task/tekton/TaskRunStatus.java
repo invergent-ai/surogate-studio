@@ -13,13 +13,13 @@ import java.time.Instant;
 @ToString
 @Builder
 public class TaskRunStatus {
-    String taskId;
-    String stage;
-    TaskRunProvisioningStatus provisioningStatus;
-    String message;
-    Instant startTime;
-    Instant completionTime;
-    String podName;
-    String container;
-    String progress;
+    private String taskId;
+    private String stage;
+    private TaskRunProvisioningStatus provisioningStatus;
+    private String message;
+    private Instant startTime;
+    private Instant completionTime;
+    private String podName;
+    private String container;
+    private String progress;
 }

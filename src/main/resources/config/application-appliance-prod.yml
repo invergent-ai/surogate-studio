@@ -127,4 +127,5 @@ app:
     endpoint: https://lakefs.densemax.local
     endpoint-internal: http://lakefs.statemesh.svc.sm.local
     s3Endpoint: https://lakefs-s3.densemax.local
+    s3Endpoint-internal: http://lakefs-s3.statemesh.svc.sm.local
     master-key: 3c2iMoO05OQqCHOkF42aV2v1k5zldbJt  # same as statemesh-installer/appliance-master/lakefs.yml:authEncryptSecretKey

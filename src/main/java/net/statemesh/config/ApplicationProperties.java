@@ -118,6 +118,7 @@ public class ApplicationProperties {
         private String endpoint;
         private String endpointInternal;
         private String s3Endpoint;
+        private String s3EndpointInternal;
         private String masterKey;
     }
 }

@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.statemesh.k8s.KubernetesController;
 import net.statemesh.k8s.exception.K8SException;
 import net.statemesh.k8s.task.TaskResult;
-import net.statemesh.k8s.task.tekton.TaskSpecs;
 import net.statemesh.service.ClusterService;
 import net.statemesh.service.ResourceService;
 import net.statemesh.service.dto.ClusterDTO;
@@ -19,15 +18,11 @@ import java.util.concurrent.CompletableFuture;
 @Component
 @Slf4j
 public class TaskRunFlow extends ResourceCreationFlow<TaskRunDTO> {
-    private final TaskSpecs taskSpecs;
-
     public TaskRunFlow(KubernetesController kubernetesController,
                        ClusterService clusterService,
                        ResourceService resourceService,
-                       @Qualifier("flowScheduler") ThreadPoolTaskScheduler taskScheduler,
-                       TaskSpecs taskSpecs) {
+                       @Qualifier("flowScheduler") ThreadPoolTaskScheduler taskScheduler) {
         super(kubernetesController, clusterService, resourceService, taskScheduler);
-        this.taskSpecs = taskSpecs;
     }
 
     @Override
@@ -37,7 +32,7 @@ public class TaskRunFlow extends ResourceCreationFlow<TaskRunDTO> {
 
     @Override
     CompletableFuture<TaskResult<String>> createDeployment(TaskRunDTO taskRun, ClusterDTO cluster) {
-        return kubernetesController.runTask(cluster, taskRun, taskSpecs, getNamespace(taskRun));
+        return kubernetesController.runTask(cluster, taskRun, getNamespace(taskRun));
     }
 
     @Override

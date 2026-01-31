@@ -500,13 +500,13 @@ public class KubernetesController {
     }
 
     @Async
-    public CompletableFuture<TaskResult<String>> runTask(ClusterDTO cluster, TaskRunDTO taskRun, TaskSpecs taskSpecs, String namespace) {
+    public CompletableFuture<TaskResult<String>> runTask(ClusterDTO cluster, TaskRunDTO taskRun, String namespace) {
         return new CreateTaskRunTask(
             getApi(cluster),
             this.taskConfig,
             namespace,
             taskRun,
-            taskSpecs
+            this.applicationProperties
         ).call();
     }
 
