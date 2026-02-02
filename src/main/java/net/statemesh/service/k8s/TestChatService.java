@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
+import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.statemesh.config.ApplicationProperties;
@@ -15,6 +16,7 @@ import net.statemesh.service.RayJobService;
 import net.statemesh.service.dto.*;
 import net.statemesh.service.dto.vllm.*;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.*;
 import org.springframework.http.client.ClientHttpRequest;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -61,6 +63,10 @@ public class TestChatService {
     private final RayJobService rayJobService;
     private final SimpMessagingTemplate messagingTemplate;
     private final RestTemplate restTemplate;
+
+    @Resource(name = "vllmRestTemplate")
+    private RestTemplate vllmRestTemplate;
+
     private final ObjectMapper objectMapper;
     private final ApplicationRepository applicationRepository;
     private final ApplicationProperties applicationProperties;
@@ -407,7 +413,7 @@ public class TestChatService {
             byte[] json = objectMapper.writeValueAsBytes(message);
             headers.setContentLength(json.length);
 
-            restTemplate.execute(
+            vllmRestTemplate.execute(
                 url,
                 HttpMethod.POST,
                 (ClientHttpRequest req) -> {

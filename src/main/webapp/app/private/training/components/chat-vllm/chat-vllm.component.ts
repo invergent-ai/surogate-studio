@@ -59,7 +59,7 @@ export class ChatVllmComponent implements OnDestroy, OnInit {
   enableThinkingInput = input<boolean>();
   advancedParamsInput = input<AdvancedParam[]>();
   supportsFiles = input.required<boolean>();
-  acceptedFileTypes = input<('image' | 'video' | 'audio')[]>();
+  acceptedFileTypes = input<('image' | 'video' | 'audio' | 'document')[]>();
   maxFiles = input<number>();
   maxFileSize = input<number>();
 
@@ -87,6 +87,43 @@ export class ChatVllmComponent implements OnDestroy, OnInit {
   internalEndpoint = input.required<string>();
   private wsSubscription? : Subscription;
   private destroy$ = new Subject<void>();
+
+  private readonly SUPPORTED_MIME_TYPES = {
+    image: [
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/webp',
+      'image/gif',
+      'image/bmp'
+    ],
+    video: [
+      'video/mp4',
+      'video/webm',
+      'video/quicktime', // .mov
+      'video/x-msvideo'  // .avi
+    ],
+    audio: [
+      'audio/mpeg',      // .mp3
+      'audio/wav',       // .wav
+      'audio/mp4',       // .m4a
+      'audio/ogg',       // .ogg
+      'audio/webm',      // .webm
+      'audio/x-m4a',     // .m4a
+      'audio/aac'        // .aac
+    ],
+    document: [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',       // .xlsx
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
+      'application/msword',  // .doc
+      'text/plain',          // .txt
+      'text/markdown',       // .md
+      'text/csv',            // .csv
+      'application/json'     // .json
+    ]
+  };
 
   constructor() {
     effect(() => {
@@ -248,7 +285,7 @@ export class ChatVllmComponent implements OnDestroy, OnInit {
   private async processFile(file: File) {
     // ✅ Validate file type
     const fileType = this.getFileType(file);
-    const acceptedTypes = this.acceptedFileTypes();
+    const acceptedTypes = this.acceptedFileTypes() || [];
 
     if (!acceptedTypes.includes(fileType)) {
       this.errorMessage.set(
@@ -257,20 +294,37 @@ export class ChatVllmComponent implements OnDestroy, OnInit {
       return;
     }
 
+    // ✅ Validate MIME type is in supported list
+    const supportedMimeTypes = acceptedTypes.flatMap(type => this.SUPPORTED_MIME_TYPES[type] || []);
+    if (!supportedMimeTypes.includes(file.type)) {
+      this.errorMessage.set(
+        `File format "${file.type}" is not supported. Please use: ${this.getAcceptedExtensions(acceptedTypes)}`
+      );
+      return;
+    }
+
+    // ✅ Validate max files
     const maxFiles = this.maxFiles();
     if (maxFiles && this.attachedFiles().length >= maxFiles) {
       this.errorMessage.set(`Maximum ${maxFiles} files allowed`);
       return;
     }
 
+    // ✅ Validate file size
     const maxSize = this.maxFileSize();
     if (maxSize && file.size > maxSize * 1024 * 1024) {
       this.errorMessage.set(
-        `File "${file.name}" is too large. Maximum size: ${maxSize}MB`
+        `File "${file.name}" is too large. Maximum size: ${maxSize}MB (file is ${(file.size / 1024 / 1024).toFixed(2)}MB)`
       );
       return;
     }
 
+    // ✅ Additional validation by type
+    if (!this.validateFileByType(file, fileType)) {
+      return; // Error already set in validateFileByType
+    }
+
+    // Process file...
     try {
       const attachedFile: AttachedFile = {
         name: file.name,
@@ -282,24 +336,178 @@ export class ChatVllmComponent implements OnDestroy, OnInit {
         url: ''
       };
 
-      if (attachedFile.type === 'image') {
+      // ✅ Generate previews based on type
+      if (fileType === 'image') {
         attachedFile.preview = await this.createImagePreview(file);
         attachedFile.url = attachedFile.preview;
+      } else if (fileType === 'video') {
+        attachedFile.preview = await this.createVideoThumbnail(file);
+        attachedFile.url = URL.createObjectURL(file);
+      } else if (fileType === 'document') {
+        attachedFile.preview = this.getDocumentIcon(file);
+      } else if (fileType === 'audio') {
+        attachedFile.preview = this.getAudioIcon(file);
+        attachedFile.url = URL.createObjectURL(file);
       }
 
       this.attachedFiles.update(files => [...files, attachedFile]);
+
     } catch (error) {
       console.error('Error processing file:', error);
       this.errorMessage.set(`Error processing file: ${file.name}`);
     }
   }
 
-  private getFileType(file: File): 'image' | 'audio' | 'video' {
+  // ✅ Helper: Get accepted extensions for display
+  public getAcceptedExtensions(types: string[]): string {
+    const extensionMap: Record<string, string> = {
+      image: '.jpg, .png, .gif, .webp',
+      video: '.mp4, .webm, .mov',
+      audio: '.mp3, .wav, .m4a, .ogg',
+      document: '.pdf, .docx, .txt, .md, .csv'
+    };
+
+    // ✅ FIXED: Type-safe mapping with proper type guard
+    return types
+      .map(type => extensionMap[type] || '')
+      .filter(ext => ext !== '')
+      .join(', ');
+  }
+// ✅ Additional validation by file type
+  private validateFileByType(file: File, fileType: 'image' | 'audio' | 'video' | 'document'): boolean {
+    // Image-specific validation
+    if (fileType === 'image') {
+      // Max resolution check (optional)
+      return true; // Could add dimension check here
+    }
+
+    // Video-specific validation
+    if (fileType === 'video') {
+      const maxVideoSize = 100; // 100MB max for videos
+      if (file.size > maxVideoSize * 1024 * 1024) {
+        this.errorMessage.set(`Video files must be under ${maxVideoSize}MB`);
+        return false;
+      }
+    }
+
+    // Audio-specific validation
+    if (fileType === 'audio') {
+      const maxAudioSize = 25; // 25MB max for audio
+      if (file.size > maxAudioSize * 1024 * 1024) {
+        this.errorMessage.set(`Audio files must be under ${maxAudioSize}MB`);
+        return false;
+      }
+    }
+
+    // Document-specific validation
+    if (fileType === 'document') {
+      const maxDocSize = 50; // 50MB max for documents
+      if (file.size > maxDocSize * 1024 * 1024) {
+        this.errorMessage.set(`Document files must be under ${maxDocSize}MB`);
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  // ✅ Video thumbnail generation
+  private createVideoThumbnail(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+
+      video.onloadedmetadata = () => {
+        video.currentTime = 1; // Seek to 1 second for thumbnail
+      };
+
+      video.onseeked = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL('image/jpeg', 0.8));
+        } else {
+          reject(new Error('Could not get canvas context'));
+        }
+
+        URL.revokeObjectURL(video.src);
+      };
+
+      video.onerror = () => reject(new Error('Error loading video'));
+      video.src = URL.createObjectURL(file);
+    });
+  }
+
+// ✅ Document icon based on extension
+  private getDocumentIcon(file: File): string {
+    const extension = file.name.toLowerCase().split('.').pop();
+
+    // Return appropriate icon based on type
+    const iconMap: Record<string, string> = {
+      'pdf': '📄',
+      'docx': '📝',
+      'doc': '📝',
+      'xlsx': '📊',
+      'xls': '📊',
+      'pptx': '📊',
+      'txt': '📃',
+      'md': '📋',
+      'csv': '📈',
+      'json': '📋'
+    };
+
+    return iconMap[extension || ''] || '📎';
+  }
+
+// ✅ Audio icon
+  private getAudioIcon(file: File): string {
+    return '🎵'; // Or use different icons based on format
+  }
+
+  /*private getFileType(file: File): 'image' | 'audio' | 'video' {
     if (file.type.startsWith('image/')) return 'image';
     if (file.type.startsWith('audio/')) return 'audio';
     if (file.type.startsWith('video/')) return 'video';
     return 'image'; // fallback
+  }*/
+  private getFileType(file: File): 'image' | 'audio' | 'video' | 'document' {
+    const mimeType = file.type;
+
+    // Check each category
+    for (const [type, mimeTypes] of Object.entries(this.SUPPORTED_MIME_TYPES)) {
+      if (mimeTypes.includes(mimeType)) {
+        return type as 'image' | 'audio' | 'video' | 'document';
+      }
+    }
+
+    // ✅ Fallback: Try to determine from extension
+    const extension = file.name.toLowerCase().split('.').pop();
+
+    if (extension) {
+      if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(extension)) {
+        return 'image';
+      }
+      if (['mp4', 'webm', 'mov', 'avi'].includes(extension)) {
+        return 'video';
+      }
+      if (['mp3', 'wav', 'm4a', 'ogg', 'aac'].includes(extension)) {
+        return 'audio';
+      }
+      if (['pdf', 'docx', 'doc', 'txt', 'md', 'csv', 'json', 'xlsx', 'pptx'].includes(extension)) {
+        return 'document';
+      }
+    }
+
+    // Default fallback
+    console.warn(`Unknown file type for: ${file.name} (${mimeType})`);
+    return 'document';
   }
+
+
 
   private fileToBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -504,13 +712,40 @@ export class ChatVllmComponent implements OnDestroy, OnInit {
     this.errorMessage.set(null);
   }
 
+  // ✅ Generate HTML accept attribute
+  getAcceptAttribute(): string {
+    const acceptedTypes = this.acceptedFileTypes() || [];
+    const mimeTypes = acceptedTypes.flatMap(type => this.SUPPORTED_MIME_TYPES[type] || []);
+    return mimeTypes.join(',');
+  }
+
+// ✅ Format file size for display
+  formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+  }
+
+  // ✅ Clean up object URLs on destroy
   ngOnDestroy() {
+    // Cleanup WebSocket subscription
     this.destroy$.next();
     this.destroy$.complete();
 
     if (this.wsSubscription) {
       this.wsSubscription.unsubscribe();
     }
+
+    // ✅ Revoke object URLs to prevent memory leaks
+    this.attachedFiles().forEach(file => {
+      if (file.url && file.url.startsWith('blob:')) {
+        URL.revokeObjectURL(file.url);
+      }
+    });
 
     this.streaming.set(false);
   }

@@ -25,6 +25,13 @@
                     <!-- User Files -->
                     <div *ngIf="msg.files && msg.files.length > 0" class="mb-2">
                       <div *ngFor="let file of msg.files" class="mb-2">
+                        <div *ngIf="file.type === 'document'" class="document-preview">
+                          <span class="file-icon">{{file.preview}}</span>
+                          <div class="file-info">
+                            <div class="file-name">{{file.name}}</div>
+                            <div class="file-size">{{formatFileSize(file.size)}}</div>
+                          </div>
+                        </div>
                         <!-- Image files -->
                         <div *ngIf="file.type === 'image'" class="border-round-lg overflow-hidden border-1 border-200">
                           <img [src]="file.url || file.preview" [alt]="file.name"
@@ -87,20 +94,20 @@
                     </div>
 
                     <div class="flex gap-2 mt-2">
-                      <button pButton class="p-button-text p-button-sm" icon="pi pi-pencil"
+                      <!--<button pButton class="p-button-text p-button-sm" icon="pi pi-pencil"
                               (click)="onEdit(msg)"></button>
                       <button pButton class="p-button-text p-button-sm" icon="pi pi-copy"
                               (click)="copy(msg.content)"></button>
                       <button pButton class="p-button-text p-button-sm" icon="pi pi-volume-up"
-                              (click)="speak(msg.content)"></button>
+                              (click)="speak(msg.content)"></button>-->
                       <button pButton class="p-button-text p-button-sm" icon="pi pi-info-circle"
                               [pTooltip]="getTooltipContent(msg)" tooltipPosition="left"></button>
-                      <button pButton class="p-button-text p-button-sm" icon="pi pi-thumbs-up"
+                      <!--<button pButton class="p-button-text p-button-sm" icon="pi pi-thumbs-up"
                               (click)="like(msg)"></button>
                       <button pButton class="p-button-text p-button-sm" icon="pi pi-thumbs-down"
                               (click)="dislike(msg)"></button>
                       <button pButton class="p-button-text p-button-sm" icon="pi pi-refresh"
-                              (click)="regenerate(msg)"></button>
+                              (click)="regenerate(msg)"></button>-->
                     </div>
                   </div>
                 </div>
@@ -151,23 +158,65 @@
           }
 
           <!-- File attachments preview -->
-          <div *ngIf="attachedFiles().length > 0" class="mb-2 flex flex-wrap gap-2">
-            <div *ngFor="let file of attachedFiles(); let i = index"
-                 class="relative border-round-lg border-1 border-200 bg-white overflow-hidden">
+          <div *ngIf="attachedFiles().length > 0" class="attached-files">
+            <div *ngFor="let file of attachedFiles(); let i = index" class="file-preview">
 
               <!-- Image preview -->
-              <div *ngIf="file.type === 'image'" class="relative">
-                <img [src]="file.preview" [alt]="file.name" class="w-4rem h-4rem object-cover">
+              <div *ngIf="file.type === 'image'" class="image-preview">
+                <img [src]="file.preview" [alt]="file.name" />
                 <button
                   pButton
+                  type="button"
                   icon="pi pi-times"
-                  class="p-button-text p-button-sm p-button-rounded absolute top-0 right-0"
-                  style="width: 1.5rem; height: 1.5rem;"
-                  (click)="removeFile(i)">
-                </button>
+                  class="p-button-rounded p-button-danger p-button-sm"
+                  (click)="removeFile(i)"
+                ></button>
               </div>
 
-              <!-- PDF preview -->
+              <!-- Video preview -->
+              <div *ngIf="file.type === 'video'" class="video-preview">
+                <img [src]="file.preview" [alt]="file.name" />
+                <span class="file-type-badge">🎬 Video</span>
+                <button
+                  pButton
+                  type="button"
+                  icon="pi pi-times"
+                  class="p-button-rounded p-button-danger p-button-sm"
+                  (click)="removeFile(i)"
+                ></button>
+              </div>
+
+              <!-- Audio preview -->
+              <div *ngIf="file.type === 'audio'" class="audio-preview">
+                <span class="file-icon">{{file.preview}}</span>
+                <div class="file-info">
+                  <div class="file-name">{{file.name}}</div>
+                  <div class="file-size">{{formatFileSize(file.size)}}</div>
+                </div>
+                <button
+                  pButton
+                  type="button"
+                  icon="pi pi-times"
+                  class="p-button-rounded p-button-danger p-button-sm"
+                  (click)="removeFile(i)"
+                ></button>
+              </div>
+
+              <!-- Document preview -->
+              <div *ngIf="file.type === 'document'" class="document-preview">
+                <span class="file-icon">{{file.preview}}</span>
+                <div class="file-info">
+                  <div class="file-name">{{file.name}}</div>
+                  <div class="file-size">{{formatFileSize(file.size)}}</div>
+                </div>
+                <button
+                  pButton
+                  type="button"
+                  icon="pi pi-times"
+                  class="p-button-rounded p-button-danger p-button-sm"
+                  (click)="removeFile(i)"
+                ></button>
+              </div>
 
             </div>
           </div>
@@ -179,21 +228,21 @@
               <input
                 #fileInput
                 type="file"
-                class="hidden"
-                [multiple]="!maxFiles() || maxFiles() > 1"
-                accept="image/*,audio/*,video/*"
+                [accept]="getAcceptAttribute()"
+                [multiple]="(maxFiles() || 1) > 1"
                 (change)="onFilesSelected($event)"
-              >
+                style="display: none"
+              />
+
               <button
                 pButton
+                type="button"
                 icon="pi pi-paperclip"
-                [text]="true"
-                [rounded]="true"
-                severity="secondary"
-                class="flex-shrink-0"
+                class="p-button-text"
+                [disabled]="!supportsFiles() || streaming()"
                 (click)="fileInput.click()"
-                [disabled]="streaming()"
               ></button>
+              <!--pTooltip="Attach files ({{getAcceptedExtensions(acceptedFileTypes() || [])}})"-->
             }
             <textarea
               pInputTextarea

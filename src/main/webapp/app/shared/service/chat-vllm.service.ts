@@ -6,7 +6,7 @@ import {TrackerService} from "./tracker.service";
 export interface AttachedFile {
   name: string;
   size: number;
-  type: 'image' | 'audio' | 'video';
+  type: 'image' | 'audio' | 'video'| 'document';
   base64: string;
   preview?: string;
   mimeType: string;
@@ -113,7 +113,7 @@ export class ChatVllmService {
           });
         }
 
-        // Add files
+        // ✅ Add files with proper handling for each type
         for (const file of msg.files) {
           if (file.type === 'image') {
             content.push({
@@ -138,6 +138,46 @@ export class ChatVllmService {
                 data: file.base64
               }
             });
+          } else if (file.type === 'document') {
+            // ✅ NEW: Handle document files
+            // Documents need to be extracted/converted first
+            // Most vision models don't support documents directly
+
+            if (file.mimeType === 'application/pdf') {
+              // ✅ Option 1: Send as PDF (if model supports it)
+              content.push({
+                type: 'document',
+                document: {
+                  format: 'pdf',
+                  data: file.base64
+                }
+              });
+            } else if (file.mimeType === 'text/plain' ||
+              file.mimeType === 'text/markdown' ||
+              file.mimeType === 'text/csv' ||
+              file.mimeType === 'application/json') {
+              // ✅ Option 2: Decode text files and include as text
+              try {
+                const decodedText = this.decodeBase64ToText(file.base64);
+                content.push({
+                  type: 'text',
+                  text: `[File: ${file.name}]\n${decodedText}`
+                });
+              } catch (e) {
+                console.error('Failed to decode text file:', e);
+                content.push({
+                  type: 'text',
+                  text: `[Error reading file: ${file.name}]`
+                });
+              }
+            } else {
+              // ✅ Option 3: For unsupported documents, add placeholder
+              // In production, you'd want to extract text/images on backend
+              content.push({
+                type: 'text',
+                text: `[Document attached: ${file.name} (${file.mimeType})]`
+              });
+            }
           }
         }
 
@@ -155,6 +195,25 @@ export class ChatVllmService {
     }
 
     return result;
+  }
+
+// ✅ NEW: Helper method to decode base64 to text
+  private decodeBase64ToText(base64: string): string {
+    try {
+      // Decode base64 to binary string
+      const binaryString = atob(base64);
+
+      // Convert binary string to UTF-8
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+
+      const decoder = new TextDecoder('utf-8');
+      return decoder.decode(bytes);
+    } catch (e) {
+      throw new Error('Failed to decode base64 to text');
+    }
   }
 
   private buildAdvancedOptions(params: AdvancedParam[]): Record<string, any> {
