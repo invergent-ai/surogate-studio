@@ -24,6 +24,10 @@ public class EvaluationJobDTO implements Serializable {
     private String judgeModelApi;
     private Boolean useGateway;
     private EvaluationJobStatus status;
+
+    @Builder.Default
     private Set<String> notify = new HashSet<>();
+
+    @Builder.Default
     private Set<EvaluationBenchmarkDTO> benchmarks = new HashSet<>();
 }

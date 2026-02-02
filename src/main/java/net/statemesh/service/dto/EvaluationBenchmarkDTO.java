@@ -16,5 +16,7 @@ public class EvaluationBenchmarkDTO implements Serializable {
     private String name;
     private String type;
     private Integer shots;
+
+    @Builder.Default
     private Set<String> selectedTasks = new HashSet<>();
 }

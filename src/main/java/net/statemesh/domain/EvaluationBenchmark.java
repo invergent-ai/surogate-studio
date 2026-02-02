@@ -36,6 +36,7 @@ public class EvaluationBenchmark implements Serializable {
     @Column(name = "shots")
     private Integer shots;
 
+    @Builder.Default
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(
         name = "evaluation_benchmark_tasks",
@@ -47,7 +48,6 @@ public class EvaluationBenchmark implements Serializable {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "evaluation_job_id")
     private EvaluationJob evaluationJob;
-
 
     @Override
     public boolean equals(Object o) {

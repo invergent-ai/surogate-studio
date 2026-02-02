@@ -54,6 +54,7 @@ public class EvaluationJob implements Serializable {
     @Column(name = "status")
     private EvaluationJobStatus status;
 
+    @Builder.Default
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(
         name = "evaluation_job_notify",
@@ -62,6 +63,7 @@ public class EvaluationJob implements Serializable {
     @Column(name = "notify_value", length = 255)
     private Set<String> notify = new HashSet<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "evaluationJob", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<EvaluationBenchmark> benchmarks = new HashSet<>();
 }
