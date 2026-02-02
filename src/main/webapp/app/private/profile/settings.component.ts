@@ -25,6 +25,11 @@ import { PageComponent } from '../../shared/components/page/page.component';
 import { PageLoadComponent } from '../../shared/components/page-load/page-load.component';
 import { CardModule } from 'primeng/card';
 import { LayoutService } from '../../shared/service/theme/app-layout.service';
+import { UserApiKey, UserApiKeyService } from '../../shared/service/user-api-key.service';
+import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
+import { TabViewModule } from 'primeng/tabview';
+import { ApiKeyProvider, ApiKeyType } from '../../shared/model/enum/api-key.enum';
 
 const initialAccount: Account = {} as Account;
 const initialNotificationPreferences: NotificationPreferences = {
@@ -32,7 +37,7 @@ const initialNotificationPreferences: NotificationPreferences = {
   ACCOUNT: false,
   BILLING: false,
   NEWS: false,
-  MAINTENANCE: false
+  MAINTENANCE: false,
 };
 
 @Component({
@@ -53,13 +58,14 @@ const initialNotificationPreferences: NotificationPreferences = {
     PageComponent,
     PageLoadComponent,
     CardModule,
+    TagModule,
+    TooltipModule,
+    TabViewModule,
   ],
-  templateUrl: './settings.component.html'
+  templateUrl: './settings.component.html',
 })
 export default class SettingsComponent implements OnInit {
-  readonly welcomeItems = [
-    {title: 'What is Surogate ?', link: 'https://surogate.ai'},
-  ];
+  readonly welcomeItems = [{ title: 'What is Surogate ?', link: 'https://surogate.ai' }];
 
   @ViewChild('passwordAccordion') passwordAccordion: Accordion;
   languages = LANGUAGES;
@@ -68,17 +74,39 @@ export default class SettingsComponent implements OnInit {
   showConfirmPassword = false;
   loading = true;
 
+  // LLM Providers
+  llmProviders = [
+    { code: ApiKeyProvider.OPENAI, name: 'OpenAI', placeholder: 'sk-...' },
+    { code: ApiKeyProvider.ANTHROPIC, name: 'Anthropic', placeholder: 'sk-ant-...' },
+    { code: ApiKeyProvider.OPENROUTER, name: 'OpenRouter', placeholder: 'sk-or-...' },
+    { code: ApiKeyProvider.AZURE, name: 'Azure OpenAI', placeholder: 'your-azure-key' },
+  ];
+
+  cloudProviders = [
+    { code: ApiKeyProvider.AWS, name: 'AWS', placeholder: 'AKIA...' },
+    { code: ApiKeyProvider.GCP, name: 'Google Cloud', placeholder: 'your-gcp-key' },
+    { code: ApiKeyProvider.OCI, name: 'Oracle Cloud', placeholder: 'your-oci-key' },
+    { code: ApiKeyProvider.RUNPOD, name: 'RunPod', placeholder: 'your-runpod-key' },
+  ];
+
+  savedLlmApiKeys: UserApiKey[] = [];
+  savedCloudApiKeys: UserApiKey[] = [];
+  editingProvider: string | null = null;
+  savingProvider: string | null = null;
+  apiKeyInputs: Record<string, string> = {};
+  showApiKey: Record<string, boolean> = {};
+
   settingsForm = new FormGroup({
     id: new FormControl<string | null>(initialAccount.id),
     firstName: new FormControl<string | null>(initialAccount.firstName, {
-      validators: [Validators.required, Validators.minLength(1), Validators.maxLength(50)]
+      validators: [Validators.required, Validators.minLength(1), Validators.maxLength(50)],
     }),
     lastName: new FormControl<string | null>(initialAccount.lastName, {
-      validators: [Validators.required, Validators.minLength(1), Validators.maxLength(50)]
+      validators: [Validators.required, Validators.minLength(1), Validators.maxLength(50)],
     }),
     email: new FormControl(initialAccount.email, {
       nonNullable: true,
-      validators: [Validators.required, Validators.minLength(5), Validators.maxLength(254), Validators.email]
+      validators: [Validators.required, Validators.minLength(5), Validators.maxLength(254), Validators.email],
     }),
     langKey: new FormControl(initialAccount.langKey, { nonNullable: true }),
     activated: new FormControl(initialAccount.activated, { nonNullable: true }),
@@ -92,10 +120,7 @@ export default class SettingsComponent implements OnInit {
     hasApps: new FormControl(initialAccount.hasApps, {}),
     cicdPipelineAutopublish: new FormControl(initialAccount.cicdPipelineAutopublish, {}),
     selectedNotifications: new FormControl<string[]>([], { nonNullable: true }),
-    notificationPreferences: new FormControl<NotificationPreferences>(
-      initialNotificationPreferences,
-      { nonNullable: true }
-    ),
+    notificationPreferences: new FormControl<NotificationPreferences>(initialNotificationPreferences, { nonNullable: true }),
     theme: new FormControl(initialAccount.theme, { nonNullable: true }),
     scale: new FormControl(initialAccount.scale, { nonNullable: true }),
     ripple: new FormControl(initialAccount.ripple, { nonNullable: true }),
@@ -112,19 +137,19 @@ export default class SettingsComponent implements OnInit {
     country: new FormControl(initialAccount.country),
     zip: new FormControl(initialAccount.zip),
     referralCode: new FormControl(initialAccount.referralCode),
-    colorScheme: new FormControl(initialAccount.colorScheme, { nonNullable: true })
+    colorScheme: new FormControl(initialAccount.colorScheme, { nonNullable: true }),
   });
 
   passwordForm = new FormGroup({
     currentPassword: new FormControl('', {
-      validators: [Validators.required]
+      validators: [Validators.required],
     }),
     newPassword: new FormControl('', {
-      validators: [Validators.required, Validators.minLength(4), Validators.maxLength(50)]
+      validators: [Validators.required, Validators.minLength(4), Validators.maxLength(50)],
     }),
     confirmPassword: new FormControl('', {
-      validators: [Validators.required]
-    })
+      validators: [Validators.required],
+    }),
   });
 
   constructor(
@@ -135,12 +160,13 @@ export default class SettingsComponent implements OnInit {
     private loginService: LoginService,
     private router: Router,
     private layoutService: LayoutService,
-  ) {
-  }
+    private userApiKeyService: UserApiKeyService,
+  ) {}
 
   ngOnInit(): void {
     this.layoutService.state.helpItems = this.welcomeItems;
-    // First load account data
+    this.loadApiKeys();
+
     this.accountService.identity().subscribe({
       next: account => {
         if (account) {
@@ -174,7 +200,6 @@ export default class SettingsComponent implements OnInit {
             zip: account.zip,
           });
 
-          // After account is loaded, load notification settings
           this.loadNotificationSettings();
           this.settingsForm.markAllAsTouched();
 
@@ -183,8 +208,77 @@ export default class SettingsComponent implements OnInit {
       },
       error: () => {
         displayError(this.store, 'Failed to load user profile');
-      }
+      },
     });
+  }
+
+  // API Keys methods
+  loadApiKeys(): void {
+    this.userApiKeyService.getAll('LLM').subscribe({
+      next: keys => (this.savedLlmApiKeys = keys),
+      error: () => displayError(this.store, 'Failed to load LLM API keys'),
+    });
+
+    this.userApiKeyService.getAll('CLOUD').subscribe({
+      next: keys => (this.savedCloudApiKeys = keys),
+      error: () => displayError(this.store, 'Failed to load Cloud API keys'),
+    });
+  }
+
+  getSavedKey(provider: ApiKeyProvider, type: ApiKeyType): UserApiKey | undefined {
+    const keys = type === 'LLM' ? this.savedLlmApiKeys : this.savedCloudApiKeys;
+    return keys.find(k => k.provider === provider);
+  }
+
+  editApiKey(provider: ApiKeyProvider, type: ApiKeyType): void {
+    this.editingProvider = `${provider}_${type}`;
+    this.apiKeyInputs[provider] = '';
+    this.showApiKey[provider] = false;
+  }
+
+  cancelEditApiKey(provider: string): void {
+    this.editingProvider = null;
+    this.apiKeyInputs[provider] = '';
+  }
+
+  saveApiKey(provider: ApiKeyProvider, type: ApiKeyType): void {
+    const apiKey = this.apiKeyInputs[provider];
+    if (!apiKey) return;
+
+    this.savingProvider = `${provider}_${type}`;
+    this.userApiKeyService.save({ type, provider, apiKey }).subscribe({
+      next: () => {
+        displaySuccess(this.store, `${this.getProviderName(provider, type)} API key saved`);
+        this.loadApiKeys();
+        this.editingProvider = null;
+        this.apiKeyInputs[provider] = '';
+        this.savingProvider = null;
+      },
+      error: () => {
+        displayError(this.store, 'Failed to save API key');
+        this.savingProvider = null;
+      },
+    });
+  }
+
+  deleteApiKey(provider: ApiKeyProvider, type: ApiKeyType): void {
+    this.confirmationService.confirm({
+      message: `Are you sure you want to delete your ${this.getProviderName(provider, type)} API key?`,
+      accept: () => {
+        this.userApiKeyService.delete(provider, type).subscribe({
+          next: () => {
+            displaySuccess(this.store, 'API key deleted');
+            this.loadApiKeys();
+          },
+          error: () => displayError(this.store, 'Failed to delete API key'),
+        });
+      },
+    });
+  }
+
+  getProviderName(code: ApiKeyProvider, type: ApiKeyType): string {
+    const providers = type === 'LLM' ? this.llmProviders : this.cloudProviders;
+    return providers.find(p => p.code === code)?.name || code;
   }
 
   private loadNotificationSettings(): void {
@@ -192,20 +286,17 @@ export default class SettingsComponent implements OnInit {
       next: settings => {
         const preferences = fromDTO(settings);
         this.settingsForm.patchValue({
-          notificationPreferences: preferences
+          notificationPreferences: preferences,
         });
       },
       error: () => {
         displayError(this.store, 'Failed to load notification preferences');
-      }
+      },
     });
   }
 
   canChangePassword(): boolean {
-    return (
-      this.passwordForm.valid &&
-      this.passwordForm.get('newPassword').value === this.passwordForm.get('confirmPassword').value
-    );
+    return this.passwordForm.valid && this.passwordForm.get('newPassword').value === this.passwordForm.get('confirmPassword').value;
   }
 
   changePassword(): void {
@@ -217,20 +308,18 @@ export default class SettingsComponent implements OnInit {
         next: () => {
           displaySuccess(this.store, 'Password changed successfully');
 
-          // Reset password fields
           this.passwordForm.patchValue({
             currentPassword: '',
             newPassword: '',
-            confirmPassword: ''
+            confirmPassword: '',
           });
-          // Close the accordion
           if (this.passwordAccordion?.activeIndex !== null) {
             this.passwordAccordion.activeIndex = -1;
           }
         },
         error: () => {
           displayError(this.store, 'Failed to change password');
-        }
+        },
       });
     }
   }
@@ -238,21 +327,21 @@ export default class SettingsComponent implements OnInit {
   async deleteAccountFirstConfirm(event: Event) {
     this.confirmationService.confirm({
       key: 'confirmDelete',
-      target: event.target || new EventTarget,
+      target: event.target || new EventTarget(),
       message: `Do you really want to delete your account?`,
       icon: 'pi pi-exclamation-triangle',
       acceptLabel: 'Yes',
       rejectLabel: 'No',
       accept: async () => this.deleteAccount(),
-      reject: async () => {
-      }
+      reject: async () => {},
     });
   }
 
   deleteAccount(): void {
     this.confirmationService.confirm({
       header: 'Delete Account',
-      message: 'Are you sure you want to delete your account?<br/> This action is irreversible. ' +
+      message:
+        'Are you sure you want to delete your account?<br/> This action is irreversible. ' +
         'All of your apps will be deleted and nodes unregistered!<br/> You will not be able to access your platform wallet either!',
       icon: 'pi pi-exclamation-triangle',
       accept: () => {
@@ -264,9 +353,9 @@ export default class SettingsComponent implements OnInit {
           },
           error: () => {
             displayError(this.store, 'Failed to delete account');
-          }
+          },
         });
-      }
+      },
     });
   }
 
@@ -310,24 +399,23 @@ export default class SettingsComponent implements OnInit {
         formValue.state,
         formValue.country,
         formValue.zip,
-        formValue.referralCode
+        formValue.referralCode,
       );
 
-      // Save both account and notification settings
       await Promise.all([
         new Promise<void>((resolve, reject) => {
           this.accountService.save(account).subscribe({
             next: () => resolve(),
-            error: reject
+            error: reject,
           });
         }),
         new Promise<void>((resolve, reject) => {
           const notificationSettings = toDTO(formValue.notificationPreferences);
           this.accountService.updateNotificationSettings(notificationSettings).subscribe({
             next: () => resolve(),
-            error: reject
+            error: reject,
           });
-        })
+        }),
       ]);
 
       displaySuccess(this.store, 'Settings updated successfully');

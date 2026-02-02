@@ -14,23 +14,26 @@ import { AccordionModule } from 'primeng/accordion';
 import { ButtonDirective } from 'primeng/button';
 import { ChevronDown, ChevronUp, LucideAngularModule, SlidersHorizontal } from 'lucide-angular';
 import { TooltipModule } from 'primeng/tooltip';
+import { UserApiKeyService } from '../../service/user-api-key.service';
+import { ApiKeyProvider, LLM_PROVIDERS_WITH_SAVED_KEYS } from '../../model/enum/api-key.enum';
 
 export interface LLMProviderConfig {
   provider: string;
   model: string;
   baseUrl: string;
   apiKey: string;
+  useSavedKey?: boolean;
   internalName?: string;
   namespace?: string;
   tokenizer?: string;
   maxTokens?: number;
-  // Generation parameters
   temperature?: number;
   topP?: number;
   topK?: number;
   minP?: number;
   presencePenalty?: number;
   enableThinking?: boolean;
+  internalPortName?: string;
 }
 
 interface DeployedModelOption extends IApplication {
@@ -97,7 +100,15 @@ interface DeployedModelOption extends IApplication {
       </div>
       <div class="field" [class]="fieldClass" *ngIf="!isInternal">
         <sm-label-tooltip tooltip="API key for authentication">API Key</sm-label-tooltip>
-        <input pInputText type="password" formControlName="apiKey" placeholder="sk-..." />
+        @if (form.get('useSavedKey')?.value) {
+          <div class="flex align-items-center gap-2 p-2 surface-100 border-round">
+            <i class="pi pi-check-circle text-green-500"></i>
+            <span class="text-sm">Using saved {{ form.get('provider')?.value }} key</span>
+            <a class="text-xs text-500 cursor-pointer ml-auto" (click)="clearSavedKey()">Use different key</a>
+          </div>
+        } @else {
+          <input pInputText type="password" formControlName="apiKey" placeholder="sk-..." />
+        }
       </div>
 
       <!-- Advanced toggle - only for model under test -->
@@ -190,18 +201,21 @@ export class LlmProviderConfigComponent implements ControlValueAccessor {
   @Input() showAdvancedToggle = false;
 
   private applicationService = inject(ApplicationService);
+  private userApiKeyService = inject(UserApiKeyService);
+
   showAdvanced = false;
   protected readonly SlidersHorizontal = SlidersHorizontal;
   protected readonly ChevronDown = ChevronDown;
   protected readonly ChevronUp = ChevronUp;
+
   providers = [
-    { name: 'Internal', code: 'internal' },
-    { name: 'OpenAI', code: 'openai' },
-    { name: 'Anthropic', code: 'anthropic' },
-    { name: 'OpenRouter', code: 'openrouter' },
-    { name: 'Azure OpenAI', code: 'azure' },
-    { name: 'vLLM', code: 'vllm' },
-    { name: 'Ollama', code: 'ollama' },
+    { name: 'Internal', code: ApiKeyProvider.INTERNAL },
+    { name: 'OpenAI', code: ApiKeyProvider.OPENAI },
+    { name: 'Anthropic', code: ApiKeyProvider.ANTHROPIC },
+    { name: 'OpenRouter', code: ApiKeyProvider.OPENROUTER },
+    { name: 'Azure OpenAI', code: ApiKeyProvider.AZURE },
+    { name: 'vLLM', code: ApiKeyProvider.VLLM },
+    { name: 'Ollama', code: ApiKeyProvider.OLLAMA },
   ];
 
   thinkingOptions = [
@@ -219,6 +233,7 @@ export class LlmProviderConfigComponent implements ControlValueAccessor {
     vllm: '',
     ollama: 'http://localhost:11434/v1',
   };
+  private savedApiKeys = derivedAsync(() => this.userApiKeyService.getAll('LLM'));
 
   private modelPlaceholders: Record<string, string> = {
     internal: '',
@@ -232,10 +247,12 @@ export class LlmProviderConfigComponent implements ControlValueAccessor {
 
   form = new FormGroup({
     provider: new FormControl<string>('openai'),
+    useSavedKey: new FormControl<boolean>(false),
     model: new FormControl<string>(''),
     baseUrl: new FormControl<string>('https://api.openai.com/v1'),
     apiKey: new FormControl<string>(''),
     deployedModel: new FormControl<DeployedModelOption | null>(null),
+    internalPortName: new FormControl<string>(''),
     internalName: new FormControl<string>(''),
     namespace: new FormControl<string>(''),
     tokenizer: new FormControl<string>(''),
@@ -258,6 +275,10 @@ export class LlmProviderConfigComponent implements ControlValueAccessor {
       .query({ 'mode.equals': 'MODEL', 'status.equals': 'DEPLOYED' })
       .pipe(map(response => (response.body ?? []).map(app => this.withApiModelName(app)))),
   );
+
+  clearSavedKey() {
+    this.form.patchValue({ useSavedKey: false, apiKey: '' });
+  }
 
   private withApiModelName(app: IApplication): DeployedModelOption {
     const config = app.extraConfig ? JSON.parse(app.extraConfig) : {};
@@ -289,19 +310,23 @@ export class LlmProviderConfigComponent implements ControlValueAccessor {
     return this.modelPlaceholders[provider] || 'model-name';
   }
 
-  getBaseUrlPlaceholder(): string {
-    const provider = this.form.get('provider')?.value || 'openai';
-    return this.defaultUrls[provider] || 'https://api.example.com/v1';
-  }
-
   onProviderChange() {
-    const provider = this.form.get('provider')?.value;
+    const provider = this.form.get('provider')?.value as ApiKeyProvider;
     if (provider && this.defaultUrls[provider] !== undefined) {
       this.form.get('baseUrl')?.setValue(this.defaultUrls[provider]);
     }
-    if (provider === 'internal') {
-      this.form.patchValue({ model: '', baseUrl: '', apiKey: '', deployedModel: null });
+    if (provider === ApiKeyProvider.INTERNAL) {
+      this.form.patchValue({ model: '', baseUrl: '', apiKey: '', deployedModel: null, useSavedKey: false });
+    } else if (LLM_PROVIDERS_WITH_SAVED_KEYS.includes(provider)) {
+      this.checkAndApplySavedKey(provider);
+    } else {
+      this.form.patchValue({ useSavedKey: false, apiKey: '' });
     }
+  }
+
+  getBaseUrlPlaceholder(): string {
+    const provider = this.form.get('provider')?.value || 'openai';
+    return this.defaultUrls[provider] || 'https://api.example.com/v1';
   }
 
   onDeployedModelChange(deployedModel: DeployedModelOption | null) {
@@ -319,6 +344,8 @@ export class LlmProviderConfigComponent implements ControlValueAccessor {
       // Check if it's a Qwen model to set thinking default
       const isQwen = (deployedModel.hfModelName || '').toLowerCase().includes('qwen');
 
+      const port80 = deployedModel.containers?.flatMap(c => c.ports || [])?.find(p => p.servicePort === 80);
+
       this.form.patchValue(
         {
           model: deployedModel.apiModelName,
@@ -328,6 +355,7 @@ export class LlmProviderConfigComponent implements ControlValueAccessor {
           namespace: deployedModel.deployedNamespace,
           tokenizer,
           maxTokens,
+          internalPortName: port80?.name || '80',
           // Set defaults for internal models
           temperature: 0.7,
           topP: 0.8,
@@ -359,23 +387,39 @@ export class LlmProviderConfigComponent implements ControlValueAccessor {
 
   writeValue(value: LLMProviderConfig | null): void {
     if (value) {
-      this.form.patchValue(value, { emitEvent: false });
+      this.form.patchValue({ ...value, useSavedKey: false }, { emitEvent: false });
 
-      if (value.provider === 'internal' && value.internalName) {
+      const provider = value.provider as ApiKeyProvider;
+      if (provider === ApiKeyProvider.INTERNAL && value.internalName) {
         this.loadDeployedModelByInternalName(value.internalName, value.namespace);
+      } else if (provider && LLM_PROVIDERS_WITH_SAVED_KEYS.includes(provider) && !value.apiKey) {
+        this.checkAndApplySavedKey(provider);
       }
     } else {
       this.form.reset(
         {
-          provider: 'openai',
+          provider: ApiKeyProvider.OPENAI,
+          useSavedKey: false,
           model: '',
-          baseUrl: this.defaultUrls['openai'],
+          baseUrl: this.defaultUrls[ApiKeyProvider.OPENAI],
           apiKey: '',
           deployedModel: null,
         },
         { emitEvent: false },
       );
+      this.checkAndApplySavedKey(ApiKeyProvider.OPENAI);
     }
+  }
+
+  private checkAndApplySavedKey(provider: ApiKeyProvider): void {
+    this.userApiKeyService.hasKey(provider, 'LLM').subscribe({
+      next: exists => {
+        this.form.patchValue({ useSavedKey: exists, apiKey: '' });
+      },
+      error: () => {
+        this.form.patchValue({ useSavedKey: false });
+      },
+    });
   }
 
   registerOnChange(fn: (value: LLMProviderConfig) => void): void {

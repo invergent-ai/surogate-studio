@@ -3,9 +3,7 @@ package net.statemesh.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.statemesh.domain.TaskRun;
-import net.statemesh.domain.enumeration.ProcessEvent;
-import net.statemesh.domain.enumeration.TaskRunProvisioningStatus;
-import net.statemesh.domain.enumeration.TaskRunType;
+import net.statemesh.domain.enumeration.*;
 import net.statemesh.k8s.KubernetesController;
 import net.statemesh.k8s.flow.DeleteTaskRunFlow;
 import net.statemesh.k8s.flow.TaskRunFlow;
@@ -55,6 +53,7 @@ public class TaskRunService {
     private final LakeFsService lakeFsService;
     private final KubernetesController kubernetesController;
     private final AsyncTaskExecutor smTaskExecutor;
+    private final UserApiKeyService userApiKeyService;
     private final DeleteTaskRunFlow deleteTaskRunFlow;
 
     public TaskRunDTO save(TaskRunDTO taskRunDTO, String login) {
@@ -82,6 +81,7 @@ public class TaskRunService {
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public TaskRunDTO submit(TaskRunDTO taskRunDTO, String login) {
         ensurePrerequisites(taskRunDTO, login);
+        resolveSavedApiKeys(taskRunDTO, login);
 
         try {
             taskRunDTO = save(taskRunDTO, login);
@@ -104,6 +104,64 @@ public class TaskRunService {
         }
 
         return save(taskRunDTO, login);
+    }
+
+
+    private void resolveSavedApiKeys(TaskRunDTO taskRun, String login) {
+        if (login == null) return;
+
+        if ("true".equals(getParamValue(taskRun, "USE_SAVED_API_KEY"))) {
+            String providerStr = getParamValue(taskRun, "SAVED_API_KEY_PROVIDER");
+            ApiKeyProvider provider = ApiKeyProvider.fromValue(providerStr);
+            userApiKeyService.getDecryptedApiKey(login, provider, ApiKeyType.LLM)
+                .ifPresentOrElse(
+                    apiKey -> {
+                        removeParam(taskRun, "USE_SAVED_API_KEY");
+                        removeParam(taskRun, "SAVED_API_KEY_PROVIDER");
+                        addOrUpdateParam(taskRun, "DEPLOYED_MODEL_API", apiKey);
+                    },
+                    () -> log.warn("No saved API key found for provider: {}", provider)
+                );
+        }
+
+        if ("true".equals(getParamValue(taskRun, "USE_SAVED_JUDGE_API_KEY"))) {
+            String providerStr = getParamValue(taskRun, "SAVED_JUDGE_API_KEY_PROVIDER");
+            ApiKeyProvider provider = ApiKeyProvider.fromValue(providerStr);
+            userApiKeyService.getDecryptedApiKey(login, provider, ApiKeyType.LLM)
+                .ifPresent(apiKey -> {
+                    removeParam(taskRun, "USE_SAVED_JUDGE_API_KEY");
+                    removeParam(taskRun, "SAVED_JUDGE_API_KEY_PROVIDER");
+                    addOrUpdateParam(taskRun, "JUDGE_MODEL_API", apiKey);
+                });
+        }
+
+        if ("true".equals(getParamValue(taskRun, "USE_SAVED_SIMULATOR_API_KEY"))) {
+            String providerStr = getParamValue(taskRun, "SAVED_SIMULATOR_API_KEY_PROVIDER");
+            ApiKeyProvider provider = ApiKeyProvider.fromValue(providerStr);
+            userApiKeyService.getDecryptedApiKey(login, provider, ApiKeyType.LLM)
+                .ifPresent(apiKey -> {
+                    removeParam(taskRun, "USE_SAVED_SIMULATOR_API_KEY");
+                    removeParam(taskRun, "SAVED_SIMULATOR_API_KEY_PROVIDER");
+                    addOrUpdateParam(taskRun, "SIMULATOR_MODEL_API", apiKey);
+                });
+        }
+    }
+
+    private String getParamValue(TaskRunDTO taskRun, String key) {
+        return taskRun.getParams().stream()
+            .filter(p -> key.equals(p.getKey()))
+            .map(TaskRunParamDTO::getValue)
+            .findFirst()
+            .orElse(null);
+    }
+
+    private void removeParam(TaskRunDTO taskRun, String key) {
+        taskRun.getParams().removeIf(p -> key.equals(p.getKey()));
+    }
+
+    private void addOrUpdateParam(TaskRunDTO taskRun, String key, String value) {
+        removeParam(taskRun, key);
+        taskRun.getParams().add(TaskRunParamDTO.builder().key(key).value(value).build());
     }
 
     private void cleanupOnError(TaskRunDTO taskRunDTO) {

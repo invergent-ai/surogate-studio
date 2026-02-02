@@ -21,20 +21,9 @@
 
             <div
               *ngIf="settingsForm.get('firstName')!.invalid && (settingsForm.get('firstName')!.dirty || settingsForm.get('firstName')!.touched)">
-              <small
-                class="p-error block"
-                *ngIf="settingsForm.get('firstName')?.errors?.required"
-              >Your first name is required.</small>
-
-              <small
-                class="p-error block"
-                *ngIf="settingsForm.get('firstName')?.errors?.minlength"
-              >Your first name is required to be at least 1 character</small>
-
-              <small
-                class="p-error block"
-                *ngIf="settingsForm.get('firstName')?.errors?.maxlength"
-              >Your first name cannot be longer than 50 characters</small>
+              <small class="p-error block" *ngIf="settingsForm.get('firstName')?.errors?.required">Your first name is required.</small>
+              <small class="p-error block" *ngIf="settingsForm.get('firstName')?.errors?.minlength">Your first name is required to be at least 1 character</small>
+              <small class="p-error block" *ngIf="settingsForm.get('firstName')?.errors?.maxlength">Your first name cannot be longer than 50 characters</small>
             </div>
           </div>
 
@@ -51,20 +40,9 @@
 
             <div
               *ngIf="settingsForm.get('lastName')!.invalid && (settingsForm.get('lastName')!.dirty || settingsForm.get('lastName')!.touched)">
-              <small
-                class="p-error block"
-                *ngIf="settingsForm.get('lastName')?.errors?.required"
-              >Your last name is required.</small>
-
-              <small
-                class="p-error block"
-                *ngIf="settingsForm.get('lastName')?.errors?.minlength"
-              >Your last name is required to be at least 1 character</small>
-
-              <small
-                class="p-error block"
-                *ngIf="settingsForm.get('lastName')?.errors?.maxlength"
-              >Your last name cannot be longer than 50 characters</small>
+              <small class="p-error block" *ngIf="settingsForm.get('lastName')?.errors?.required">Your last name is required.</small>
+              <small class="p-error block" *ngIf="settingsForm.get('lastName')?.errors?.minlength">Your last name is required to be at least 1 character</small>
+              <small class="p-error block" *ngIf="settingsForm.get('lastName')?.errors?.maxlength">Your last name cannot be longer than 50 characters</small>
             </div>
           </div>
 
@@ -84,25 +62,10 @@
 
             <div
               *ngIf="settingsForm.get('email')!.invalid && (settingsForm.get('email')!.dirty || settingsForm.get('email')!.touched)">
-              <small
-                class="p-error block"
-                *ngIf="settingsForm.get('email')?.errors?.required"
-              >Your email is required.</small>
-
-              <small
-                class="p-error block"
-                *ngIf="settingsForm.get('email')?.errors?.email"
-              >Your email is invalid.</small>
-
-              <small
-                class="p-error block"
-                *ngIf="settingsForm.get('email')?.errors?.minlength"
-              >Your email is required to be at least 5 characters.</small>
-
-              <small
-                class="p-error block"
-                *ngIf="settingsForm.get('email')?.errors?.maxlength"
-              >Your email cannot be longer than 50 characters.</small>
+              <small class="p-error block" *ngIf="settingsForm.get('email')?.errors?.required">Your email is required.</small>
+              <small class="p-error block" *ngIf="settingsForm.get('email')?.errors?.email">Your email is invalid.</small>
+              <small class="p-error block" *ngIf="settingsForm.get('email')?.errors?.minlength">Your email is required to be at least 5 characters.</small>
+              <small class="p-error block" *ngIf="settingsForm.get('email')?.errors?.maxlength">Your email cannot be longer than 50 characters.</small>
             </div>
           </div>
 
@@ -112,6 +75,44 @@
         </form>
       </p-card>
 
+      <!-- API Keys Section -->
+      <div class="mt-3">
+        <p-accordion>
+          <p-accordionTab header="API Keys">
+            <p class="text-sm text-500 mb-4">
+              Store your API keys securely. These will be auto-filled when selecting providers.
+            </p>
+
+            <p-tabView>
+              <!-- LLM Providers Tab -->
+              <p-tabPanel header="LLM Providers">
+                <p class="text-sm text-500 mb-3">
+                  API keys for AI model providers used in evaluations and inference.
+                </p>
+                <div class="grid">
+                  @for (provider of llmProviders; track provider.code) {
+                    <ng-container *ngTemplateOutlet="apiKeyCard; context: { provider: provider, type: 'LLM' }"></ng-container>
+                  }
+                </div>
+              </p-tabPanel>
+
+              <!-- Cloud Providers Tab -->
+              <p-tabPanel header="Cloud Providers">
+                <p class="text-sm text-500 mb-3">
+                  API keys for cloud infrastructure providers used for deployments.
+                </p>
+                <div class="grid">
+                  @for (provider of cloudProviders; track provider.code) {
+                    <ng-container *ngTemplateOutlet="apiKeyCard; context: { provider: provider, type: 'CLOUD' }"></ng-container>
+                  }
+                </div>
+              </p-tabPanel>
+            </p-tabView>
+          </p-accordionTab>
+        </p-accordion>
+      </div>
+
+      <!-- Change Password Section -->
       <div class="mt-3">
         <p-accordion #passwordAccordion>
           <p-accordionTab>
@@ -183,5 +184,82 @@
     </ng-template>
   </sm-page-loader>
 </sm-page>
+
+<!-- API Key Card Template -->
+<ng-template #apiKeyCard let-provider="provider" let-type="type">
+  <div class="col-12 md:col-6 lg:col-4">
+    <div class="p-3 border-1 border-round surface-border">
+      <div class="flex align-items-center justify-content-between mb-2">
+        <span class="font-medium">{{ provider.name }}</span>
+        @if (getSavedKey(provider.code, type)) {
+          <p-tag severity="success" value="Configured"></p-tag>
+        }
+      </div>
+
+      @if (editingProvider === provider.code + '_' + type) {
+        <div class="flex flex-column gap-2">
+          <div class="p-input-icon-right w-full">
+            <i class="pi" [ngClass]="showApiKey[provider.code] ? 'pi-eye-slash' : 'pi-eye'"
+               (click)="showApiKey[provider.code] = !showApiKey[provider.code]"
+               style="cursor: pointer"></i>
+            <input [type]="showApiKey[provider.code] ? 'text' : 'password'"
+                   pInputText
+                   class="w-full"
+                   [(ngModel)]="apiKeyInputs[provider.code]"
+                   [placeholder]="provider.placeholder"/>
+          </div>
+          <div class="flex gap-2">
+            <button pButton
+                    type="button"
+                    size="small"
+                    label="Save"
+                    (click)="saveApiKey(provider.code, type)"
+                    [loading]="savingProvider === provider.code + '_' + type"
+                    [disabled]="!apiKeyInputs[provider.code]">
+            </button>
+            <button pButton
+                    type="button"
+                    size="small"
+                    severity="secondary"
+                    label="Cancel"
+                    (click)="cancelEditApiKey(provider.code)">
+            </button>
+          </div>
+        </div>
+      } @else {
+        <div class="flex align-items-center gap-2">
+          @if (getSavedKey(provider.code, type); as key) {
+            <span class="text-sm text-500 flex-1">{{ key.maskedApiKey }}</span>
+            <button pButton
+                    type="button"
+                    size="small"
+                    severity="secondary"
+                    icon="pi pi-pencil"
+                    pTooltip="Edit"
+                    (click)="editApiKey(provider.code, type)">
+            </button>
+            <button pButton
+                    type="button"
+                    size="small"
+                    severity="danger"
+                    icon="pi pi-trash"
+                    pTooltip="Delete"
+                    (click)="deleteApiKey(provider.code, type)">
+            </button>
+          } @else {
+            <span class="text-sm text-500 flex-1">Not configured</span>
+            <button pButton
+                    type="button"
+                    size="small"
+                    label="Add"
+                    icon="pi pi-plus"
+                    (click)="editApiKey(provider.code, type)">
+            </button>
+          }
+        </div>
+      }
+    </div>
+  </div>
+</ng-template>
 
 <p-confirmDialog></p-confirmDialog>

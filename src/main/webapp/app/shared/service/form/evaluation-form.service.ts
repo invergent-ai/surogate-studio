@@ -23,7 +23,7 @@ export class EvaluationFormService {
       id: new FormControl<string | null>(null),
       name: new FormControl<string>('', [Validators.required, Validators.minLength(3)]),
       description: new FormControl<string>(''),
-      modelUnderTest: new FormControl<LLMProviderConfig | null>(null, Validators.required), // Changed
+      modelUnderTest: new FormControl<LLMProviderConfig | null>(null, Validators.required),
       judgeConfig: new FormControl<LLMProviderConfig | null>(null),
       useSeparateSimulator: new FormControl<boolean>(false),
       simulatorConfig: new FormControl<LLMProviderConfig | null>(null),
@@ -79,11 +79,19 @@ export class EvaluationFormService {
 
     if (config.provider === 'internal') {
       if (config.internalName) params.push({ key: 'DEPLOYED_MODEL_INTERNAL_NAME', value: config.internalName });
+      if (config.internalPortName) params.push({ key: 'DEPLOYED_MODEL_INTERNAL_PORT_NAME', value: config.internalPortName });
       if (config.namespace) params.push({ key: 'DEPLOYED_MODEL_NAMESPACE', value: config.namespace });
       params.push({ key: 'DEPLOYED_MODEL_API', value: 'sk-no-key-required' });
     } else {
       if (config.baseUrl) params.push({ key: 'DEPLOYED_MODEL_BASE_URL', value: config.baseUrl });
-      if (config.apiKey) params.push({ key: 'DEPLOYED_MODEL_API', value: config.apiKey });
+
+      // Use saved key or manual key
+      if (config.useSavedKey) {
+        params.push({ key: 'USE_SAVED_API_KEY', value: 'true' });
+        params.push({ key: 'SAVED_API_KEY_PROVIDER', value: config.provider });
+      } else if (config.apiKey) {
+        params.push({ key: 'DEPLOYED_MODEL_API', value: config.apiKey });
+      }
     }
 
     if (config.tokenizer) {
@@ -94,7 +102,6 @@ export class EvaluationFormService {
       params.push({ key: 'MODEL_MAX_TOKENS', value: String(config.maxTokens) });
     }
 
-    // Generation parameters
     if (config.temperature != null) {
       params.push({ key: 'MODEL_TEMPERATURE', value: String(config.temperature) });
     }
@@ -118,29 +125,60 @@ export class EvaluationFormService {
   private addJudgeParams(params: ITaskRunParam[], formValues: any): void {
     if (!formValues.judgeConfig?.model) return;
 
-    params.push({ key: 'JUDGE_MODEL', value: formValues.judgeConfig.model });
+    const config = formValues.judgeConfig as LLMProviderConfig;
+
+    params.push({ key: 'JUDGE_MODEL', value: config.model });
     params.push({
       key: 'JUDGE_MODEL_PROVIDER',
-      value: formValues.judgeConfig.provider === 'internal' ? 'openai' : formValues.judgeConfig.provider,
+      value: config.provider === 'internal' ? 'openai' : config.provider,
     });
-    if (formValues.judgeConfig.baseUrl) params.push({ key: 'JUDGE_MODEL_BASE_URL', value: formValues.judgeConfig.baseUrl });
-    params.push({ key: 'JUDGE_MODEL_API', value: formValues.judgeConfig.apiKey || 'sk-no-key-required' });
-    if (formValues.judgeConfig.internalName) params.push({ key: 'JUDGE_MODEL_INTERNAL_NAME', value: formValues.judgeConfig.internalName });
-    if (formValues.judgeConfig.namespace) params.push({ key: 'JUDGE_MODEL_NAMESPACE', value: formValues.judgeConfig.namespace });
+
+    if (config.provider === 'internal') {
+      if (config.internalName) params.push({ key: 'JUDGE_MODEL_INTERNAL_NAME', value: config.internalName });
+      if (config.internalPortName) params.push({ key: 'JUDGE_MODEL_INTERNAL_PORT_NAME', value: config.internalPortName });
+      if (config.namespace) params.push({ key: 'JUDGE_MODEL_NAMESPACE', value: config.namespace });
+      params.push({ key: 'JUDGE_MODEL_API', value: 'sk-no-key-required' });
+    } else {
+      if (config.baseUrl) params.push({ key: 'JUDGE_MODEL_BASE_URL', value: config.baseUrl });
+
+      if (config.useSavedKey) {
+        params.push({ key: 'USE_SAVED_JUDGE_API_KEY', value: 'true' });
+        params.push({ key: 'SAVED_JUDGE_API_KEY_PROVIDER', value: config.provider });
+      } else if (config.apiKey) {
+        params.push({ key: 'JUDGE_MODEL_API', value: config.apiKey });
+      }
+    }
   }
 
   private addSimulatorParams(params: ITaskRunParam[], formValues: any): void {
     const config =
-      formValues.useSeparateSimulator && formValues.simulatorConfig?.model ? formValues.simulatorConfig : formValues.judgeConfig;
+      formValues.useSeparateSimulator && formValues.simulatorConfig?.model
+        ? (formValues.simulatorConfig as LLMProviderConfig)
+        : (formValues.judgeConfig as LLMProviderConfig);
 
     if (!config?.model) return;
 
     params.push({ key: 'SIMULATOR_MODEL', value: config.model });
-    params.push({ key: 'SIMULATOR_MODEL_PROVIDER', value: config.provider === 'internal' ? 'openai' : config.provider });
-    if (config.baseUrl) params.push({ key: 'SIMULATOR_MODEL_BASE_URL', value: config.baseUrl });
-    params.push({ key: 'SIMULATOR_MODEL_API', value: config.apiKey || 'sk-no-key-required' });
-    if (config.internalName) params.push({ key: 'SIMULATOR_MODEL_INTERNAL_NAME', value: config.internalName });
-    if (config.namespace) params.push({ key: 'SIMULATOR_MODEL_NAMESPACE', value: config.namespace });
+    params.push({
+      key: 'SIMULATOR_MODEL_PROVIDER',
+      value: config.provider === 'internal' ? 'openai' : config.provider,
+    });
+
+    if (config.provider === 'internal') {
+      if (config.internalName) params.push({ key: 'SIMULATOR_MODEL_INTERNAL_NAME', value: config.internalName });
+      if (config.internalPortName) params.push({ key: 'SIMULATOR_MODEL_INTERNAL_PORT_NAME', value: config.internalPortName });
+      if (config.namespace) params.push({ key: 'SIMULATOR_MODEL_NAMESPACE', value: config.namespace });
+      params.push({ key: 'SIMULATOR_MODEL_API', value: 'sk-no-key-required' });
+    } else {
+      if (config.baseUrl) params.push({ key: 'SIMULATOR_MODEL_BASE_URL', value: config.baseUrl });
+
+      if (config.useSavedKey) {
+        params.push({ key: 'USE_SAVED_SIMULATOR_API_KEY', value: 'true' });
+        params.push({ key: 'SAVED_SIMULATOR_API_KEY_PROVIDER', value: config.provider });
+      } else if (config.apiKey) {
+        params.push({ key: 'SIMULATOR_MODEL_API', value: config.apiKey });
+      }
+    }
   }
 
   private addBasicParams(params: ITaskRunParam[], formValues: any): void {
@@ -256,19 +294,16 @@ export class EvaluationFormService {
         formValues.customEvalDatasets.map((d: any) => {
           const evalType = d.evalType || 'exact_match';
 
-          // Build columns based on evalType
           const columns: any = {
             instruction: d.instructionColumn || 'instruction',
             answer: d.answerColumn || 'answer',
           };
 
-          // Only include eval_type and judge_criteria columns for hybrid mode
           if (evalType === 'hybrid') {
             columns.eval_type = d.evalTypeColumn || 'eval_type';
             columns.judge_criteria = d.judgeCriteriaColumn || 'judge_criteria';
           }
 
-          // Add system_prompt column if specified
           if (d.systemPromptColumn) {
             columns.system_prompt = d.systemPromptColumn;
           }
@@ -284,7 +319,6 @@ export class EvaluationFormService {
             promptTemplate: d.usePromptTemplate ? d.promptTemplate : null,
             stopSequences: d.usePromptTemplate ? d.stopSequences : null,
             defaultJudgeCriteria: evalType !== 'exact_match' ? d.defaultJudgeCriteria : null,
-            // NEW: Add default system prompt
             defaultSystemPrompt: d.defaultSystemPrompt || 'You are a helpful assistant.',
           };
         }),
@@ -298,10 +332,7 @@ export class EvaluationFormService {
     const language = getValue('LANGUAGE') || 'en';
     const notify = getValue('NOTIFY') || '';
 
-    // Model under test config
     const modelUnderTest = this.buildLLMConfig(envVars, 'DEPLOYED_MODEL');
-
-    // Judge config
     const judgeConfig = this.buildLLMConfig(envVars, 'JUDGE');
     const simulatorConfig = this.buildLLMConfig(envVars, 'SIMULATOR');
     const useSeparateSimulator = !!getValue('SIMULATOR_MODEL') && getValue('SIMULATOR_MODEL') !== judgeConfig.model;
@@ -315,7 +346,6 @@ export class EvaluationFormService {
       notify: typeof notify === 'string' && notify ? notify.split(',') : [],
     });
 
-    // Parse arrays
     this.parseBenchmarks(form, getValue('BENCHMARKS'));
     this.parsePerformance(form, getValue('PERFORMANCE_METRICS'));
     this.parseQuality(form, getValue('QUALITY_METRICS'));
@@ -328,14 +358,15 @@ export class EvaluationFormService {
   private buildLLMConfig(envVars: ITaskRunParam[], prefix: string): LLMProviderConfig {
     const getValue = (key: string) => envVars.find(ev => ev.key === key)?.value;
 
-    // Handle the inconsistent naming for DEPLOYED_MODEL
     const modelKey = prefix === 'DEPLOYED_MODEL' ? `${prefix}_NAME` : `${prefix}_MODEL`;
     const apiKey = prefix === 'DEPLOYED_MODEL' ? `${prefix}_API` : `${prefix}_MODEL_API`;
     const baseUrlKey = prefix === 'DEPLOYED_MODEL' ? `${prefix}_BASE_URL` : `${prefix}_MODEL_BASE_URL`;
     const internalNameKey = prefix === 'DEPLOYED_MODEL' ? `${prefix}_INTERNAL_NAME` : `${prefix}_MODEL_INTERNAL_NAME`;
+    const internalPortNameKey = prefix === 'DEPLOYED_MODEL' ? `${prefix}_INTERNAL_PORT_NAME` : `${prefix}_MODEL_INTERNAL_PORT_NAME`;
     const namespaceKey = prefix === 'DEPLOYED_MODEL' ? `${prefix}_NAMESPACE` : `${prefix}_MODEL_NAMESPACE`;
 
     const internalNameVal = getValue(internalNameKey);
+    const internalPortNameVal = getValue(internalPortNameKey);
     const namespaceVal = getValue(namespaceKey);
     const baseUrlVal = getValue(baseUrlKey) || 'https://api.openai.com/v1';
 
@@ -350,11 +381,11 @@ export class EvaluationFormService {
       baseUrl: baseUrlVal,
       apiKey: getValue(apiKey) || '',
       internalName: internalNameVal,
+      internalPortName: internalPortNameVal,
       namespace: namespaceVal,
       tokenizer: getValue('MODEL_TOKENIZER'),
     };
 
-    // Only parse generation params for DEPLOYED_MODEL
     if (prefix === 'DEPLOYED_MODEL') {
       const maxTokensVal = getValue('MODEL_MAX_TOKENS');
       const temperatureVal = getValue('MODEL_TEMPERATURE');
@@ -536,7 +567,7 @@ export class EvaluationFormService {
           ref: d.ref ? { id: d.ref, type: 'branch' } : null,
           split: d.split || 'test',
           samples: d.limit?.toString() || null,
-          evalType: d.evalType || 'exact_match', // ADD THIS
+          evalType: d.evalType || 'exact_match',
           instructionColumn: d.columns?.instruction || 'instruction',
           answerColumn: d.columns?.answer || 'answer',
           evalTypeColumn: d.columns?.eval_type || 'eval_type',

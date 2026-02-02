@@ -125,6 +125,8 @@ app:
     metrics-wait-timeout: 600 # Seconds
     status-poll-interval: 3 # Seconds
     status-wait-timeout: 1800 # Seconds
+  security:
+    api-key-secret: ${API_KEY_SECRET:TKrW8XGXMntNtUT1XQL0rFQ5Gob2/wj7jgMNuPyNQDY=}
   profile:
     datacenters:
       - default
