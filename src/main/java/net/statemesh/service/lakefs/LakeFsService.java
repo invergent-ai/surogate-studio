@@ -88,6 +88,10 @@ public class LakeFsService {
 
         var metadata = new HashMap<String, String>();
         metadata.put("type", LakeFsRepositoryType.DATASET.getType());
+
+        if(!StringUtils.isEmpty(repoId)) {
+            metadata.put("displayName", repoId);
+        }
         if (!StringUtils.isEmpty(externalId)) {
             metadata.put("externalId", externalId);
         }
