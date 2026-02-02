@@ -66,7 +66,7 @@ export class EvaluationResultsHelperService {
   }
 
   // ============================================================================
-  // QUALITY METRICS
+  // CONVERSATION METRICS
   // ============================================================================
 
   hasConversationalMetrics(result: IEvaluationResult | null): boolean {
@@ -74,9 +74,15 @@ export class EvaluationResultsHelperService {
     return result.targets.some(t => t.evaluations?.some(e => e.dataset_type === 'multi_turn'));
   }
 
-  hasQualityMetrics(result: IEvaluationResult | null): boolean {
-    if (!result?.targets) return false;
-    return result.targets.some(t => t.evaluations?.some(e => e.dataset_type === 'single_turn'));
+  getConversationalMetrics(result: IEvaluationResult | null): { key: string; value: IMetricSummary }[] {
+    for (const target of result?.targets || []) {
+      for (const evaluation of target.evaluations || []) {
+        if (evaluation.dataset_type === 'multi_turn' && evaluation.metrics_summary) {
+          return this.getMetricsSummaryEntries(evaluation.metrics_summary);
+        }
+      }
+    }
+    return [];
   }
 
   getTotalEvaluations(result: IEvaluationResult | null): number {

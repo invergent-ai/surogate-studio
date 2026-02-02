@@ -1,3 +1,4 @@
+// src/app/shared/components/evaluation-results/components/eval-quality-tab.component.ts
 import { Component, inject, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TableModule } from 'primeng/table';
@@ -148,9 +149,8 @@ interface ConversationTurn {
     }
   `,
 })
-export class EvalQualityTabComponent {
+export class EvalConversationTabComponent {
   @Input() result: IEvaluationResult | null = null;
-  @Input() mode: 'quality' | 'conversational' = 'quality';
 
   helper = inject(EvaluationResultsHelperService);
 
@@ -160,8 +160,7 @@ export class EvalQualityTabComponent {
 
   filterEvaluations(evaluations?: IEvaluation[]): IEvaluation[] {
     if (!evaluations) return [];
-    const targetType = this.mode === 'conversational' ? 'multi_turn' : 'single_turn';
-    return evaluations.filter(e => e.dataset_type === targetType);
+    return evaluations.filter(e => e.dataset_type === 'multi_turn');
   }
 
   isConversational(input: any): boolean {

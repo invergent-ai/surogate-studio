@@ -8,7 +8,7 @@ import { BarChart3, FileText, LucideAngularModule } from 'lucide-angular';
 import { CardComponent } from '../card/card.component';
 import { EvalSummaryCardComponent } from './components/eval-summary-card.component';
 import { EvalCustomTabComponent } from './components/eval-custom-tab.component';
-import { EvalQualityTabComponent } from './components/eval-quality-tab.component';
+import { EvalConversationTabComponent } from './components/eval-conversation-tab.component';
 import { EvalBenchmarksTabComponent } from './components/eval-benchmarks-tab.component';
 import { EvalSecurityTabComponent } from './components/eval-security-tab.component';
 import { EvalReportTabComponent } from './components/eval-report-tab.component';
@@ -16,7 +16,6 @@ import { EvaluationResultsHelperService } from './evaluation-results-helper.serv
 import { EvaluationResultService } from '../../service/evaluation-result.service';
 import { IEvaluationResult } from '../../model/evaluation-result.model';
 import { EvalAnalyticsTabComponent } from './components/eval-analytics-tab.component';
-
 
 @Component({
   standalone: true,
@@ -30,7 +29,7 @@ import { EvalAnalyticsTabComponent } from './components/eval-analytics-tab.compo
     CardComponent,
     EvalSummaryCardComponent,
     EvalCustomTabComponent,
-    EvalQualityTabComponent,
+    EvalConversationTabComponent,
     EvalBenchmarksTabComponent,
     EvalSecurityTabComponent,
     EvalReportTabComponent,
@@ -52,9 +51,11 @@ import { EvalAnalyticsTabComponent } from './components/eval-analytics-tab.compo
             <sm-eval-summary-card [result]="result()"></sm-eval-summary-card>
           </p-tabPanel>
 
-          <p-tabPanel header="Analytics">
-            <sm-eval-analytics-tab [result]="result()"></sm-eval-analytics-tab>
-          </p-tabPanel>
+          @if (hasAnalyticsData()) {
+            <p-tabPanel header="Analytics">
+              <sm-eval-analytics-tab [result]="result()"></sm-eval-analytics-tab>
+            </p-tabPanel>
+          }
 
           @if (helper.hasCustomEvaluation(result())) {
             <p-tabPanel header="Custom Evaluation">
@@ -62,15 +63,9 @@ import { EvalAnalyticsTabComponent } from './components/eval-analytics-tab.compo
             </p-tabPanel>
           }
 
-          @if (helper.hasQualityMetrics(result())) {
-            <p-tabPanel header="Quality">
-              <sm-eval-quality-tab [result]="result()"></sm-eval-quality-tab>
-            </p-tabPanel>
-          }
-
           @if (helper.hasConversationalMetrics(result())) {
-            <p-tabPanel header="Conversational">
-              <sm-eval-quality-tab [result]="result()" mode="conversational"></sm-eval-quality-tab>
+            <p-tabPanel header="Conversation Results">
+              <sm-eval-quality-tab [result]="result()"></sm-eval-quality-tab>
             </p-tabPanel>
           }
 
@@ -119,6 +114,16 @@ export class EvaluationResultsComponent implements OnInit, OnChanges {
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['taskRunId'] && this.taskRunId) this.loadResultByJobId();
+  }
+
+  hasAnalyticsData(): boolean {
+    const r = this.result();
+    return (
+      this.helper.hasSecurityResults(r) ||
+      this.helper.hasBenchmarks(r) ||
+      this.helper.hasCustomEvaluation(r) ||
+      (this.helper.hasConversationalMetrics(r) && this.helper.getConversationalMetrics(r).length > 1)
+    );
   }
 
   loadResultByJobId() {

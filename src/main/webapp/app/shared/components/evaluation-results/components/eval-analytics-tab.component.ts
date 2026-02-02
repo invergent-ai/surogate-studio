@@ -39,12 +39,12 @@ import { EvaluationResultsHelperService } from '../evaluation-results-helper.ser
         </div>
       }
 
-      <!-- Quality Metrics - Radar -->
-      @if (helper.hasQualityMetrics(result)) {
+      <!-- Conversation Metrics - Radar -->
+      @if (helper.hasConversationalMetrics(result) && helper.getConversationalMetrics(result).length > 1) {
         <div class="col-12 md:col-6">
           <div class="border-1 border-200 border-round p-3">
-            <h4 class="text-sm font-semibold mb-3">Quality Metrics</h4>
-            <p-chart type="radar" [data]="qualityRadarData" [options]="radarOptions" height="250"></p-chart>
+            <h4 class="text-sm font-semibold mb-3">Conversation Metrics</h4>
+            <p-chart type="radar" [data]="conversationRadarData" [options]="radarOptions" height="250"></p-chart>
           </div>
         </div>
       }
@@ -78,7 +78,7 @@ export class EvalAnalyticsTabComponent implements OnChanges {
   securityDoughnutData: any;
   vulnerabilityBarData: any;
   benchmarkBarData: any;
-  qualityRadarData: any;
+  conversationRadarData: any;
   customEvalBarData: any;
   customEvalPieData: any;
 
@@ -127,7 +127,7 @@ export class EvalAnalyticsTabComponent implements OnChanges {
   private buildCharts() {
     this.buildSecurityCharts();
     this.buildBenchmarkChart();
-    this.buildQualityChart();
+    this.buildConversationChart();
     this.buildCustomEvalCharts();
   }
 
@@ -177,11 +177,13 @@ export class EvalAnalyticsTabComponent implements OnChanges {
     };
   }
 
-  private buildQualityChart() {
-    if (!this.helper.hasQualityMetrics(this.result)) return;
+  private buildConversationChart() {
+    if (!this.helper.hasConversationalMetrics(this.result)) return;
 
-    const metrics = this.getQualityMetrics();
-    this.qualityRadarData = {
+    const metrics = this.helper.getConversationalMetrics(this.result);
+    if (metrics.length === 0) return;
+
+    this.conversationRadarData = {
       labels: metrics.map(m => m.key),
       datasets: [
         {
@@ -227,16 +229,5 @@ export class EvalAnalyticsTabComponent implements OnChanges {
 
   private getBenchmarks(): any[] {
     return this.result?.targets?.flatMap(t => this.helper.getNonCustomBenchmarks(t.benchmarks || [])) || [];
-  }
-
-  private getQualityMetrics(): { key: string; value: any }[] {
-    for (const target of this.result?.targets || []) {
-      for (const evaluation of target.evaluations || []) {
-        if (evaluation.metrics_summary) {
-          return this.helper.getMetricsSummaryEntries(evaluation.metrics_summary);
-        }
-      }
-    }
-    return [];
   }
 }

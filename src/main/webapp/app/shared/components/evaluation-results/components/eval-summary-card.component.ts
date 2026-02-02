@@ -3,7 +3,7 @@ import { Component, inject, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TagModule } from 'primeng/tag';
 import { DividerModule } from 'primeng/divider';
-import { BarChart3, CheckCircle, FileText, FlaskConical, LucideAngularModule, ShieldCheck } from 'lucide-angular';
+import { BarChart3, CheckCircle, FileText, FlaskConical, LucideAngularModule, MessageSquare, ShieldCheck } from 'lucide-angular';
 import { IEvaluationResult } from '../../../model/evaluation-result.model';
 import { EvaluationResultsHelperService } from '../evaluation-results-helper.service';
 
@@ -73,12 +73,12 @@ import { EvaluationResultsHelperService } from '../evaluation-results-helper.ser
       </div>
     }
 
-    <!-- Quality Metrics Summary Card -->
-    @if (helper.hasQualityMetrics(result)) {
+    <!-- Conversation Metrics Summary Card -->
+    @if (helper.hasConversationalMetrics(result)) {
       <div class="border-1 border-200 border-round p-4 mb-4">
         <div class="flex align-items-center gap-3 mb-3">
-          <i-lucide [img]="CheckCircle" class="w-1.5rem h-1.5rem text-primary"></i-lucide>
-          <span class="font-semibold">Quality Metrics</span>
+          <i-lucide [img]="MessageSquare" class="w-1.5rem h-1.5rem text-primary"></i-lucide>
+          <span class="font-semibold">Conversation Metrics</span>
         </div>
         <div class="grid text-center">
           <div class="col-4">
@@ -155,7 +155,7 @@ export class EvalSummaryCardComponent {
 
   protected readonly ShieldCheck = ShieldCheck;
   protected readonly FlaskConical = FlaskConical;
-  protected readonly CheckCircle = CheckCircle;
+  protected readonly MessageSquare = MessageSquare;
   protected readonly BarChart3 = BarChart3;
   protected readonly FileText = FileText;
 
