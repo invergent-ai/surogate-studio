@@ -33,7 +33,6 @@ export interface LLMProviderConfig {
   minP?: number;
   presencePenalty?: number;
   enableThinking?: boolean;
-  internalPortName?: string;
 }
 
 interface DeployedModelOption extends IApplication {
@@ -252,7 +251,6 @@ export class LlmProviderConfigComponent implements ControlValueAccessor {
     baseUrl: new FormControl<string>('https://api.openai.com/v1'),
     apiKey: new FormControl<string>(''),
     deployedModel: new FormControl<DeployedModelOption | null>(null),
-    internalPortName: new FormControl<string>(''),
     internalName: new FormControl<string>(''),
     namespace: new FormControl<string>(''),
     tokenizer: new FormControl<string>(''),
@@ -341,10 +339,7 @@ export class LlmProviderConfigComponent implements ControlValueAccessor {
       const maxContextSize = config.maxContextSize || 4096;
       const maxTokens = Math.floor(maxContextSize * 0.9);
 
-      // Check if it's a Qwen model to set thinking default
       const isQwen = (deployedModel.hfModelName || '').toLowerCase().includes('qwen');
-
-      const port80 = deployedModel.containers?.flatMap(c => c.ports || [])?.find(p => p.servicePort === 80);
 
       this.form.patchValue(
         {
@@ -355,8 +350,6 @@ export class LlmProviderConfigComponent implements ControlValueAccessor {
           namespace: deployedModel.deployedNamespace,
           tokenizer,
           maxTokens,
-          internalPortName: port80?.name || '80',
-          // Set defaults for internal models
           temperature: 0.7,
           topP: 0.8,
           topK: 20,

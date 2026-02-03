@@ -47,6 +47,7 @@ import net.statemesh.k8s.task.security.CreateRoleTask;
 import net.statemesh.k8s.task.security.CreateServiceAccountTask;
 import net.statemesh.k8s.task.tekton.*;
 import net.statemesh.k8s.util.*;
+import net.statemesh.repository.ApplicationRepository;
 import net.statemesh.service.*;
 import net.statemesh.service.dto.*;
 import org.apache.commons.lang3.StringUtils;
@@ -79,6 +80,8 @@ public class KubernetesController {
     private final ClusterService clusterService;
     private final ZoneService zoneService;
     private final RestTemplate restTemplate;
+    private final ApplicationRepository applicationRepository;
+
     private final ClusterSelectionStrategy clusterSelector;
     @Getter
     private final ApplicationProperties applicationProperties;
@@ -506,7 +509,8 @@ public class KubernetesController {
             this.taskConfig,
             namespace,
             taskRun,
-            this.applicationProperties
+            this.applicationProperties,
+            this.applicationRepository
         ).call();
     }
 

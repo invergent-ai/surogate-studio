@@ -79,7 +79,6 @@ export class EvaluationFormService {
 
     if (config.provider === 'internal') {
       if (config.internalName) params.push({ key: 'DEPLOYED_MODEL_INTERNAL_NAME', value: config.internalName });
-      if (config.internalPortName) params.push({ key: 'DEPLOYED_MODEL_INTERNAL_PORT_NAME', value: config.internalPortName });
       if (config.namespace) params.push({ key: 'DEPLOYED_MODEL_NAMESPACE', value: config.namespace });
       params.push({ key: 'DEPLOYED_MODEL_API', value: 'sk-no-key-required' });
     } else {
@@ -135,7 +134,6 @@ export class EvaluationFormService {
 
     if (config.provider === 'internal') {
       if (config.internalName) params.push({ key: 'JUDGE_MODEL_INTERNAL_NAME', value: config.internalName });
-      if (config.internalPortName) params.push({ key: 'JUDGE_MODEL_INTERNAL_PORT_NAME', value: config.internalPortName });
       if (config.namespace) params.push({ key: 'JUDGE_MODEL_NAMESPACE', value: config.namespace });
       params.push({ key: 'JUDGE_MODEL_API', value: 'sk-no-key-required' });
     } else {
@@ -166,7 +164,6 @@ export class EvaluationFormService {
 
     if (config.provider === 'internal') {
       if (config.internalName) params.push({ key: 'SIMULATOR_MODEL_INTERNAL_NAME', value: config.internalName });
-      if (config.internalPortName) params.push({ key: 'SIMULATOR_MODEL_INTERNAL_PORT_NAME', value: config.internalPortName });
       if (config.namespace) params.push({ key: 'SIMULATOR_MODEL_NAMESPACE', value: config.namespace });
       params.push({ key: 'SIMULATOR_MODEL_API', value: 'sk-no-key-required' });
     } else {
@@ -362,11 +359,9 @@ export class EvaluationFormService {
     const apiKey = prefix === 'DEPLOYED_MODEL' ? `${prefix}_API` : `${prefix}_MODEL_API`;
     const baseUrlKey = prefix === 'DEPLOYED_MODEL' ? `${prefix}_BASE_URL` : `${prefix}_MODEL_BASE_URL`;
     const internalNameKey = prefix === 'DEPLOYED_MODEL' ? `${prefix}_INTERNAL_NAME` : `${prefix}_MODEL_INTERNAL_NAME`;
-    const internalPortNameKey = prefix === 'DEPLOYED_MODEL' ? `${prefix}_INTERNAL_PORT_NAME` : `${prefix}_MODEL_INTERNAL_PORT_NAME`;
     const namespaceKey = prefix === 'DEPLOYED_MODEL' ? `${prefix}_NAMESPACE` : `${prefix}_MODEL_NAMESPACE`;
 
     const internalNameVal = getValue(internalNameKey);
-    const internalPortNameVal = getValue(internalPortNameKey);
     const namespaceVal = getValue(namespaceKey);
     const baseUrlVal = getValue(baseUrlKey) || 'https://api.openai.com/v1';
 
@@ -381,7 +376,6 @@ export class EvaluationFormService {
       baseUrl: baseUrlVal,
       apiKey: getValue(apiKey) || '',
       internalName: internalNameVal,
-      internalPortName: internalPortNameVal,
       namespace: namespaceVal,
       tokenizer: getValue('MODEL_TOKENIZER'),
     };
