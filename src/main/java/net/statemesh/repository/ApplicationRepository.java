@@ -33,6 +33,8 @@ public interface ApplicationRepository extends JpaRepository<Application, String
         return this.findAllWithToOneRelationships(pageable);
     }
 
+    Optional<Application> findByInternalName(String internalName);
+
     @Query(
         value = "select application from Application application left join fetch application.project",
         countQuery = "select count(application) from Application application"
