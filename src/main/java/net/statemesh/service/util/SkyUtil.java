@@ -14,8 +14,12 @@ import static net.statemesh.k8s.util.K8SConstants.*;
 public class SkyUtil {
     public static SkyConfigDTO setupSkyConfig(SkyConfigDTO skyConfig, RayJobDTO rayJob) {
         return skyConfig
-            .withImageId(USE_AXOLOTL_TRAINING_LIBRARY ?
-                SUROGATE_TRAIN_AXOLOTL_IMAGE : SUROGATE_TRAIN_SUROGATE_IMAGE)
+            .withImageId(
+                    Optional.ofNullable(rayJob.getSkyToK8s()).orElse(Boolean.TRUE) ? SUROGATE_IMAGE :
+                            USE_AXOLOTL_TRAINING_LIBRARY ?
+                                    SUROGATE_TRAIN_AXOLOTL_IMAGE :
+                                    SUROGATE_TRAIN_SUROGATE_IMAGE
+            )
             .withSetup(String.format("""
                 echo "Setup runtime environment for model ${BASE_MODEL} training using %s library"
                 """,
@@ -43,19 +47,20 @@ public class SkyUtil {
 
     public static TaskRunDTO rayJobToSkyTaskRun(RayJobDTO rayJob, ApplicationProperties applicationProperties) {
         return TaskRunDTO.builder()
-            .name(rayJob.getName())
-            .internalName(rayJob.getInternalName())
-            .project(rayJob.getProject())
-            .deployedNamespace(rayJob.getDeployedNamespace())
-            .workDirVolumeName(rayJob.getWorkDirVolumeName())
-            .type(Optional.of(rayJob.getType()).map(type ->
-                switch (type) {
-                    case TRAIN -> TaskRunType.TRAIN;
-                    case FINE_TUNE -> TaskRunType.FINE_TUNE;
-                }).orElseThrow(() -> new RuntimeException("Job type was not present"))
-            )
-            .params(taskRunParams(rayJob, applicationProperties))
-            .build();
+                .name(rayJob.getName())
+                .internalName(rayJob.getInternalName())
+                .project(rayJob.getProject())
+                .deployedNamespace(rayJob.getDeployedNamespace())
+                .workDirVolumeName(rayJob.getWorkDirVolumeName())
+                .skyToK8s(rayJob.getSkyToK8s())
+                .type(Optional.of(rayJob.getType()).map(type ->
+                    switch (type) {
+                        case TRAIN -> TaskRunType.TRAIN;
+                        case FINE_TUNE -> TaskRunType.FINE_TUNE;
+                    }).orElseThrow(() -> new RuntimeException("Job type was not present"))
+                )
+                .params(taskRunParams(rayJob, applicationProperties))
+                .build();
     }
 
     private static Set<TaskRunParamDTO> taskRunParams(RayJobDTO rayJob, ApplicationProperties applicationProperties) {

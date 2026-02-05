@@ -8,7 +8,6 @@ import {QuantizationPage} from './quantization/quantization.page';
 import {RewardFunctionPage} from './reward-function/reward-function.page';
 import {JobsPage} from './jobs/jobs.page';
 import {TrainingPage} from "./training/training.page";
-import { TargetSelectorComponent } from './components/target/target-selector.component';
 
 const trainingRoute: Routes = [
   {
@@ -16,14 +15,6 @@ const trainingRoute: Routes = [
     component: TrainingWizardPage,
     data: {
       breadcrumb: 'AI Factory Wizard'
-    },
-    canActivate: [UserRouteAccessService],
-  },
-  {
-    path: 'target/:type',
-    component: TargetSelectorComponent,
-    data: {
-      breadcrumb: 'Deployment target'
     },
     canActivate: [UserRouteAccessService],
   },
@@ -60,7 +51,7 @@ const trainingRoute: Routes = [
     canActivate: [UserRouteAccessService],
   },
   {
-    path: 'training/:infra/:type',
+    path: 'training/:type',
     canActivate: [UserRouteAccessService],
     data: { breadcrumb: 'Training' },
     children: [

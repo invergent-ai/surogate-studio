@@ -1,5 +1,5 @@
 <div class="grid">
-  <div *ngFor="let item of items()" class="col-6">
+  <div *ngFor="let item of items()" class="md:col-6 sm:col-12">
     <ng-container [ngTemplateOutlet]="card"
                   [ngTemplateOutletContext]="{imgBg: item.imgBg, img: item.img, title: item.title,
                         description: item.description, tags: item.tags, disabled: item.disabled}">

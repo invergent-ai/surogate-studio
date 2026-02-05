@@ -5,6 +5,7 @@ import net.statemesh.domain.enumeration.PullImageMode;
 import net.statemesh.k8s.crd.tekton.models.*;
 import net.statemesh.service.dto.TaskRunDTO;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -29,54 +30,65 @@ public class SkyTaskRunSpec extends V1TaskRunSpec implements TaskRunSpec {
                             .value("$(params." + param.getKey() + ")"))
                         .toList()
                 )
-                .volumeMounts(List.of(
-                    new V1TaskSpecSidecarsInnerVolumeMountsInner()
-                        .name("work-dir")
-                        .mountPath(RAY_WORK_DIR),
-                    new V1TaskSpecSidecarsInnerVolumeMountsInner()
-                        .name("aim")
-                        .mountPath(AIM_DIR),
-                    new V1TaskSpecSidecarsInnerVolumeMountsInner()
-                        .name("dshm")
-                        .mountPath("/dev/shm"),
-                    new V1TaskSpecSidecarsInnerVolumeMountsInner()
-                        .name("devinf")
-                        .mountPath("/dev/infiniband")
-                ))
+                .volumeMounts(volumeMounts(taskRun))
             )))
             .podTemplate(new V1PipelineRunSpecTaskRunSpecsInnerPodTemplate()
-                .volumes(List.of(Map.of(
-                    "name", "work-dir",
-                    "persistentVolumeClaim", Map.of(
-                        "claimName", pvcName(taskRun.getWorkDirVolumeName()))),
-                    Map.of(
-                    "name", "aim",
-                    "nfs", Map.of(
-                        "server", NFS_SERVER,
-                        "path", NFS_AIM_PATH
-                        )
-                    ),
-                    Map.of(
-                    "name", "dshm",
-                    "hostPath", Map.of(
-                        "path", "/dev/shm")
-                    ),
-                    Map.of(
-                    "name", "devinf",
-                    "hostPath", Map.of(
-                        "path", "/dev/infiniband")
-                    )
-                ))
+                .volumes(volumes(taskRun))
             )
             .computeResources(new V1PipelineRunSpecTaskRunSpecsInnerComputeResources()
                 .limits(Map.of("cpu", "4", "memory", "16Gi")));
     }
 
-//    private void volumes() {
-//        Optional.ofNullable(rayJob.getSkyToK8s()).orElse(Boolean.FALSE)
-//    }
-//
-//    private void volumeMounts() {
-//        Optional.ofNullable(rayJob.getSkyToK8s()).orElse(Boolean.FALSE)
-//    }
+    private Object volumes(TaskRunDTO taskRun) {
+        var volumes = new ArrayList<>(List.of(Map.of(
+                        "name", "work-dir",
+                        "persistentVolumeClaim", Map.of(
+                                "claimName", pvcName(taskRun.getWorkDirVolumeName()))),
+                Map.of(
+                        "name", "aim",
+                        "nfs", Map.of(
+                                "server", NFS_SERVER,
+                                "path", NFS_AIM_PATH
+                        )
+                )
+        ));
+        if (Optional.ofNullable(taskRun.getSkyToK8s()).orElse(Boolean.FALSE)) {
+            volumes.addAll(List.of(
+                Map.of(
+                        "name", "dshm",
+                        "hostPath", Map.of(
+                                "path", "/dev/shm")
+                ),
+                Map.of(
+                        "name", "devinf",
+                        "hostPath", Map.of(
+                                "path", "/dev/infiniband")
+                )
+            ));
+        }
+        return volumes;
+    }
+
+    private List<V1TaskSpecSidecarsInnerVolumeMountsInner> volumeMounts(TaskRunDTO taskRun) {
+        var volumeMounts = new ArrayList<>(List.of(
+                new V1TaskSpecSidecarsInnerVolumeMountsInner()
+                        .name("work-dir")
+                        .mountPath(RAY_WORK_DIR),
+                new V1TaskSpecSidecarsInnerVolumeMountsInner()
+                        .name("aim")
+                        .mountPath(AIM_DIR)
+        ));
+        if (Optional.ofNullable(taskRun.getSkyToK8s()).orElse(Boolean.FALSE)) {
+            volumeMounts.addAll(List.of(
+                    new V1TaskSpecSidecarsInnerVolumeMountsInner()
+                            .name("dshm")
+                            .mountPath("/dev/shm"),
+                    new V1TaskSpecSidecarsInnerVolumeMountsInner()
+                            .name("devinf")
+                            .mountPath("/dev/infiniband")
+            ));
+        }
+
+        return volumeMounts;
+    }
 }

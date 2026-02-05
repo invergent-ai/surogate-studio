@@ -1,11 +1,11 @@
-import {Component, computed, inject, OnInit, signal} from '@angular/core';
-import {PageComponent} from '../../../shared/components/page/page.component';
-import {PageLoadComponent} from '../../../shared/components/page-load/page-load.component';
-import {CardModule} from 'primeng/card';
-import {ButtonDirective} from 'primeng/button';
-import {CardComponent} from '../../../shared/components/card/card.component';
-import {CheckboxModule} from 'primeng/checkbox';
-import {InputNumberModule} from 'primeng/inputnumber';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { PageComponent } from '../../../shared/components/page/page.component';
+import { PageLoadComponent } from '../../../shared/components/page-load/page-load.component';
+import { CardModule } from 'primeng/card';
+import { ButtonDirective } from 'primeng/button';
+import { CardComponent } from '../../../shared/components/card/card.component';
+import { CheckboxModule } from 'primeng/checkbox';
+import { InputNumberModule } from 'primeng/inputnumber';
 import {
   ArrowRight,
   ClipboardList,
@@ -17,19 +17,20 @@ import {
   Plug,
   Plus,
   Save,
+  Server,
   SlidersHorizontal,
-  Trash
+  Trash,
 } from 'lucide-angular';
-import {TableModule} from 'primeng/table';
-import {TagModule} from 'primeng/tag';
-import {TrainingRecipeComponent} from '../components/training-recipe/training-recipe.component';
-import {LayoutService} from '../../../shared/service/theme/app-layout.service';
-import {InputTextModule} from 'primeng/inputtext';
-import {InputTextareaModule} from 'primeng/inputtextarea';
-import {NgIf} from '@angular/common';
-import {FormArray, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
-import {DropdownModule} from 'primeng/dropdown';
-import {LabelTooltipComponent} from '../../../shared/components/label-tooltip/label-tooltip.component';
+import { TableModule } from 'primeng/table';
+import { TagModule } from 'primeng/tag';
+import { TrainingRecipeComponent } from '../components/training-recipe/training-recipe.component';
+import { LayoutService } from '../../../shared/service/theme/app-layout.service';
+import { InputTextModule } from 'primeng/inputtext';
+import { InputTextareaModule } from 'primeng/inputtextarea';
+import { NgIf } from '@angular/common';
+import { FormArray, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { DropdownModule } from 'primeng/dropdown';
+import { LabelTooltipComponent } from '../../../shared/components/label-tooltip/label-tooltip.component';
 import {
   BASE_MODEL_REPOSITORY,
   GPUS_PER_WORKER,
@@ -48,43 +49,41 @@ import {
   RAY_CLUSTER_SHAPE,
   RECOMPUTE_LORA,
   TEST_VLLM_TP,
-  USE_HEAD_AS_WORKER
+  USE_HEAD_AS_WORKER,
 } from '../tooltips';
-import {MessagesModule} from 'primeng/messages';
-import {RayJobService} from "../../../shared/service/ray-job.service";
-import {derivedAsync} from "ngxtension/derived-async";
-import {catchError, tap} from "rxjs/operators";
-import {displayError, displayErrorAndRethrow} from "../../../shared/util/error.util";
-import {Store} from "@ngxs/store";
-import {IRayJob} from "../../../shared/model/ray-job.model";
-import {EMPTY, lastValueFrom, of} from "rxjs";
-import {revalidateForm} from "../../../shared/util/form.util";
-import {RayJobType} from "../../../shared/model/enum/ray-job-type.model";
-import {RayJobProvisioningStatus} from "../../../shared/model/enum/ray-job-provisioning-status.model";
-import {AccountService} from "../../../shared/service/account.service";
-import {IProject} from "../../../shared/model/project.model";
-import {IJobEnvironmentVariable} from "../../../shared/model/job-environment-variable.model";
-import {displaySuccess} from "../../../shared/util/success.util";
-import {Router} from "@angular/router";
-import {RefSelection, RefSelectorComponent} from "../../hub/components/ref-selector.component";
-import {RepoSelectorComponent} from "../../../shared/components/repo-selector/repo-selector.component";
-import {ObjectSelectorComponent} from "../../../shared/components/object-selector/object-selector.component";
+import { MessagesModule } from 'primeng/messages';
+import { RayJobService } from '../../../shared/service/ray-job.service';
+import { derivedAsync } from 'ngxtension/derived-async';
+import { catchError, tap } from 'rxjs/operators';
+import { displayError, displayErrorAndRethrow } from '../../../shared/util/error.util';
+import { Store } from '@ngxs/store';
+import { IRayJob } from '../../../shared/model/ray-job.model';
+import { EMPTY, lastValueFrom, of } from 'rxjs';
+import { revalidateForm } from '../../../shared/util/form.util';
+import { RayJobType } from '../../../shared/model/enum/ray-job-type.model';
+import { RayJobProvisioningStatus } from '../../../shared/model/enum/ray-job-provisioning-status.model';
+import { AccountService } from '../../../shared/service/account.service';
+import { IProject } from '../../../shared/model/project.model';
+import { IJobEnvironmentVariable } from '../../../shared/model/job-environment-variable.model';
+import { displaySuccess } from '../../../shared/util/success.util';
+import { Router } from '@angular/router';
+import { RefSelection, RefSelectorComponent } from '../../hub/components/ref-selector.component';
+import { RepoSelectorComponent } from '../../../shared/components/repo-selector/repo-selector.component';
+import { ObjectSelectorComponent } from '../../../shared/components/object-selector/object-selector.component';
 import {
   DatasetTableChooserComponent,
-  newDatasetForm
-} from "../../../shared/components/dataset-table-chooser/dataset-table-chooser.component";
-import {v4 as uuidv4} from 'uuid';
-import {IDatasetConfig, ITrainingConfig} from "../../../shared/model/training-config.model";
-import {doubleValidator, filterDouble, sciNumberValidator} from "../../../shared/util/validators.util";
-import {
-  TrainingOptimizerType,
-  TrainingPrecisionType,
-  TrainingSchedulerType
-} from "../../../shared/model/training.model";
-import {IRayClusterShape} from "../../../shared/model/ray-cluster-shape.model";
-import {TabViewModule} from "primeng/tabview";
-import {injectParams} from "ngxtension/inject-params";
+  newDatasetForm,
+} from '../../../shared/components/dataset-table-chooser/dataset-table-chooser.component';
+import { v4 as uuidv4 } from 'uuid';
+import { IDatasetConfig, ITrainingConfig } from '../../../shared/model/training-config.model';
+import { doubleValidator, filterDouble, sciNumberValidator } from '../../../shared/util/validators.util';
+import { TrainingOptimizerType, TrainingPrecisionType, TrainingSchedulerType } from '../../../shared/model/training.model';
+import { IRayClusterShape } from '../../../shared/model/ray-cluster-shape.model';
+import { TabViewModule } from 'primeng/tabview';
+import { injectParams } from 'ngxtension/inject-params';
 import { ISkyConfig } from '../../../shared/model/sky-config.model';
+import { RadioButtonModule } from 'primeng/radiobutton';
+import { TargetSelectorComponent } from '../components/target/target-selector.component';
 
 @Component({
   standalone: true,
@@ -114,26 +113,29 @@ import { ISkyConfig } from '../../../shared/model/sky-config.model';
     RepoSelectorComponent,
     ObjectSelectorComponent,
     DatasetTableChooserComponent,
-    TabViewModule
+    TabViewModule,
+    RadioButtonModule,
+    TargetSelectorComponent,
   ],
-  styles: [`
-    ::ng-deep .p-datatable .p-datatable-thead > tr > th {
-      background-color: var(--surface-50);
-    }
-    ::ng-deep p-checkbox .p-checkbox-label {
-      font-weight: 400;
-    }
-  `]
+  styles: [
+    `
+      ::ng-deep .p-datatable .p-datatable-thead > tr > th {
+        background-color: var(--surface-50);
+      }
+      ::ng-deep p-checkbox .p-checkbox-label {
+        font-weight: 400;
+      }
+    `,
+  ],
 })
 export class TrainingPage implements OnInit {
-  infra = injectParams('infra');
   type = injectParams('type');
   jobId = injectParams('id');
 
   readonly welcomeItems = [
     { title: 'What is Surogate ?', link: 'https://surogate.ai/' },
     { title: 'Train models', link: 'https://surogate.ai/' },
-    { title: 'Fine-Tune models', link: 'https://surogate.ai/' }
+    { title: 'Fine-Tune models', link: 'https://surogate.ai/' },
   ];
 
   readonly layoutService = inject(LayoutService);
@@ -170,7 +172,8 @@ export class TrainingPage implements OnInit {
       downProj: new FormControl<boolean>(true),
       gateProj: new FormControl<boolean>(true),
       fromCheckpoint: new FormControl<boolean>(false),
-      skyToK8s: new FormControl<boolean>(true),
+      runInTheSky: new FormControl<boolean>(false),
+      skyToK8s: new FormControl<boolean>(false),
       numNodes: new FormControl<number>(1, [Validators.required]),
       gpusPerWorker: new FormControl<number>(2, [Validators.required]),
       headGpus: new FormControl<number>(2, [Validators.required]),
@@ -216,8 +219,8 @@ export class TrainingPage implements OnInit {
         debugTimeBreakdown: new FormControl<boolean>(null),
         debugMemoryBreakdown: new FormControl<boolean>(null),
         recipe: new FormControl<string>(TrainingPrecisionType.BF16, [Validators.required]),
-        zeroLevel: new FormControl<number>(1, [])
-      })
+        zeroLevel: new FormControl<number>(1, []),
+      }),
     });
   }
 
@@ -248,28 +251,28 @@ export class TrainingPage implements OnInit {
 
     this.createForm();
     if (this.jobId()) {
-      return this.rayJobService.find(this.jobId())
-        .pipe(
-          catchError((e) => displayErrorAndRethrow(this.store, e)),
-          tap(job => this.initForm(job))
-        )
+      return this.rayJobService.find(this.jobId()).pipe(
+        catchError(e => displayErrorAndRethrow(this.store, e)),
+        tap(job => this.initForm(job)),
+      );
     }
 
     return of({
       type: this.type() === 'pretrain' ? RayJobType.TRAIN : RayJobType.FINE_TUNE,
       provisioningStatus: RayJobProvisioningStatus.CREATED,
       project: this.user().defaultProject,
-      runInTheSky: this.infra() === 'sky'
     } as IRayJob);
   });
   provisioningStatus = computed(() => {
     return this.job()?.provisioningStatus ?? null;
   });
   mustRelaunch = computed(() => {
-    return this.provisioningStatus() === RayJobProvisioningStatus.DEPLOYED ||
+    return (
+      this.provisioningStatus() === RayJobProvisioningStatus.DEPLOYED ||
       this.provisioningStatus() === RayJobProvisioningStatus.CANCELLED ||
       this.provisioningStatus() === RayJobProvisioningStatus.ERROR ||
-      this.provisioningStatus() === RayJobProvisioningStatus.COMPLETED;
+      this.provisioningStatus() === RayJobProvisioningStatus.COMPLETED
+    );
   });
   title = computed(() => {
     switch (this.type()) {
@@ -310,8 +313,8 @@ export class TrainingPage implements OnInit {
   }
 
   envVarsToForm(envVars: IJobEnvironmentVariable[] = []) {
-    const baseModel = envVars.find(ev => ev.key === 'BASE_MODEL')?.value || "/";
-    const branch = envVars.find(ev => ev.key === 'BRANCH')?.value || "";
+    const baseModel = envVars.find(ev => ev.key === 'BASE_MODEL')?.value || '/';
+    const branch = envVars.find(ev => ev.key === 'BRANCH')?.value || '';
     const mergeLora = !!(envVars.find(ev => ev.key === 'MERGE_LORA')?.value === 'true' || false);
     const mergeIteratively = !!(envVars.find(ev => ev.key === 'MERGE_ITERATIVELY')?.value === 'true' || false);
 
@@ -319,9 +322,11 @@ export class TrainingPage implements OnInit {
       baseModelRepo: baseModel.split('/')[0],
       baseModelBranch: {
         id: baseModel.split('/')[1],
-        type: 'branch'
+        type: 'branch',
       } as RefSelection,
-      branch, mergeLora, mergeIteratively
+      branch,
+      mergeLora,
+      mergeIteratively,
     });
   }
 
@@ -369,8 +374,8 @@ export class TrainingPage implements OnInit {
         debugTimeBreakdown: trainingConfig.debugTimeBreakdown,
         debugMemoryBreakdown: trainingConfig.debugMemoryBreakdown,
         recipe: trainingConfig.recipe,
-        zeroLevel: trainingConfig.zeroLevel
-      }
+        zeroLevel: trainingConfig.zeroLevel,
+      },
     });
 
     if (trainingConfig.datasets) {
@@ -378,10 +383,10 @@ export class TrainingPage implements OnInit {
         const dsForm = newDatasetForm(uuidv4(), dataset.type);
         dsForm.patchValue({
           ...dataset,
-          ref: {id: dataset.ref, type: 'branch'} as RefSelection,
+          ref: { id: dataset.ref, type: 'branch' } as RefSelection,
           messagePropertyMappingsRole: dataset.messagePropertyMappings?.role,
-          messagePropertyMappingsContent: dataset.messagePropertyMappings?.content
-        })
+          messagePropertyMappingsContent: dataset.messagePropertyMappings?.content,
+        });
         this.datasets.push(dsForm);
       });
     }
@@ -390,10 +395,10 @@ export class TrainingPage implements OnInit {
         const dsForm = newDatasetForm(uuidv4(), dataset.type);
         dsForm.patchValue({
           ...dataset,
-          ref: {id: dataset.ref, type: 'branch'} as RefSelection,
+          ref: { id: dataset.ref, type: 'branch' } as RefSelection,
           messagePropertyMappingsRole: dataset.messagePropertyMappings?.role,
-          messagePropertyMappingsContent: dataset.messagePropertyMappings?.content
-        })
+          messagePropertyMappingsContent: dataset.messagePropertyMappings?.content,
+        });
         this.testDatasets.push(dsForm);
       });
     }
@@ -409,7 +414,7 @@ export class TrainingPage implements OnInit {
       gpusPerWorker: rayClusterShape.gpusPerWorker,
       headGpus: rayClusterShape.headGpus,
       useHeadAsWorker: rayClusterShape.useHeadAsWorker,
-      testVllmTp: rayClusterShape.testVllmTp
+      testVllmTp: rayClusterShape.testVllmTp,
     });
   }
 
@@ -417,14 +422,13 @@ export class TrainingPage implements OnInit {
     const envVars: IJobEnvironmentVariable[] = [];
     const { baseModelRepo, baseModelBranch, branch, datasets, testDatasets, lora, mergeLora, mergeIteratively } = formValues;
 
-    envVars.push({id: null, key: 'BASE_MODEL', value: `${baseModelRepo}/${baseModelBranch.id}`});
-    envVars.push({id: null, key: 'BRANCH', value: branch ?? null});
-    envVars.push({id: null, key: 'MERGE_LORA', value: mergeLora ?? null});
-    envVars.push({id: null, key: 'LORA', value: lora ?? null});
-    envVars.push({id: null, key: 'MERGE_ITERATIVELY', value: mergeIteratively ?? null});
+    envVars.push({ id: null, key: 'BASE_MODEL', value: `${baseModelRepo}/${baseModelBranch.id}` });
+    envVars.push({ id: null, key: 'BRANCH', value: branch ?? null });
+    envVars.push({ id: null, key: 'MERGE_LORA', value: mergeLora ?? null });
+    envVars.push({ id: null, key: 'LORA', value: lora ?? null });
+    envVars.push({ id: null, key: 'MERGE_ITERATIVELY', value: mergeIteratively ?? null });
 
-    envVars.push({id: null, key: 'RUNPOD_API_KEY', value: 'rpa_5CS79KNGQKU6VMY1A47JFPC3GS9DMIMB5SWY1P2Qq9knjy'});
-
+    envVars.push({ id: null, key: 'RUNPOD_API_KEY', value: 'rpa_5CS79KNGQKU6VMY1A47JFPC3GS9DMIMB5SWY1P2Qq9knjy' });
 
     if (datasets?.length || testDatasets?.length) {
       const dsts = [...datasets];
@@ -434,49 +438,95 @@ export class TrainingPage implements OnInit {
       let datasetString = '';
       dsts.forEach((ds: any) => {
         if (datasetString) {
-          datasetString += ','
+          datasetString += ',';
         }
         datasetString += `${ds.repoId}/${ds.ref.id}`;
-      })
-      envVars.push({id: null, key: 'DATASET', value: datasetString});
+      });
+      envVars.push({ id: null, key: 'DATASET', value: datasetString });
     }
 
     return envVars;
   }
 
   formToTrainingConfig(formValues: any): ITrainingConfig {
-    const { lora, loraR, loraAlpha, loraDropout, qProj, kProj, vProj, oProj, upProj, downProj, gateProj,
-      qloraFp8, qloraFp4, qloraBnb, recomputeLora, mergeLora, datasets, testDatasets, trainingForm } = formValues;
+    const {
+      lora,
+      loraR,
+      loraAlpha,
+      loraDropout,
+      qProj,
+      kProj,
+      vProj,
+      oProj,
+      upProj,
+      downProj,
+      gateProj,
+      qloraFp8,
+      qloraFp4,
+      qloraBnb,
+      recomputeLora,
+      mergeLora,
+      datasets,
+      testDatasets,
+      trainingForm,
+    } = formValues;
     const loraTargetModules: string[] = [];
-    if (qProj) { loraTargetModules.push('q_proj'); }
-    if (kProj) { loraTargetModules.push('k_proj'); }
-    if (vProj) { loraTargetModules.push('v_proj'); }
-    if (oProj) { loraTargetModules.push('o_proj'); }
-    if (upProj) { loraTargetModules.push('up_proj'); }
-    if (downProj) { loraTargetModules.push('down_proj'); }
-    if (gateProj) { loraTargetModules.push('gate_proj'); }
+    if (qProj) {
+      loraTargetModules.push('q_proj');
+    }
+    if (kProj) {
+      loraTargetModules.push('k_proj');
+    }
+    if (vProj) {
+      loraTargetModules.push('v_proj');
+    }
+    if (oProj) {
+      loraTargetModules.push('o_proj');
+    }
+    if (upProj) {
+      loraTargetModules.push('up_proj');
+    }
+    if (downProj) {
+      loraTargetModules.push('down_proj');
+    }
+    if (gateProj) {
+      loraTargetModules.push('gate_proj');
+    }
 
     const dsets: IDatasetConfig[] = [];
-    datasets.forEach((ds: IDatasetConfig) => dsets.push({
-      ...ds,
-      ref: (ds.ref as any).id,
-      messagePropertyMappings: {
-        role: (ds as any).messagePropertyMappingsRole,
-        content: (ds as any).messagePropertyMappingsContent
-      }
-    }));
+    datasets.forEach((ds: IDatasetConfig) =>
+      dsets.push({
+        ...ds,
+        ref: (ds.ref as any).id,
+        messagePropertyMappings: {
+          role: (ds as any).messagePropertyMappingsRole,
+          content: (ds as any).messagePropertyMappingsContent,
+        },
+      }),
+    );
     const tdsets: IDatasetConfig[] = [];
-    testDatasets.forEach((ds: IDatasetConfig) => tdsets.push({
-      ...ds,
-      ref: (ds.ref as any).id,
-      messagePropertyMappings: {
-        role: (ds as any).messagePropertyMappingsRole,
-        content: (ds as any).messagePropertyMappingsContent
-      }
-    }));
+    testDatasets.forEach((ds: IDatasetConfig) =>
+      tdsets.push({
+        ...ds,
+        ref: (ds.ref as any).id,
+        messagePropertyMappings: {
+          role: (ds as any).messagePropertyMappingsRole,
+          content: (ds as any).messagePropertyMappingsContent,
+        },
+      }),
+    );
 
     return {
-      lora, loraR, loraAlpha, loraDropout, loraTargetModules, qloraFp8, qloraFp4, qloraBnb, recomputeLora, mergeLora,
+      lora,
+      loraR,
+      loraAlpha,
+      loraDropout,
+      loraTargetModules,
+      qloraFp8,
+      qloraFp4,
+      qloraBnb,
+      recomputeLora,
+      mergeLora,
       datasets: dsets,
       testDatasets: tdsets.length ? tdsets : null,
       numEpochs: trainingForm.numEpochs,
@@ -504,7 +554,7 @@ export class TrainingPage implements OnInit {
       debugTimeBreakdown: trainingForm.debugTimeBreakdown,
       debugMemoryBreakdown: trainingForm.debugMemoryBreakdown,
       recipe: trainingForm.recipe,
-      zeroLevel: trainingForm.zeroLevel
+      zeroLevel: trainingForm.zeroLevel,
     };
   }
 
@@ -512,8 +562,8 @@ export class TrainingPage implements OnInit {
     return {
       resources: {
         infra: 'runpod',
-        accelerators: 'RTX5090:2'
-      }
+        accelerators: 'RTX5090:2',
+      },
     };
   }
 
@@ -544,7 +594,6 @@ export class TrainingPage implements OnInit {
       job.container = existing.container;
       job.project = existing.project;
       job.internalName = existing.internalName;
-      job.runInTheSky = existing.runInTheSky;
 
       job.trainingConfigPojo = this.formToTrainingConfig(job);
       job.rayClusterShapePojo = this.formToRayClusterShape(job);
@@ -558,11 +607,7 @@ export class TrainingPage implements OnInit {
         this.isSaving = false;
         this.isLaunching = true;
         try {
-          await lastValueFrom(
-            launch && this.mustRelaunch() ?
-              this.rayJobService.redeploy(saved) :
-              this.rayJobService.deploy(saved)
-          );
+          await lastValueFrom(launch && this.mustRelaunch() ? this.rayJobService.redeploy(saved) : this.rayJobService.deploy(saved));
           displaySuccess(this.store, 'Job launched successfully');
         } catch (err) {
           console.log(err);
@@ -610,6 +655,7 @@ export class TrainingPage implements OnInit {
   protected readonly ArrowRight = ArrowRight;
   protected readonly Save = Save;
   protected readonly Cpu = Cpu;
+  protected readonly Server = Server;
 
   protected readonly BASE_MODEL_REPOSITORY = BASE_MODEL_REPOSITORY;
   protected readonly LORA = LORA;

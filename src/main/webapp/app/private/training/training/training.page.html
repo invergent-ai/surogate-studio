@@ -3,9 +3,7 @@
     <ng-template>
       <div class="mb-5">
         <h1 class="page-title">{{ title() }}</h1>
-        <p class="page-subtitle">{{ subtitle() }}
-          <p-tag severity="info" class="ml-2">{{ infra() === 'sky' ? 'Cloud' : 'Local infrastructure' }}</p-tag>
-        </p>
+        <p class="page-subtitle">{{ subtitle() }}</p>
       </div>
 
       <div *ngIf="jobForm" class="grid gap-3">
@@ -200,10 +198,28 @@
             </div>
           </sm-card>
 
+          <!--          Training infrastructure-->
+          <sm-card header="Training infrastructure" [icon]="Server" [padContent]="false">
+            <div class="mt-4">
+              <sm-target-selector></sm-target-selector>
+            </div>
+
+            <div class="flex flex-wrap gap-3">
+              <div class="flex align-items-center">
+                <p-radioButton id="localInfra" [value]="false" inputId="localInfra" formControlName="runInTheSky" />
+                <label for="localInfra" class="ml-2 font-normal">Local infrastructure</label>
+              </div>
+              <div class="flex align-items-center">
+                <p-radioButton id="cloud" [value]="true" inputId="cloud" formControlName="runInTheSky" />
+                <label for="cloud" class="ml-2 font-normal">Cloud</label>
+              </div>
+            </div>
+          </sm-card>
+
           <!--          Ray cluster shape-->
           <sm-card header="Ray cluster shape" [icon]="Cpu" [padContent]="false">
             <ng-template pTemplate="toolbar">
-              @if (infra() === 'ray') {
+              @if (!jobForm.get('runInTheSky').value) {
                 <div class="flex align-items-center gap-2">
                   <button pButton size="small" type="button" severity="secondary" (click)="advanced.set(!advanced())">
                     <div class="flex gap-2 align-items-center">
