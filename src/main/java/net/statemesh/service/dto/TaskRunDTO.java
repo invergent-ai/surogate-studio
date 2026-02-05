@@ -28,6 +28,7 @@ public class TaskRunDTO implements ResourceDTO, Serializable {
 
     private String internalName;
     private String deployedNamespace;
+    private String workDirVolumeName;
     private Instant startTime;
     private Instant endTime;
     private String podName;
@@ -47,6 +48,9 @@ public class TaskRunDTO implements ResourceDTO, Serializable {
 
     @NotNull
     private ProjectDTO project;
+
+    // Transient
+    private Boolean skyToK8s;
 
     @Override
     public boolean equals(Object o) {

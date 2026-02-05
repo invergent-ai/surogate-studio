@@ -165,12 +165,6 @@ public class CreateRayJobFlow extends ResourceCreationFlow<RayJobDTO> {
         );
         rayJobDTO.getEnvVars().add(
             JobEnvironmentVariableDTO.builder()
-                .key(RAY_JOB_ENV_VIRTUAL_ENV)
-                .value(RAY_TRAIN_VENV)
-                .build()
-        );
-        rayJobDTO.getEnvVars().add(
-            JobEnvironmentVariableDTO.builder()
                 .key(RAY_JOB_ENV_LAKECTL_SERVER_ENDPOINT_URL)
                 .value(applicationProperties.getLakeFs().getEndpointInternal())
                 .build()
@@ -207,7 +201,6 @@ public class CreateRayJobFlow extends ResourceCreationFlow<RayJobDTO> {
                 .filter(envVar -> !List.of(
                     RAY_JOB_ENV_JOB_ID,
                     RAY_JOB_ENV_WORK_DIR,
-                    RAY_JOB_ENV_VIRTUAL_ENV,
                     RAY_JOB_ENV_LAKECTL_SERVER_ENDPOINT_URL,
                     RAY_JOB_ENV_LAKECTL_CREDENTIALS_ACCESS_KEY_ID,
                     RAY_JOB_ENV_LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY

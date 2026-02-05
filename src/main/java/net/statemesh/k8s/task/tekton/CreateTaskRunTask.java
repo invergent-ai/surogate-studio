@@ -14,10 +14,10 @@ import net.statemesh.k8s.task.TaskResult;
 import net.statemesh.k8s.task.tekton.spec.EvaluationTaskRunSpec;
 import net.statemesh.k8s.task.tekton.spec.ImportHfTaskRunSpec;
 import net.statemesh.k8s.task.tekton.spec.QuantizationTaskRunSpec;
+import net.statemesh.k8s.task.tekton.spec.SkyTaskRunSpec;
 import net.statemesh.k8s.util.ApiStub;
 import net.statemesh.repository.ApplicationRepository;
 import net.statemesh.service.dto.TaskRunDTO;
-import org.apache.commons.lang3.NotImplementedException;
 
 import java.util.Objects;
 
@@ -70,7 +70,7 @@ public class CreateTaskRunTask extends BaseMutationTask<String> {
             case EVALUATION -> new EvaluationTaskRunSpec(applicationRepository).create(taskRun, applicationProperties);
             case IMPORT_HF_MODEL, IMPORT_HF_DATASET -> new ImportHfTaskRunSpec().create(taskRun, applicationProperties);
             case QUANTIZATION -> new QuantizationTaskRunSpec().create(taskRun, applicationProperties);
-            default -> throw new NotImplementedException("Unexpected value: " + taskRun.getType());
+            case TRAIN, FINE_TUNE -> new SkyTaskRunSpec().create(taskRun, applicationProperties);
         };
     }
 

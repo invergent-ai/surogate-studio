@@ -1,6 +1,5 @@
 package net.statemesh.service;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -14,16 +13,11 @@ import net.statemesh.k8s.KubernetesController;
 import net.statemesh.k8s.exception.K8SException;
 import net.statemesh.k8s.flow.CreateRayJobFlow;
 import net.statemesh.k8s.flow.DeleteRayJobFlow;
+import net.statemesh.k8s.flow.DeleteTaskRunFlow;
+import net.statemesh.k8s.flow.TaskRunFlow;
 import net.statemesh.k8s.task.TaskResult;
 import net.statemesh.repository.RayJobRepository;
-import net.statemesh.service.dto.MessageDTO;
-import net.statemesh.service.dto.RayClusterShape;
-import net.statemesh.service.dto.RayJobDTO;
-import net.statemesh.service.dto.TrainingConfigDTO;
-import net.statemesh.service.dto.mixin.DatasetMixin;
-import net.statemesh.service.dto.mixin.SurogateDatasetMixin;
-import net.statemesh.service.dto.mixin.SurogateTrainingConfigMixin;
-import net.statemesh.service.dto.mixin.TrainingConfigMixin;
+import net.statemesh.service.dto.*;
 import net.statemesh.service.mapper.CycleAvoidingMappingContext;
 import net.statemesh.service.mapper.RayJobMapper;
 import org.apache.commons.lang3.StringUtils;
@@ -39,14 +33,16 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static net.statemesh.config.Constants.USE_AXOLOTL_TRAINING_LIBRARY;
 import static net.statemesh.config.K8Timeouts.DELETE_NODE_TIMEOUT_SECONDS;
 import static net.statemesh.k8s.util.K8SConstants.*;
 import static net.statemesh.k8s.util.NamingUtils.*;
+import static net.statemesh.service.util.MixinUtil.*;
 import static net.statemesh.service.util.ProjectUtil.updateProject;
+import static net.statemesh.service.util.SkyUtil.rayJobToSkyTaskRun;
+import static net.statemesh.service.util.SkyUtil.setupSkyConfig;
 
 @Service
 @RequiredArgsConstructor
@@ -54,6 +50,8 @@ import static net.statemesh.service.util.ProjectUtil.updateProject;
 public class RayJobService {
     private final CreateRayJobFlow createRayJobFlow;
     private final DeleteRayJobFlow deleteRayJobFlow;
+    private final TaskRunFlow taskRunFlow;
+    private final DeleteTaskRunFlow deleteTaskRunFlow;
     private final RayJobRepository rayJobRepository;
     private final RayJobMapper rayJobMapper;
     private final SimpMessagingTemplate messagingTemplate;
@@ -91,7 +89,10 @@ public class RayJobService {
             rayJobDTO.setProvisioningStatus(RayJobProvisioningStatus.DEPLOYING);
             updateProvisioningStatus(rayJobDTO.getId(), RayJobProvisioningStatus.DEPLOYING);
 
-            TaskResult<String> result = createRayJobFlow.execute(rayJobDTO);
+            TaskResult<String> result =
+                Optional.ofNullable(rayJobDTO.getRunInTheSky()).orElse(Boolean.FALSE) ?
+                    runInTheSky(rayJobDTO) :
+                    createRayJobFlow.execute(rayJobDTO);
             rayJobDTO.setDeployedNamespace(
                 EXTERNAL_RAY_CLUSTER ? EXTERNAL_RAY_CLUSTER_DEFAULT_NAMESPACE : rayJobDTO.getProject().getNamespace()
             );
@@ -114,12 +115,44 @@ public class RayJobService {
         rayJob.setProvisioningStatus(RayJobProvisioningStatus.COMPLETED);
         updateProvisioningStatus(rayJob.getId(), RayJobProvisioningStatus.COMPLETED);
 
-        deleteRayJobFlow.execute(rayJob);
+        if (Optional.ofNullable(rayJob.getRunInTheSky()).orElse(Boolean.FALSE)) {
+            deleteFromTheSky(rayJob);
+        } else {
+            deleteRayJobFlow.execute(rayJob);
+        }
 
         rayJob.setProvisioningStatus(RayJobProvisioningStatus.CREATED);
         updateProvisioningStatus(rayJob.getId(), RayJobProvisioningStatus.CREATED);
 
         return deploy(rayJob, login);
+    }
+
+    /**
+     * Run on SkyPilot using Tekton backend
+     *
+     * @param rayJob - RayJobDTO
+     * @return TaskResult<String>
+     */
+    private TaskResult<String> runInTheSky(RayJobDTO rayJob) {
+         return taskRunFlow.execute(
+             rayJobToSkyTaskRun(rayJob, kubernetesController.getApplicationProperties())
+         );
+    }
+
+    private void deleteFromTheSky(RayJobDTO rayJob) {
+        deleteTaskRunFlow.execute(
+            rayJobToSkyTaskRun(rayJob, kubernetesController.getApplicationProperties())
+        );
+    }
+
+    private void cancelFromTheSky(RayJobDTO rayJob) throws ExecutionException, InterruptedException, TimeoutException {
+        kubernetesController.cancelTaskRun(
+            Objects.isNull(rayJob.getDeployedNamespace()) ?
+                rayJob.getProject().getNamespace() :
+                rayJob.getDeployedNamespace(),
+            rayJob.getProject().getCluster(),
+            rayJobToSkyTaskRun(rayJob, kubernetesController.getApplicationProperties())
+        ).get(DELETE_NODE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
     }
 
     public void loadInternalsAndDumpTrainingConfig(RayJobDTO rayJobDTO) {
@@ -141,7 +174,7 @@ public class RayJobService {
         }
 
         try {
-            addSerializationMixins(rayJobDTO);
+            addSerializationMixins(yamlMapper, rayJobDTO);
             rayJobDTO.setTrainingConfig(
                 yamlMapper.writeValueAsString(
                     USE_AXOLOTL_TRAINING_LIBRARY ?
@@ -160,6 +193,8 @@ public class RayJobService {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
+
+        dumpSkyConfig(rayJobDTO);
     }
 
     public void loadTrainingConfig(Optional<RayJobDTO> rayJobDTO) {
@@ -168,7 +203,7 @@ public class RayJobService {
         }
         if (!StringUtils.isEmpty(rayJobDTO.get().getTrainingConfig())) {
             try {
-                addDeserializationMixins();
+                addDeserializationMixins(yamlMapper);
                 rayJobDTO.get().setTrainingConfigPojo(
                     yamlMapper.readValue(rayJobDTO.get().getTrainingConfig(), TrainingConfigDTO.class)
                 );
@@ -183,6 +218,16 @@ public class RayJobService {
             try {
                 rayJobDTO.get().setRayClusterShapePojo(
                     objectMapper.readValue(rayJobDTO.get().getRayClusterShape(), RayClusterShape.class)
+                );
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        if (!StringUtils.isEmpty(rayJobDTO.get().getSkyConfig())) {
+            try {
+                addSkyMixins(yamlMapper);
+                rayJobDTO.get().setSkyConfigPojo(
+                    yamlMapper.readValue(rayJobDTO.get().getSkyConfig(), SkyConfigDTO.class)
                 );
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
@@ -235,6 +280,35 @@ public class RayJobService {
                 (USE_AXOLOTL_TRAINING_LIBRARY &&
                     Optional.ofNullable(trainingConfig.getLora()).orElse(Boolean.FALSE) ? "/lora" : ""))
             .withDatasetsPath(RAY_WORK_DIR);
+    }
+
+    public void dumpSkyConfig(RayJobDTO rayJobDTO) {
+        if (!Optional.ofNullable(rayJobDTO.getRunInTheSky()).orElse(Boolean.FALSE) ||
+            rayJobDTO.getSkyConfigPojo() == null) {
+            return;
+        }
+
+        try {
+            addSkyMixins(yamlMapper);
+            rayJobDTO.setSkyConfig(
+                yamlMapper.writeValueAsString(
+                    loadSkyConfigInternals(rayJobDTO)
+                )
+            );
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private SkyConfigDTO loadSkyConfigInternals(RayJobDTO rayJob) {
+        return setupSkyConfig(rayJob.getSkyConfigPojo(), rayJob)
+            .withName(rayJob.getInternalName())
+            .withNumNodes(rayJob.getRayClusterShapePojo().getNumNodes())
+            .withWorkDir(".")
+            .withFileMounts(Map.of(
+                RAY_WORK_DIR, RAY_WORK_DIR,
+                AIM_DIR, AIM_DIR
+            ));
     }
 
     public void initNames(RayJobDTO rayJobDTO) {
@@ -306,11 +380,15 @@ public class RayJobService {
 
         var job = optJob.get();
         try {
-            kubernetesController.cancelRayJob(
-                Objects.isNull(job.getDeployedNamespace()) ? job.getProject().getNamespace() : job.getDeployedNamespace(),
-                job.getProject().getCluster(),
-                job
-            ).get(DELETE_NODE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            if (Optional.ofNullable(job.getRunInTheSky()).orElse(Boolean.FALSE)) {
+                cancelFromTheSky(job);
+            } else {
+                kubernetesController.cancelRayJob(
+                    Objects.isNull(job.getDeployedNamespace()) ? job.getProject().getNamespace() : job.getDeployedNamespace(),
+                    job.getProject().getCluster(),
+                    job
+                ).get(DELETE_NODE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            }
 
             job.setProvisioningStatus(RayJobProvisioningStatus.CANCELLED);
             job.setEndTime(Instant.now());
@@ -337,7 +415,11 @@ public class RayJobService {
             return;
         }
 
-        deleteRayJobFlow.execute(rayJobDTO);
+        if (Optional.ofNullable(rayJobDTO.getRunInTheSky()).orElse(Boolean.FALSE)) {
+            deleteFromTheSky(rayJobDTO);
+        } else {
+            deleteRayJobFlow.execute(rayJobDTO);
+        }
         transactionTemplate.executeWithoutResult(tx -> rayJobRepository.deleteById(id));
 
         notifyUser(rayJobDTO, login, MessageDTO.MessageType.DELETE);
@@ -352,76 +434,6 @@ public class RayJobService {
                 .type(type)
                 .jobs(Collections.singletonList(rayJobDTO))
                 .build()
-        );
-    }
-
-    private void addSerializationMixins(RayJobDTO rayJobDTO) {
-        yamlMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        if (USE_AXOLOTL_TRAINING_LIBRARY) {
-            yamlMapper.addMixIn(TrainingConfigDTO.class, TrainingConfigMixin.class);
-            yamlMapper.addMixIn(TrainingConfigDTO.Dataset.class, DatasetMixin.class);
-            addValuesSerializationMixin(rayJobDTO.getTrainingConfigPojo());
-        } else {
-            yamlMapper.addMixIn(TrainingConfigDTO.class, SurogateTrainingConfigMixin.class);
-            yamlMapper.addMixIn(TrainingConfigDTO.Dataset.class, SurogateDatasetMixin.class);
-        }
-    }
-
-    private void addDeserializationMixins() {
-        if (USE_AXOLOTL_TRAINING_LIBRARY) {
-            yamlMapper.addMixIn(TrainingConfigDTO.class, TrainingConfigMixin.class);
-            yamlMapper.addMixIn(TrainingConfigDTO.Dataset.class, DatasetMixin.class);
-        } else {
-            yamlMapper.addMixIn(TrainingConfigDTO.class, SurogateTrainingConfigMixin.class);
-            yamlMapper.addMixIn(TrainingConfigDTO.Dataset.class, SurogateDatasetMixin.class);
-        }
-    }
-
-    private void addValuesSerializationMixin(TrainingConfigDTO trainingConfigDTO) {
-        if ("adamw_8bit".equals(trainingConfigDTO.getOptimizer())) {
-            trainingConfigDTO.setOptimizer("adamw_torch_fused");
-        }
-        datasetMixins(trainingConfigDTO, this::serializedDatasetType);
-    }
-
-    private void addValuesDeserializationMixin(TrainingConfigDTO trainingConfigDTO) {
-        if ("adamw_torch_fused".equals(trainingConfigDTO.getOptimizer())) {
-            trainingConfigDTO.setOptimizer("adamw_8bit");
-        }
-        datasetMixins(trainingConfigDTO, this::deserializedDatasetType);
-    }
-
-    private void datasetMixins(TrainingConfigDTO trainingConfigDTO, Consumer<TrainingConfigDTO.Dataset> consumer) {
-        if (trainingConfigDTO.getDatasets() == null || trainingConfigDTO.getDatasets().isEmpty()) {
-            return;
-        }
-        trainingConfigDTO.getDatasets().forEach(consumer);
-
-        if (trainingConfigDTO.getTestDatasets() == null || trainingConfigDTO.getTestDatasets().isEmpty()) {
-            return;
-        }
-        trainingConfigDTO.getTestDatasets().forEach(consumer);
-    }
-
-    private void serializedDatasetType(TrainingConfigDTO.Dataset dataset) {
-        dataset.setType(
-            switch (dataset.getType()) {
-                case "text" -> "pretrain";
-                case "instruction" -> "alpaca";
-                case "conversation" -> "gpteacher";
-                default -> dataset.getType();
-            }
-        );
-    }
-
-    private void deserializedDatasetType(TrainingConfigDTO.Dataset dataset) {
-        dataset.setType(
-            switch (dataset.getType()) {
-                case "pretrain" -> "text";
-                case "alpaca" -> "instruction";
-                case "gpteacher" -> "conversation";
-                default -> dataset.getType();
-            }
         );
     }
 

@@ -108,6 +108,7 @@ app:
   k8s-access-mode: false
   node-reservation-duration: 60 # Minutes
   check-node-resource-updates: true
+  skypilot-server-url: http://skypilot:skypilot@skypilot-api-service.skypilot.svc
   job:
     delete-terminating-schedule: 0 0/1 * * * ? # Every 1 minute
     update-node-status-schedule: 0/30 * * * * ? # Every minute

@@ -3,7 +3,9 @@ package net.statemesh.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.statemesh.domain.TaskRun;
-import net.statemesh.domain.enumeration.*;
+import net.statemesh.domain.enumeration.ProcessEvent;
+import net.statemesh.domain.enumeration.TaskRunProvisioningStatus;
+import net.statemesh.domain.enumeration.TaskRunType;
 import net.statemesh.k8s.KubernetesController;
 import net.statemesh.k8s.flow.DeleteTaskRunFlow;
 import net.statemesh.k8s.flow.TaskRunFlow;
@@ -19,7 +21,6 @@ import net.statemesh.service.mapper.CycleAvoidingMappingContext;
 import net.statemesh.service.mapper.TaskRunMapper;
 import org.apache.commons.collections4.IterableUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -34,7 +35,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
-import static net.statemesh.config.K8Timeouts.DELETE_DEPLOYMENT_TIMEOUT_SECONDS;
 import static net.statemesh.config.K8Timeouts.DELETE_NODE_TIMEOUT_SECONDS;
 import static net.statemesh.k8s.util.NamingUtils.resourceName;
 import static net.statemesh.service.util.ProjectUtil.updateProject;
@@ -49,12 +49,10 @@ public class TaskRunService {
     private final TaskRunRepository taskRunRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final TaskRunFlow taskRunFlow;
+    private final DeleteTaskRunFlow deleteTaskRunFlow;
     private final NotificationService notificationService;
     private final LakeFsService lakeFsService;
     private final KubernetesController kubernetesController;
-    private final AsyncTaskExecutor smTaskExecutor;
-    private final UserApiKeyService userApiKeyService;
-    private final DeleteTaskRunFlow deleteTaskRunFlow;
 
     public TaskRunDTO save(TaskRunDTO taskRunDTO, String login) {
         if (StringUtils.isEmpty(taskRunDTO.getInternalName())) {
@@ -81,12 +79,13 @@ public class TaskRunService {
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public TaskRunDTO submit(TaskRunDTO taskRunDTO, String login) {
         ensurePrerequisites(taskRunDTO, login);
-        resolveSavedApiKeys(taskRunDTO, login);
 
         try {
             taskRunDTO = save(taskRunDTO, login);
+
             taskRunDTO.setProvisioningStatus(TaskRunProvisioningStatus.DEPLOYING);
             updateProvisioningStatus(taskRunDTO.getId(), TaskRunProvisioningStatus.DEPLOYING);
+
             var result = taskRunFlow.execute(taskRunDTO);
             taskRunDTO.setDeployedNamespace(taskRunDTO.getProject().getNamespace());
             taskRunDTO.getProject().setCluster(result.getCluster());
@@ -106,77 +105,6 @@ public class TaskRunService {
         return save(taskRunDTO, login);
     }
 
-
-    private void resolveSavedApiKeys(TaskRunDTO taskRun, String login) {
-        if (login == null) return;
-
-        if ("true".equals(getParamValue(taskRun, "USE_SAVED_API_KEY"))) {
-            String providerStr = getParamValue(taskRun, "SAVED_API_KEY_PROVIDER");
-            ApiKeyProvider provider = ApiKeyProvider.fromValue(providerStr);
-            userApiKeyService.getDecryptedApiKey(login, provider, ApiKeyType.LLM)
-                .ifPresentOrElse(
-                    apiKey -> {
-                        removeParam(taskRun, "USE_SAVED_API_KEY");
-                        removeParam(taskRun, "SAVED_API_KEY_PROVIDER");
-                        addOrUpdateParam(taskRun, "DEPLOYED_MODEL_API", apiKey);
-                    },
-                    () -> log.warn("No saved API key found for provider: {}", provider)
-                );
-        }
-
-        if ("true".equals(getParamValue(taskRun, "USE_SAVED_JUDGE_API_KEY"))) {
-            String providerStr = getParamValue(taskRun, "SAVED_JUDGE_API_KEY_PROVIDER");
-            ApiKeyProvider provider = ApiKeyProvider.fromValue(providerStr);
-            userApiKeyService.getDecryptedApiKey(login, provider, ApiKeyType.LLM)
-                .ifPresent(apiKey -> {
-                    removeParam(taskRun, "USE_SAVED_JUDGE_API_KEY");
-                    removeParam(taskRun, "SAVED_JUDGE_API_KEY_PROVIDER");
-                    addOrUpdateParam(taskRun, "JUDGE_MODEL_API", apiKey);
-                });
-        }
-
-        if ("true".equals(getParamValue(taskRun, "USE_SAVED_SIMULATOR_API_KEY"))) {
-            String providerStr = getParamValue(taskRun, "SAVED_SIMULATOR_API_KEY_PROVIDER");
-            ApiKeyProvider provider = ApiKeyProvider.fromValue(providerStr);
-            userApiKeyService.getDecryptedApiKey(login, provider, ApiKeyType.LLM)
-                .ifPresent(apiKey -> {
-                    removeParam(taskRun, "USE_SAVED_SIMULATOR_API_KEY");
-                    removeParam(taskRun, "SAVED_SIMULATOR_API_KEY_PROVIDER");
-                    addOrUpdateParam(taskRun, "SIMULATOR_MODEL_API", apiKey);
-                });
-        }
-    }
-
-    private String getParamValue(TaskRunDTO taskRun, String key) {
-        return taskRun.getParams().stream()
-            .filter(p -> key.equals(p.getKey()))
-            .map(TaskRunParamDTO::getValue)
-            .findFirst()
-            .orElse(null);
-    }
-
-    private void removeParam(TaskRunDTO taskRun, String key) {
-        taskRun.getParams().removeIf(p -> key.equals(p.getKey()));
-    }
-
-    private void addOrUpdateParam(TaskRunDTO taskRun, String key, String value) {
-        removeParam(taskRun, key);
-        taskRun.getParams().add(TaskRunParamDTO.builder().key(key).value(value).build());
-    }
-
-    private void cleanupOnError(TaskRunDTO taskRunDTO) {
-        if (TaskRunType.IMPORT_HF_MODEL.equals(taskRunDTO.getType()) || TaskRunType.IMPORT_HF_DATASET.equals(taskRunDTO.getType())) {
-            // delete lakefs repository
-
-            taskRunDTO.getParams().stream()
-                .filter(p -> "lakefs-repo".equals(p.getKey()))
-                .findFirst()
-                .ifPresent(param -> {
-                    lakeFsService.deleteRepository(param.getValue());
-                });
-        }
-    }
-
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public TaskRunDTO redeploy(TaskRunDTO taskRun, String login) {
         taskRun.setProvisioningStatus(TaskRunProvisioningStatus.COMPLETED);
@@ -190,9 +118,20 @@ public class TaskRunService {
         return submit(taskRun, login);
     }
 
+    private void cleanupOnError(TaskRunDTO taskRunDTO) {
+        if (TaskRunType.IMPORT_HF_MODEL.equals(taskRunDTO.getType()) || TaskRunType.IMPORT_HF_DATASET.equals(taskRunDTO.getType())) {
+            // delete lakefs repository
+
+            taskRunDTO.getParams().stream()
+                .filter(p -> "lakefs-repo".equals(p.getKey()))
+                .findFirst()
+                .ifPresent(param -> lakeFsService.deleteRepository(param.getValue()));
+        }
+    }
 
     private void ensurePrerequisites(TaskRunDTO taskRunDTO, String login) {
-        if (TaskRunType.IMPORT_HF_MODEL.equals(taskRunDTO.getType()) || TaskRunType.IMPORT_HF_DATASET.equals(taskRunDTO.getType())) {
+        if (TaskRunType.IMPORT_HF_MODEL.equals(taskRunDTO.getType()) ||
+            TaskRunType.IMPORT_HF_DATASET.equals(taskRunDTO.getType())) {
             var hfRepo = IterableUtils.find(taskRunDTO.getParams(), p -> "hf-repo-id".equals(p.getKey()));
             if (hfRepo == null || StringUtils.isEmpty(hfRepo.getValue())) {
                 throw new TaskRunException("HF Repository not set");
@@ -310,10 +249,7 @@ public class TaskRunService {
     public void delete(String taskId, String login) {
         var taskRunDTO = transactionTemplate.execute(tx -> {
             Optional<TaskRun> optTask = taskRunRepository.findById(taskId);
-            if (optTask.isEmpty()) {
-                return null;
-            }
-            return taskRunMapper.toDto(optTask.get(), new CycleAvoidingMappingContext());
+            return optTask.map(taskRun -> taskRunMapper.toDto(taskRun, new CycleAvoidingMappingContext())).orElse(null);
         });
         if (taskRunDTO == null) {
             return;

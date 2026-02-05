@@ -3,7 +3,9 @@
     <ng-template>
       <div class="mb-5">
         <h1 class="page-title">{{ title() }}</h1>
-        <p class="page-subtitle">{{ subtitle() }}</p>
+        <p class="page-subtitle">{{ subtitle() }}
+          <p-tag severity="info" class="ml-2">{{ infra() === 'sky' ? 'Cloud' : 'Local infrastructure' }}</p-tag>
+        </p>
       </div>
 
       <div *ngIf="jobForm" class="grid gap-3">
@@ -201,14 +203,16 @@
           <!--          Ray cluster shape-->
           <sm-card header="Ray cluster shape" [icon]="Cpu" [padContent]="false">
             <ng-template pTemplate="toolbar">
-              <div class="flex align-items-center gap-2">
-                <button pButton size="small" type="button" severity="secondary" (click)="advanced.set(!advanced())">
-                  <div class="flex gap-2 align-items-center">
-                    <i-lucide [img]="SlidersHorizontal" class="w-1rem h-1rem"></i-lucide>
-                    <span>Advanced</span>
-                  </div>
-                </button>
-              </div>
+              @if (infra() === 'ray') {
+                <div class="flex align-items-center gap-2">
+                  <button pButton size="small" type="button" severity="secondary" (click)="advanced.set(!advanced())">
+                    <div class="flex gap-2 align-items-center">
+                      <i-lucide [img]="SlidersHorizontal" class="w-1rem h-1rem"></i-lucide>
+                      <span>Advanced</span>
+                    </div>
+                  </button>
+                </div>
+              }
             </ng-template>
             <p-messages severity="info">
               <ng-template pTemplate="content">

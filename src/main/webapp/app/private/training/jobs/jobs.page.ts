@@ -1,29 +1,29 @@
-import {Component, computed, inject, signal} from '@angular/core';
-import {PageComponent} from '../../../shared/components/page/page.component';
-import {PageLoadComponent} from '../../../shared/components/page-load/page-load.component';
-import {injectParams} from 'ngxtension/inject-params';
-import {InputTextModule} from 'primeng/inputtext';
-import {DropdownModule} from 'primeng/dropdown';
-import {Copy, LucideAngularModule, Plus, Scale, SlidersHorizontal, Trash} from 'lucide-angular';
-import {TableModule} from 'primeng/table';
-import {TagModule} from 'primeng/tag';
-import {Router} from '@angular/router';
-import {OverlayPanelModule} from 'primeng/overlaypanel';
-import {Store} from '@ngxs/store';
-import {IJobType} from "../../../shared/model/job.model";
-import {ExecutorType} from "../../../shared/model/enum/executor-type.model";
-import {JobListComponent} from "../../../shared/components/jobs/job-list.component";
-import {ProgressBarModule} from "primeng/progressbar";
-import {ButtonDirective} from "primeng/button";
-import {TrainingMetricsComponent} from "../components/training-metrics/training-metrics.component";
-import {TestChatComponent} from "../components/test-chat/test-chat.component";
+import { Component, computed, inject, signal } from '@angular/core';
+import { PageComponent } from '../../../shared/components/page/page.component';
+import { PageLoadComponent } from '../../../shared/components/page-load/page-load.component';
+import { injectParams } from 'ngxtension/inject-params';
+import { InputTextModule } from 'primeng/inputtext';
+import { DropdownModule } from 'primeng/dropdown';
+import { Copy, LucideAngularModule, Plus, SlidersHorizontal, Trash } from 'lucide-angular';
+import { TableModule } from 'primeng/table';
+import { TagModule } from 'primeng/tag';
+import { Router } from '@angular/router';
+import { OverlayPanelModule } from 'primeng/overlaypanel';
+import { Store } from '@ngxs/store';
+import { IJobType } from '../../../shared/model/job.model';
+import { ExecutorType } from '../../../shared/model/enum/executor-type.model';
+import { JobListComponent } from '../../../shared/components/jobs/job-list.component';
+import { ProgressBarModule } from 'primeng/progressbar';
+import { ButtonDirective } from 'primeng/button';
+import { TrainingMetricsComponent } from '../components/training-metrics/training-metrics.component';
+import { TestChatComponent } from '../components/test-chat/test-chat.component';
 import { EvaluationResultsComponent } from '../../../shared/components/evaluation-results/evaluation-results.component';
 
 export type JobType = 'dataset' | 'training' | 'fine-tuning' | 'evaluation' | 'quantization';
 
 @Component({
   standalone: true,
-  selector: 'sm-jobs-age',
+  selector: 'sm-jobs-page',
   templateUrl: './jobs.page.html',
   imports: [
     PageComponent,
@@ -129,5 +129,4 @@ export class JobsPage {
   protected readonly Trash = Trash;
   protected readonly Copy = Copy;
   protected readonly SlidersHorizontal = SlidersHorizontal;
-  protected readonly Scale = Scale;
 }

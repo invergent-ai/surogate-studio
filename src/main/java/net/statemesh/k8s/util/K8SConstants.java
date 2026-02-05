@@ -179,10 +179,17 @@ public class K8SConstants {
     public static final String RAY_NFS_STORAGE_CLASS = "nfs-csi-densemax-v2";
     public static final String RAY_WORKDIR_VOLUME_NAME = "ray-work-dir";
     public static final String RAY_WORK_DIR = "/opt/work";
-    public static final String RAY_TRAIN_VENV = "/opt/densemax/train/.venv";
     public static final String AIM_DIR = "/opt/aim";
     public static final String RAY_VERSION = "2.50.1";
+
     public static final String DENSEMAX_IMAGE = "registry.densemax.local/statemesh/densemax:1.0.0";
+
+    public static final String SUROGATE_IMAGE = "statemesh/densemax:1.0.0";
+
+    public static final String SUROGATE_TRAIN_AXOLOTL_IMAGE = "statemesh/train-axolotl:latest";
+    public static final String SUROGATE_TRAIN_SUROGATE_IMAGE = "statemesh/train-surogate:latest";
+
+    public static final String TEKTON_JOB_NAME = "run-job";
 
     public static final String POSTGRESQL_GROUP = "acid.zalan.do";
     public static final String POSTGRESQL_API_VERSION = "v1";

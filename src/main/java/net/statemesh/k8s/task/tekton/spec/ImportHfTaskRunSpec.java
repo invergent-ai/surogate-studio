@@ -1,6 +1,7 @@
 package net.statemesh.k8s.task.tekton.spec;
 
 import net.statemesh.config.ApplicationProperties;
+import net.statemesh.domain.enumeration.PullImageMode;
 import net.statemesh.k8s.crd.tekton.models.*;
 import net.statemesh.service.dto.TaskRunDTO;
 import org.apache.commons.lang3.NotImplementedException;
@@ -9,15 +10,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static net.statemesh.k8s.util.K8SConstants.TEKTON_JOB_NAME;
+
 public class ImportHfTaskRunSpec extends V1TaskRunSpec implements TaskRunSpec {
     @Override
     public V1TaskRunSpec create(TaskRunDTO taskRun, ApplicationProperties applicationProperties) {
         return new V1TaskRunSpec()
             .params(toParams(taskRun, applicationProperties))
             .taskSpec(new V1TaskSpec().steps(List.of(new V1TaskSpecStepsInner()
-                .name("run-job")
-                .image("docker.io/statemesh/hf-api:1.1")
-                .imagePullPolicy("Always")
+                .name(TEKTON_JOB_NAME)
+                .image("docker.io/statemesh/hf-api:1.1") // TODO - Change to DENSEMAX_IMAGE
+                .imagePullPolicy(PullImageMode.PULL.getValue())
                 .command(List.of("python3"))
                 .args(List.of("-m", importScript(taskRun)))
                 .env(envVars(taskRun,

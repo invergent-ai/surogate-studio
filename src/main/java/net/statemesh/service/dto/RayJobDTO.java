@@ -44,12 +44,15 @@ public class RayJobDTO implements ResourceDTO, Serializable {
 
     @NotNull
     private RayJobType type;
+    private Boolean runInTheSky;
+    private Boolean skyToK8s;
 
     @NotNull
     private RayJobProvisioningStatus provisioningStatus;
 
     private String trainingConfig;
     private String rayClusterShape;
+    private String skyConfig;
 
     @Builder.Default
     private Set<JobEnvironmentVariableDTO> envVars = new HashSet<>();
@@ -59,6 +62,7 @@ public class RayJobDTO implements ResourceDTO, Serializable {
 
     private TrainingConfigDTO trainingConfigPojo;
     private RayClusterShape rayClusterShapePojo;
+    private SkyConfigDTO skyConfigPojo;
 
     @Override
     public boolean equals(Object o) {

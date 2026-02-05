@@ -10,11 +10,13 @@ import net.statemesh.service.dto.TaskRunDTO;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static net.statemesh.config.K8Timeouts.DELETE_FLOW_TIMEOUT_SECONDS;
+import static net.statemesh.k8s.util.NamingUtils.pvcName;
 
 @Component
 @Slf4j
@@ -31,12 +33,26 @@ public class DeleteTaskRunFlow extends ResourceDeletionFlow<TaskRunDTO> {
             kubernetesController.deleteTaskRun(
                 getNamespace(resource),
                 setCluster(resource, kubernetesController, clusterService),
-                resource
-            ).get(DELETE_FLOW_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                resource)
+            .thenCompose(result -> CompletableFuture.allOf(
+                deleteWorkDirPVC(resource)
+            ))
+            .get(DELETE_FLOW_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException ex) {
             throw new RuntimeException(ex);
         }
         return TaskResult.success();
+    }
+
+    protected CompletableFuture<TaskResult<Void>> deleteWorkDirPVC(TaskRunDTO resource) {
+        if (StringUtils.isEmpty(resource.getWorkDirVolumeName())) {
+            return CompletableFuture.completedFuture(null);
+        }
+        return this.kubernetesController.deleteVolumeClaim(
+            getNamespace(resource),
+            setCluster(resource, kubernetesController, clusterService),
+            pvcName(resource.getWorkDirVolumeName())
+        );
     }
 
     @Override

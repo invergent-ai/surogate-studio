@@ -84,6 +84,7 @@ import {
 import {IRayClusterShape} from "../../../shared/model/ray-cluster-shape.model";
 import {TabViewModule} from "primeng/tabview";
 import {injectParams} from "ngxtension/inject-params";
+import { ISkyConfig } from '../../../shared/model/sky-config.model';
 
 @Component({
   standalone: true,
@@ -125,6 +126,7 @@ import {injectParams} from "ngxtension/inject-params";
   `]
 })
 export class TrainingPage implements OnInit {
+  infra = injectParams('infra');
   type = injectParams('type');
   jobId = injectParams('id');
 
@@ -168,6 +170,7 @@ export class TrainingPage implements OnInit {
       downProj: new FormControl<boolean>(true),
       gateProj: new FormControl<boolean>(true),
       fromCheckpoint: new FormControl<boolean>(false),
+      skyToK8s: new FormControl<boolean>(true),
       numNodes: new FormControl<number>(1, [Validators.required]),
       gpusPerWorker: new FormControl<number>(2, [Validators.required]),
       headGpus: new FormControl<number>(2, [Validators.required]),
@@ -255,7 +258,8 @@ export class TrainingPage implements OnInit {
     return of({
       type: this.type() === 'pretrain' ? RayJobType.TRAIN : RayJobType.FINE_TUNE,
       provisioningStatus: RayJobProvisioningStatus.CREATED,
-      project: this.user().defaultProject
+      project: this.user().defaultProject,
+      runInTheSky: this.infra() === 'sky'
     } as IRayJob);
   });
   provisioningStatus = computed(() => {
@@ -301,6 +305,7 @@ export class TrainingPage implements OnInit {
     this.envVarsToForm(job.envVars);
     this.trainingConfigToForm(job.trainingConfigPojo);
     this.rayClusterShapeToForm(job.rayClusterShapePojo);
+    this.skyConfigToForm(job.skyConfigPojo);
     revalidateForm(this.jobForm);
   }
 
@@ -394,6 +399,10 @@ export class TrainingPage implements OnInit {
     }
   }
 
+  skyConfigToForm(skyConfig: ISkyConfig) {
+    this.jobForm.patchValue({});
+  }
+
   rayClusterShapeToForm(rayClusterShape: IRayClusterShape) {
     this.jobForm.patchValue({
       numNodes: rayClusterShape.numNodes,
@@ -413,6 +422,9 @@ export class TrainingPage implements OnInit {
     envVars.push({id: null, key: 'MERGE_LORA', value: mergeLora ?? null});
     envVars.push({id: null, key: 'LORA', value: lora ?? null});
     envVars.push({id: null, key: 'MERGE_ITERATIVELY', value: mergeIteratively ?? null});
+
+    envVars.push({id: null, key: 'RUNPOD_API_KEY', value: 'rpa_5CS79KNGQKU6VMY1A47JFPC3GS9DMIMB5SWY1P2Qq9knjy'});
+
 
     if (datasets?.length || testDatasets?.length) {
       const dsts = [...datasets];
@@ -496,6 +508,15 @@ export class TrainingPage implements OnInit {
     };
   }
 
+  formToSkyConfig(formValues: any): ISkyConfig {
+    return {
+      resources: {
+        infra: 'runpod',
+        accelerators: 'RTX5090:2'
+      }
+    };
+  }
+
   formToRayClusterShape(formValues: any): IRayClusterShape {
     const { numNodes, gpusPerWorker, headGpus, useHeadAsWorker, testVllmTp } = formValues;
     return { numNodes, gpusPerWorker, headGpus, useHeadAsWorker, testVllmTp };
@@ -523,9 +544,12 @@ export class TrainingPage implements OnInit {
       job.container = existing.container;
       job.project = existing.project;
       job.internalName = existing.internalName;
+      job.runInTheSky = existing.runInTheSky;
 
       job.trainingConfigPojo = this.formToTrainingConfig(job);
       job.rayClusterShapePojo = this.formToRayClusterShape(job);
+      job.skyConfigPojo = this.formToSkyConfig(job);
+
       job.envVars = this.formToEnvVars(job);
 
       const saved = await lastValueFrom(this.rayJobService.save(job));

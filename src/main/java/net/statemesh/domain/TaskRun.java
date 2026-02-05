@@ -46,6 +46,9 @@ public class TaskRun extends AbstractAuditingEntity<String> implements Resource,
     @Column(name = "deployed_namespace")
     private String deployedNamespace;
 
+    @Column(name = "work_dir_volume_name")
+    private String workDirVolumeName;
+
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false)

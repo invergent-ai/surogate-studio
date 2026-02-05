@@ -80,6 +80,12 @@ public class RayJob extends AbstractAuditingEntity<String> implements Resource, 
     @Column(name = "type", nullable = false)
     private RayJobType type;
 
+    @Column(name = "run_in_the_sky")
+    private Boolean runInTheSky;
+
+    @Column(name = "sky_to_k8s")
+    private Boolean skyToK8s;
+
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "provisioning_status", nullable = false)
@@ -90,6 +96,9 @@ public class RayJob extends AbstractAuditingEntity<String> implements Resource, 
 
     @Column(name = "ray_cluster_shape", columnDefinition = "text")
     private String rayClusterShape;
+
+    @Column(name = "sky_config", columnDefinition = "text")
+    private String skyConfig;
 
     @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "job")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)

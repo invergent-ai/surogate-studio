@@ -70,7 +70,7 @@ export class TrainingWizardPage implements OnInit {
         {severity: "danger", value: "heavy", image: Gauge}
       ],
       estimated: "weeks / months",
-      routerLink: ['/train/training/pretrain'],
+      routerLink: ['/train/target/training'],
     },
     {
       imgBg: "bg-indigo-500",
@@ -84,7 +84,7 @@ export class TrainingWizardPage implements OnInit {
         {severity: "warning", value: "moderate", image: Gauge}
       ],
       estimated: "hours / days",
-      routerLink: ['/train/training/finetune']
+      routerLink: ['/train/target/fine-tuning']
     },
     {
       imgBg: "bg-blue-400",

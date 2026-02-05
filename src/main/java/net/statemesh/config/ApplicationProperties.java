@@ -15,6 +15,7 @@ public class ApplicationProperties {
     private Boolean k8sAccessMode;
     private Long nodeReservationDuration;
     private Boolean checkNodeResourceUpdates;
+    private String skypilotServerUrl;
     private final RateLimiter rateLimiter = new RateLimiter();
     private final Metrics metrics = new Metrics();
     private final Pipeline pipeline = new Pipeline();

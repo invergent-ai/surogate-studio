@@ -26,7 +26,6 @@ import java.util.Optional;
 public class TaskRunResource {
     private final TaskRunQueryService taskQueryService;
     private final TaskRunService taskRunService;
-    private Optional<TaskRunDTO> taskRunDTO;
 
     @PostMapping("")
     public ResponseEntity<TaskRunDTO> save(@RequestBody TaskRunDTO taskRunDTO,

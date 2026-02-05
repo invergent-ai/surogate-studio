@@ -4,6 +4,7 @@ import {IJobEnvironmentVariable} from "./job-environment-variable.model";
 import {RayJobProvisioningStatus} from "./enum/ray-job-provisioning-status.model";
 import {ITrainingConfig} from "./training-config.model";
 import {IRayClusterShape} from "./ray-cluster-shape.model";
+import { ISkyConfig } from './sky-config.model';
 
 export interface IRayJob extends IBaseResource {
   internalName?: string | null;
@@ -17,9 +18,12 @@ export interface IRayJob extends IBaseResource {
   container?: string;
   completedStatus?: string;
   type?: keyof typeof RayJobType;
+  runInTheSky?: boolean;
+  skyToK8s?: boolean;
   provisioningStatus?: keyof typeof RayJobProvisioningStatus;
   trainingConfig?: string | null;
   rayClusterShape?: string | null;
+  skyConfig?: string | null;
   envVars?: IJobEnvironmentVariable[] | null;
   createdDate?: string | null;
   startTime?: string | null;
@@ -29,6 +33,7 @@ export interface IRayJob extends IBaseResource {
   message?: string;
   trainingConfigPojo?: ITrainingConfig | null;
   rayClusterShapePojo?: IRayClusterShape | null;
+  skyConfigPojo?: ISkyConfig | null;
 }
 
 export type NewRayJob = Omit<IRayJob, 'id'> & { id: null };

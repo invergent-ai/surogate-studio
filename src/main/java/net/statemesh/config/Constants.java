@@ -54,14 +54,19 @@ public final class Constants {
 
     public static final String RAY_JOB_ENV_JOB_ID = "JOB_ID";
     public static final String RAY_JOB_ENV_WORK_DIR = "WORK_DIR";
+    public static final String RAY_JOB_ENV_BASE_MODEL = "BASE_MODEL";
     public static final String RAY_JOB_ENV_LAKECTL_SERVER_ENDPOINT_URL = "LAKECTL_SERVER_ENDPOINT_URL";
     public static final String RAY_JOB_ENV_LAKECTL_CREDENTIALS_ACCESS_KEY_ID = "LAKECTL_CREDENTIALS_ACCESS_KEY_ID";
     public static final String RAY_JOB_ENV_LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY = "LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY";
-    public static final String RAY_JOB_ENV_VIRTUAL_ENV = "VIRTUAL_ENV";
     public static final String RAY_JOB_ENV_VLLM_TP = "VLLM_TP";
     public static final String RAY_JOB_ENV_AXOLOTL_CONFIG = "AXOLOTL_CONFIG";
+    public static final String TASK_RUN_ENV_SKY_CONFIG = "SKY_CONFIG";
+    public static final String TASK_RUN_ENV_USE_AXOLOTL = "USE_AXOLOTL_TRAINING_LIBRARY";
+    public static final String TASK_RUN_ENV_SKYPILOT_ENDPOINT = "SKYPILOT_API_SERVER_ENDPOINT";
+    public static final String TASK_RUN_ENV_KUBE_CONFIG = "KUBE_CONFIG";
 
-    public static final Boolean USE_AXOLOTL_TRAINING_LIBRARY = true;
+    public static final Boolean USE_AXOLOTL_TRAINING_LIBRARY = true; // Axolotl vs Surogate training lib
+    public static final Boolean USE_SKYPILOT_SERVER = false; // Set this to true only if the server has cloud providers preconfigured
 
     private Constants() {
     }

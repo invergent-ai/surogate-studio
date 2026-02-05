@@ -514,7 +514,6 @@ public class KubernetesController {
         ).call();
     }
 
-
     @Async
     public CompletableFuture<TaskResult<List<ResourceStatus>>> readAppStatus(String namespace,
                                                                              ClusterDTO cluster,
@@ -531,7 +530,6 @@ public class KubernetesController {
             component
         ).call();
     }
-
 
     @Async
     public CompletableFuture<TaskResult<Void>> getAppShell(String namespace,
@@ -601,7 +599,6 @@ public class KubernetesController {
         ).call();
     }
 
-
     @Async
     public CompletableFuture<TaskResult<String>> createRayJob(String namespace, ClusterDTO cluster, RayJobDTO rayJob, RayClusterShape rayClusterShape) {
         log.info("Creating ray job {}", rayJob.getName());
@@ -624,7 +621,6 @@ public class KubernetesController {
             rayJob
         ).call();
     }
-
 
     @Async
     public CompletableFuture<TaskResult<List<TaskRunStatus>>> readTaskRunStatuses(String namespace,
@@ -683,7 +679,6 @@ public class KubernetesController {
         log.info("Deleting database on cluster {}", cluster.getName());
         return new DeletePostgreSQLTask(getApi(cluster), this.taskConfig, namespace, database).call();
     }
-
 
     @Async
     public CompletableFuture<TaskResult<Void>> deleteService(String namespace, ClusterDTO cluster, String serviceName) {
