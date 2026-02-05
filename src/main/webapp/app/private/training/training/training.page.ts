@@ -173,7 +173,7 @@ export class TrainingPage implements OnInit {
       gateProj: new FormControl<boolean>(true),
       fromCheckpoint: new FormControl<boolean>(false),
       runInTheSky: new FormControl<boolean>(false),
-      skyToK8s: new FormControl<boolean>(false),
+      skyToK8s: new FormControl<boolean>(true),
       numNodes: new FormControl<number>(1, [Validators.required]),
       gpusPerWorker: new FormControl<number>(2, [Validators.required]),
       headGpus: new FormControl<number>(2, [Validators.required]),
@@ -561,7 +561,7 @@ export class TrainingPage implements OnInit {
   formToSkyConfig(formValues: any): ISkyConfig {
     return {
       resources: {
-        infra: 'runpod',
+        infra: 'k8s',
         accelerators: 'RTX5090:2',
       },
     };

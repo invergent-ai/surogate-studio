@@ -47,6 +47,7 @@ public class SkyUtil {
 
     public static TaskRunDTO rayJobToSkyTaskRun(RayJobDTO rayJob, ApplicationProperties applicationProperties) {
         return TaskRunDTO.builder()
+                .id(rayJob.getId())
                 .name(rayJob.getName())
                 .internalName(rayJob.getInternalName())
                 .project(rayJob.getProject())

@@ -136,15 +136,6 @@ public class TaskRunStatusService extends PollingEventStreamService {
         return resourceStatuses;
     }
 
-    private TaskResult<List<TaskRunStatus>> getTaskRunStatuses(Set<TaskRunDTO> taskRuns) throws ExecutionException, InterruptedException, TimeoutException {
-        var sampleTaskRun = taskRuns.iterator().next();
-        return this.kubernetesController.readTaskRunStatuses(
-            Objects.isNull(sampleTaskRun.getDeployedNamespace()) ? sampleTaskRun.getInternalName() : sampleTaskRun.getDeployedNamespace(),
-            sampleTaskRun.getProject().getCluster(),
-            taskRuns
-        ).get(COPY_FILE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-    }
-
     private CompletableFuture<Void> updateProgressForRunningTasks(Set<TaskRunDTO> taskRuns, List<TaskRunStatus> resourceStatuses) {
         var tasksToCollectLogsFrom = new HashSet<TaskRunDTO>();
         for (TaskRunStatus status : resourceStatuses) {
@@ -195,6 +186,15 @@ public class TaskRunStatusService extends PollingEventStreamService {
             return Optional.of(m.group(1).trim());
         }
         return Optional.empty();
+    }
+
+    public TaskResult<List<TaskRunStatus>> getTaskRunStatuses(Set<TaskRunDTO> taskRuns) throws ExecutionException, InterruptedException, TimeoutException {
+        var sampleTaskRun = taskRuns.iterator().next();
+        return this.kubernetesController.readTaskRunStatuses(
+            Objects.isNull(sampleTaskRun.getDeployedNamespace()) ? sampleTaskRun.getInternalName() : sampleTaskRun.getDeployedNamespace(),
+            sampleTaskRun.getProject().getCluster(),
+            taskRuns
+        ).get(COPY_FILE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
     }
 
     private void cleanupOnError(TaskRunDTO taskRunDTO) {

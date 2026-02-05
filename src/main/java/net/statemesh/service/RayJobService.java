@@ -306,8 +306,7 @@ public class RayJobService {
             .withNumNodes(rayJob.getRayClusterShapePojo().getNumNodes())
             .withWorkDir(".")
             .withFileMounts(Map.of(
-                RAY_WORK_DIR, RAY_WORK_DIR,
-                AIM_DIR, AIM_DIR
+                RAY_WORK_DIR, RAY_WORK_DIR
             ));
     }
 
