@@ -1,36 +1,17 @@
-import {Routes} from '@angular/router';
-import {UserRouteAccessService} from '../../shared/service/user-route-access.service';
-import {TrainingWizardPage} from './wizard/training-wizard.page';
-import {AlignmentPage} from './alignment/alignment.page';
-import {EmbeddingPage} from './embedding/embedding.page';
-import {EvaluationPage} from './evaluation/evaluation.page';
-import {QuantizationPage} from './quantization/quantization.page';
-import {RewardFunctionPage} from './reward-function/reward-function.page';
-import {JobsPage} from './jobs/jobs.page';
-import {TrainingPage} from "./training/training.page";
+import { Routes } from '@angular/router';
+import { UserRouteAccessService } from '../../shared/service/user-route-access.service';
+import { TrainingWizardPage } from './wizard/training-wizard.page';
+import { EvaluationPage } from './evaluation/evaluation.page';
+import { QuantizationPage } from './quantization/quantization.page';
+import { JobsPage } from './jobs/jobs.page';
+import { TrainingPage } from './training/training.page';
 
 const trainingRoute: Routes = [
   {
     path: 'wizard',
     component: TrainingWizardPage,
     data: {
-      breadcrumb: 'AI Factory Wizard'
-    },
-    canActivate: [UserRouteAccessService],
-  },
-  {
-    path: 'alignment',
-    component: AlignmentPage,
-    data: {
-      breadcrumb: 'Alignment'
-    },
-    canActivate: [UserRouteAccessService],
-  },
-  {
-    path: 'embedding',
-    component: EmbeddingPage,
-    data: {
-      breadcrumb: 'Embedding'
+      breadcrumb: 'AI Factory Wizard',
     },
     canActivate: [UserRouteAccessService],
   },
@@ -38,7 +19,7 @@ const trainingRoute: Routes = [
     path: 'evaluation',
     component: EvaluationPage,
     data: {
-      breadcrumb: 'Evaluation'
+      breadcrumb: 'Evaluation',
     },
     canActivate: [UserRouteAccessService],
   },
@@ -46,7 +27,7 @@ const trainingRoute: Routes = [
     path: 'evaluation/:id',
     component: EvaluationPage,
     data: {
-      breadcrumb: 'Evaluation'
+      breadcrumb: 'Evaluation',
     },
     canActivate: [UserRouteAccessService],
   },
@@ -63,15 +44,7 @@ const trainingRoute: Routes = [
     path: 'quantization',
     component: QuantizationPage,
     data: {
-      breadcrumb: 'Quantization'
-    },
-    canActivate: [UserRouteAccessService],
-  },
-  {
-    path: 'reward-function',
-    component: RewardFunctionPage,
-    data: {
-      breadcrumb: 'Reward Function'
+      breadcrumb: 'Quantization',
     },
     canActivate: [UserRouteAccessService],
   },
@@ -79,7 +52,7 @@ const trainingRoute: Routes = [
     path: 'jobs/:executor/:type',
     component: JobsPage,
     data: {
-      breadcrumb: 'Jobs'
+      breadcrumb: 'Jobs',
     },
     canActivate: [UserRouteAccessService],
   },

@@ -16,7 +16,6 @@ import net.statemesh.k8s.task.tekton.spec.ImportHfTaskRunSpec;
 import net.statemesh.k8s.task.tekton.spec.QuantizationTaskRunSpec;
 import net.statemesh.k8s.task.tekton.spec.SkyTaskRunSpec;
 import net.statemesh.k8s.util.ApiStub;
-import net.statemesh.repository.ApplicationRepository;
 import net.statemesh.service.dto.TaskRunDTO;
 
 import java.util.Objects;
@@ -27,18 +26,15 @@ import static net.statemesh.k8s.util.K8SConstants.*;
 public class CreateTaskRunTask extends BaseMutationTask<String> {
     private final TaskRunDTO taskRun;
     private final ApplicationProperties applicationProperties;
-    private final ApplicationRepository applicationRepository;
 
     public CreateTaskRunTask(ApiStub apiStub,
                              TaskConfig taskConfig,
                              String namespace,
                              TaskRunDTO taskRun,
-                             ApplicationProperties applicationProperties,
-                             ApplicationRepository applicationRepository) {
+                             ApplicationProperties applicationProperties) {
         super(apiStub, taskConfig, namespace);
         this.taskRun = taskRun;
         this.applicationProperties = applicationProperties;
-        this.applicationRepository = applicationRepository;
     }
 
     @Override
@@ -67,7 +63,7 @@ public class CreateTaskRunTask extends BaseMutationTask<String> {
 
     private V1TaskRunSpec taskRunSpec() {
         return switch (taskRun.getType()) {
-            case EVALUATION -> new EvaluationTaskRunSpec(applicationRepository).create(taskRun, applicationProperties);
+            case EVALUATION -> new EvaluationTaskRunSpec().create(taskRun, applicationProperties);
             case IMPORT_HF_MODEL, IMPORT_HF_DATASET -> new ImportHfTaskRunSpec().create(taskRun, applicationProperties);
             case QUANTIZATION -> new QuantizationTaskRunSpec().create(taskRun, applicationProperties);
             case TRAIN, FINE_TUNE -> new SkyTaskRunSpec().create(taskRun, applicationProperties);
