@@ -64,8 +64,6 @@ public class TestChatService {
 
     private final RayJobService rayJobService;
     private final SimpMessagingTemplate messagingTemplate;
-    private final RestTemplate restTemplate;
-
     @Resource(name = "vllmRestTemplate")
     private RestTemplate vllmRestTemplate;
 
@@ -188,7 +186,7 @@ public class TestChatService {
         try {
             HttpEntity<?> entity =
                 new HttpEntity<>(message != null ? objectMapper.writeValueAsString(message) : null, headers);
-            return restTemplate.exchange(
+            return vllmRestTemplate.exchange(
                 url,
                 HttpMethod.POST,
                 entity,
@@ -206,7 +204,7 @@ public class TestChatService {
         try {
             byte[] json = objectMapper.writeValueAsBytes(message);
             headers.setContentLength(json.length);
-            restTemplate.execute(
+            vllmRestTemplate.execute(
                 url,
                 HttpMethod.POST,
                 (ClientHttpRequest req) -> {
