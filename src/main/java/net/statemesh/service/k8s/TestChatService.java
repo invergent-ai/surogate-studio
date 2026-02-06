@@ -14,9 +14,11 @@ import net.statemesh.domain.Application;
 import net.statemesh.repository.ApplicationRepository;
 import net.statemesh.service.RayJobService;
 import net.statemesh.service.dto.*;
-import net.statemesh.service.dto.vllm.*;
+import net.statemesh.service.dto.vllm.MessageInfoDTO;
+import net.statemesh.service.dto.vllm.UsageDTO;
+import net.statemesh.service.dto.vllm.VllmChatRequestDTO;
+import net.statemesh.service.dto.vllm.VllmChatResponseDTO;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.*;
 import org.springframework.http.client.ClientHttpRequest;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -298,6 +300,7 @@ public class TestChatService {
             StringUtils.join(
                 "http://",
                 serviceName(rayJob.getInternalName(), VLLM_CONTROLLER_PORT.toString()),
+                StringUtils.isEmpty(rayJob.getDeployedNamespace()) ? "" : ("." + rayJob.getDeployedNamespace()),
                 ":",
                 VLLM_CONTROLLER_PORT.toString()
             ) :
@@ -334,7 +337,7 @@ public class TestChatService {
 
         return Optional.ofNullable(applicationProperties.getK8sAccessMode()).orElse(Boolean.FALSE) ?
             StringUtils.join(
-                "http://",request.getInternalEndpoint()
+                "http://", request.getInternalEndpoint()
             ) :
             StringUtils.join("https://", app.getIngressHostName());
     }

@@ -80,7 +80,6 @@ export class ChatVllmComponent implements OnDestroy, OnInit {
   systemPrompt = 'You are a helpful assistant.';
   advancedParams: AdvancedParam[] = [];
 
-  private streamSub: Subscription | undefined;
   private scrollTimeout: any;
 
   applicationId = input.required<string>();

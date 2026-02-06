@@ -1,12 +1,12 @@
-import {Injectable} from '@angular/core';
-import {HttpClient, HttpHeaders} from '@angular/common/http';
-import {Observable} from 'rxjs';
-import {TrackerService} from "./tracker.service";
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { TrackerService } from './tracker.service';
 
 export interface AttachedFile {
   name: string;
   size: number;
-  type: 'image' | 'audio' | 'video'| 'document';
+  type: 'image' | 'audio' | 'video' | 'document';
   base64: string;
   preview?: string;
   mimeType: string;
@@ -27,18 +27,6 @@ export interface AdvancedParam {
   value: string | number | boolean | string[] | null;
   isCustom: boolean;
   options?: string[];
-}
-
-export interface MessageInfo {
-  finishReason?: string;
-  model?: string;
-  timestamp?: Date;
-  usage?: {
-    inputTokens?: number;
-    outputTokens?: number;
-    totalTokens?: number;
-  };
-  provider?: string;
 }
 
 @Injectable({
@@ -231,24 +219,5 @@ export class ChatVllmService {
       options[p.key] = p.value;
     }
     return options;
-  }
-
-  private enhanceError(error: any): Error {
-    let message = 'An error occurred while processing your request.';
-    const status = error.status || error.statusCode;
-    if (status === 401) message = 'Invalid API key. Please check your configuration.';
-    else if (status === 429) message = 'Rate limit exceeded. Please wait a moment and try again.';
-    else if (status === 404) message = 'Model not found. Please check the model name.';
-    else if (status === 500) message = 'Server error. Please try again later.';
-    else if (status >= 400 && status < 500) message = `Client error (${status}). Please check your request.`;
-    else if (status >= 500) message = `Server error (${status}). Please try again later.`;
-    else if (error.message?.toLowerCase().includes('network') || error.message?.toLowerCase().includes('fetch')) {
-      message = 'Network error. Please check your connection and try again.';
-    } else if (error.message) message = error.message;
-
-    const enhancedError = new Error(message);
-    (enhancedError as any).originalError = error;
-    (enhancedError as any).status = status;
-    return enhancedError;
   }
 }
