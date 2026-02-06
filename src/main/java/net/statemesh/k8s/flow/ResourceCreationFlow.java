@@ -10,7 +10,6 @@ import net.statemesh.service.ResourceService;
 import net.statemesh.service.dto.ClusterDTO;
 import net.statemesh.service.dto.ResourceDTO;
 import net.statemesh.service.dto.VolumeDTO;
-import net.statemesh.service.util.ProfileUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
@@ -59,24 +58,13 @@ public abstract class ResourceCreationFlow<T extends ResourceDTO> extends Resour
         final Set<Step> succeeded = Collections.synchronizedSet(EnumSet.noneOf(Step.class));
         AtomicBoolean cancelRetries = new AtomicBoolean(false);
 
-        // Namespace first (validated)
+        // Namespace first
         var namespaceFuture = retryAsync(() -> ensureNamespace(resource, cluster),
             MAX_ATTEMPTS, RETRY_DELAY, taskScheduler, t -> unwrap(t) instanceof NamespaceCreationException, cancelRetries::get)
             .thenApply(r -> {
                 if (r == null || r.isFailed())
                     throw new NamespaceCreationException("Namespace unsuccessful (null or failed TaskResult)", null);
                 succeeded.add(Step.NAMESPACE);
-                return r;
-            });
-
-        // Network policy after namespace (validated)
-        var networkPolicyFuture = namespaceFuture.thenCompose(v ->
-                retryAsync(() -> createNetworkPolicy(resource, cluster), MAX_ATTEMPTS, RETRY_DELAY, taskScheduler,
-                    t -> unwrap(t) instanceof NetworkPolicyCreationException, cancelRetries::get))
-            .thenApply(r -> {
-                if (r == null || r.isFailed())
-                    throw new NetworkPolicyCreationException("Network policy unsuccessful (null or failed TaskResult)", null);
-                succeeded.add(Step.NETWORK_POLICY);
                 return r;
             });
 
@@ -96,7 +84,7 @@ public abstract class ResourceCreationFlow<T extends ResourceDTO> extends Resour
                     t -> unwrap(t) instanceof VolumeCreationException, cancelRetries::get))
             .thenRun(() -> succeeded.add(Step.VOLUMES));
 
-        var deploymentPrereqs = CompletableFuture.allOf(volumesFuture, dockerSecretsFuture, storageClassesFuture, networkPolicyFuture);
+        var deploymentPrereqs = CompletableFuture.allOf(volumesFuture, dockerSecretsFuture, storageClassesFuture);
 
         var deploymentFuture = deploymentPrereqs.thenCompose(v ->
                 retryAsync(() -> createDeployment(resource, cluster), MAX_ATTEMPTS, RETRY_DELAY, taskScheduler,
@@ -127,12 +115,12 @@ public abstract class ResourceCreationFlow<T extends ResourceDTO> extends Resour
 
         // Track all component futures for potential cancellation on failure/timeout
         List<CompletableFuture<?>> componentFutures = List.of(
-            networkPolicyFuture, dockerSecretsFuture, storageClassesFuture, volumesFuture,
+            dockerSecretsFuture, storageClassesFuture, volumesFuture,
             servicesFuture, ingressFuture, deploymentFuture
         );
 
         CompletableFuture<Void> allResources = CompletableFuture.allOf(
-            networkPolicyFuture, dockerSecretsFuture, storageClassesFuture, volumesFuture,
+            dockerSecretsFuture, storageClassesFuture, volumesFuture,
             servicesFuture, ingressFuture, deploymentFuture
         ).orTimeout(CREATE_FLOW_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
@@ -174,18 +162,6 @@ public abstract class ResourceCreationFlow<T extends ResourceDTO> extends Resour
                 log.error("Error creating namespace for resource with message: {}", e.getMessage());
                 throw new NamespaceCreationException("Namespace could not be ensured in time. Flow interrupted", e);
             });
-    }
-
-    public CompletableFuture<TaskResult<Void>> createNetworkPolicy(T resource, ClusterDTO cluster) {
-        if (ProfileUtil.isCloud(kubernetesController.getEnvironment())) {
-            return kubernetesController.createNetworkPolicy(getNamespace(resource), cluster)
-                .orTimeout(CREATE_POLICY_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                .exceptionally(e -> {
-                    log.error("Error creating network policy: {}", e.getMessage());
-                    throw new NetworkPolicyCreationException("Network policy could not be ensured in time. Flow interrupted", e);
-                });
-        }
-        return CompletableFuture.completedFuture(TaskResult.success());
     }
 
     CompletableFuture<Void> createDockerSecrets(T resource, ClusterDTO cluster) {
