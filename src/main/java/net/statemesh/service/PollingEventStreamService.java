@@ -78,11 +78,14 @@ public abstract class PollingEventStreamService extends ResourceContext {
                     } else {
                         // No emitters registered, stop polling
                         log.debug("No SSE emitters registered for key {}, stopping poll", key);
-                        handle.cancelled = true;
-                        handle.future.cancel(true);
-                        statuses.remove(key);
+                        // This is causing a race-condition on slower envs
+//                        handle.cancelled = true;
+//                        handle.future.cancel(true);
+//                        statuses.remove(key);
                         return;
                     }
+                } else {
+                    log.debug("Waiting first poll step for emitter to be registered");
                 }
 
                 if (!handle.inProgress.compareAndSet(false, true)) {
@@ -153,6 +156,7 @@ public abstract class PollingEventStreamService extends ResourceContext {
     public SseEmitter registerStatusEmitter(String... emId) {
         SseEmitter emitter = new SseEmitter(0L);
         emitters.computeIfAbsent(key(emId), k -> new CopyOnWriteArrayList<>()).add(emitter);
+        log.debug("Registered emitter for key: {}", key(emId));
         emitter.onTimeout(() -> {
             emitter.complete();
             removeEmitter(emitter, emId);
