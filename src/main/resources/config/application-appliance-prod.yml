@@ -121,7 +121,7 @@ app:
         cid: densemax
         url: http://localhost:8265 # Deprecated
         aimUrl: http://localhost:31002
-        aimUrlInternal: http://aim-service.default.svc.sm.local:43800
+        aimUrlInternal: http://aim-service.default.svc.sm.local
   lake-fs:
     key: AKIAJ3ASUQUROUFTNOUQ # created once lakefs is installed
     secret: 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 # created once lakefs is installed
