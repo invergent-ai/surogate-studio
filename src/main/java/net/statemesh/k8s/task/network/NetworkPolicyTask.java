@@ -44,11 +44,11 @@ public class NetworkPolicyTask extends BaseMutationTask<Void> {
                                         )
                                 )
                                 .policyTypes(List.of("Egress"))
-//                                    .policyTypes(List.of("Ingress", "Egress"))
-//                                    .ingress(Collections.singletonList(
-//                                        new V1NetworkPolicyIngressRule()
-//                                            .from(namespacePolicies())
-//                                    ))
+                                    .policyTypes(List.of("Ingress", "Egress"))
+                                    .ingress(Collections.singletonList(
+                                        new V1NetworkPolicyIngressRule()
+                                            .from(namespacePolicies())
+                                    ))
                                 .egress(Collections.singletonList(
                                     new V1NetworkPolicyEgressRule()
                                         .to(namespacePolicies())

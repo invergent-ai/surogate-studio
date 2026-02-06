@@ -232,7 +232,6 @@
         </p-tabPanel>
         <p-tabPanel header="Chat" [disabled]="statusTabDisabled('Worker')">
           <ng-template pTemplate="content">
-<!--            <sm-chat-vllm [acceptedFileTypes]="['image']" [supportsFiles]="true" [applicationId]="application.id" [internalEndpoint]="internalRouterEndpoint()"></sm-chat-vllm>-->
             <sm-chat-vllm
               [applicationId]="application.id"
               [internalEndpoint]="internalRouterEndpoint()"

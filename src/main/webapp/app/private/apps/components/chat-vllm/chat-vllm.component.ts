@@ -467,12 +467,6 @@ export class ChatVllmComponent implements OnDestroy, OnInit {
     return '🎵'; // Or use different icons based on format
   }
 
-  /*private getFileType(file: File): 'image' | 'audio' | 'video' {
-    if (file.type.startsWith('image/')) return 'image';
-    if (file.type.startsWith('audio/')) return 'audio';
-    if (file.type.startsWith('video/')) return 'video';
-    return 'image'; // fallback
-  }*/
   private getFileType(file: File): 'image' | 'audio' | 'video' | 'document' {
     const mimeType = file.type;
 
@@ -570,8 +564,8 @@ export class ChatVllmComponent implements OnDestroy, OnInit {
 
     this.scrollToBottom();
 
-    const baseUrl = this.baseUrl() || 'http://172.17.30.157:8000/v1';
-    const model = this.modelName() || 'Qwen/Qwen2-VL-7B-Instruct-AWQ';
+    const baseUrl = this.baseUrl();
+    const model = this.modelName();
     const thinking = this.getEnableThinking();
 
     this.chatService.sendChatMessage(

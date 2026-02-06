@@ -285,7 +285,7 @@ public class TestChatService {
 
             return Optional.ofNullable(trainingConfig.getLora()).orElse(Boolean.FALSE) && !mergeLora;
         } catch (JsonProcessingException e) {
-            e.printStackTrace();
+            log.error("Failed to read training config", e);
             return Boolean.TRUE;
         }
     }
