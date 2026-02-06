@@ -114,6 +114,15 @@ app:
     terminating-pods-delete-finalizers: true
   token:
     ttl: 300 # Seconds (Needs time to save wallet mnemonic)
+  profile:
+    datacenters:
+      - default
+    rayClusters:
+      - name: raycluster-kuberay
+        cid: densemax
+        url: http://localhost:8265 # Deprecated
+        aimUrl: http://localhost:31002
+        aimUrlInternal: http://aim-service.default.svc.sm.local:43800
   lake-fs:
     key: AKIAJ3ASUQUROUFTNOUQ # created once lakefs is installed
     secret: 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 # created once lakefs is installed

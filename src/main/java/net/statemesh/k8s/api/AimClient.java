@@ -13,6 +13,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -42,10 +43,14 @@ public class AimClient {
 
     private final RestTemplate restTemplate;
     private final ApplicationProperties.RayCluster config;
+    private final Boolean k8sAccessMode;
 
-    public AimClient(RestTemplate restTemplate, ApplicationProperties.RayCluster config) {
+    public AimClient(RestTemplate restTemplate,
+                     ApplicationProperties.RayCluster config,
+                     Boolean k8sAccessMode) {
         this.restTemplate = restTemplate;
         this.config = config;
+        this.k8sAccessMode = k8sAccessMode;
     }
 
     public String name() {
@@ -92,7 +97,7 @@ public class AimClient {
 
         ResponseEntity<List<AimMetric>> response = restTemplate.exchange(
             StringUtils.join(
-                config.getAimUrl(),
+                endpoint(),
                 BATCH_METRICS_ENDPOINT,
                 runId,
                 BATCH_METRICS_PATH
@@ -116,7 +121,7 @@ public class AimClient {
 
         ResponseEntity<AimExperiment> response = restTemplate.exchange(
             StringUtils.join(
-                config.getAimUrl(),
+                endpoint(),
                 EXPERIMENTS_ENDPOINT,
                 experimentId,
                 EXPERIMENTS_RUNS_PATH
@@ -140,7 +145,7 @@ public class AimClient {
 
         ResponseEntity<List<AimExperiment>> response = restTemplate.exchange(
             StringUtils.join(
-                config.getAimUrl(),
+                endpoint(),
                 EXPERIMENTS_ENDPOINT
             ),
             HttpMethod.GET,
@@ -153,5 +158,10 @@ public class AimClient {
         }
 
         return response.getBody();
+    }
+
+    private String endpoint() {
+        return Optional.ofNullable(k8sAccessMode).orElse(Boolean.FALSE) ?
+            config.getAimUrlInternal() : config.getAimUrl();
     }
 }

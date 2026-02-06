@@ -133,6 +133,8 @@ app:
         cid: densemax
         url: http://localhost:8265
         aimUrl: http://localhost:31002
+  security:
+    api-key-secret: ${API_KEY_SECRET:TKrW8XGXMntNtUT1XQL0rFQ5Gob2/wj7jgMNuPyNQDY=}
   mail:
     from: noreply@densemax.local
 

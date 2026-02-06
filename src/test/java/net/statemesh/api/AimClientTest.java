@@ -32,7 +32,8 @@ public class AimClientTest {
             restTemplate,
             applicationProperties.getProfile().getRayClusters()
                 .stream().findAny()
-                .orElseThrow(() -> new RuntimeException("No Aim api configured"))
+                .orElseThrow(() -> new RuntimeException("No Aim api configured")),
+            Boolean.FALSE
         );
 
         log.info("Experiment Metric {}",
@@ -50,7 +51,8 @@ public class AimClientTest {
             restTemplate,
             applicationProperties.getProfile().getRayClusters()
                 .stream().findAny()
-                .orElseThrow(() -> new RuntimeException("No Aim api configured"))
+                .orElseThrow(() -> new RuntimeException("No Aim api configured")),
+            Boolean.FALSE
         );
 
         final String experimentId = aimClient.getExperiments().stream()

@@ -831,7 +831,7 @@ public class KubernetesController {
         }
         return applicationProperties.getProfile().getRayClusters().stream()
             .filter(ray -> cluster.getCid().equals(ray.getCid()))
-            .map(ray -> new AimClient(restTemplate, ray))
+            .map(ray -> new AimClient(restTemplate, ray, applicationProperties.getK8sAccessMode()))
             .collect(Collectors.toMap(AimClient::name, client -> client));
     }
 

@@ -101,6 +101,7 @@ public class ApplicationProperties {
         private String cid;
         private String url;
         private String aimUrl;
+        private String aimUrlInternal;
     }
 
     @Getter
