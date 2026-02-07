@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 
 import static net.statemesh.config.Constants.USE_AXOLOTL_TRAINING_LIBRARY;
 import static net.statemesh.config.K8Timeouts.DELETE_NODE_TIMEOUT_SECONDS;
+import static net.statemesh.k8s.util.ApiUtils.executeInsidePod;
 import static net.statemesh.k8s.util.K8SConstants.*;
 import static net.statemesh.k8s.util.NamingUtils.*;
 import static net.statemesh.service.util.MixinUtil.*;
@@ -140,12 +141,14 @@ public class RayJobService {
     }
 
     private void deleteFromTheSky(RayJobDTO rayJob) {
+        stopSkyCluster(rayJob);
         deleteTaskRunFlow.execute(
             rayJobToSkyTaskRun(rayJob, kubernetesController.getApplicationProperties())
         );
     }
 
     private void cancelFromTheSky(RayJobDTO rayJob) throws ExecutionException, InterruptedException, TimeoutException {
+        stopSkyCluster(rayJob);
         kubernetesController.cancelTaskRun(
             Objects.isNull(rayJob.getDeployedNamespace()) ?
                 rayJob.getProject().getNamespace() :
@@ -153,6 +156,16 @@ public class RayJobService {
             rayJob.getProject().getCluster(),
             rayJobToSkyTaskRun(rayJob, kubernetesController.getApplicationProperties())
         ).get(DELETE_NODE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+    }
+
+    private void stopSkyCluster(RayJobDTO rayJob) {
+        executeInsidePod(
+            kubernetesController.getApi(rayJob.getProject().getCluster()),
+            rayJob.getDeployedNamespace(),
+            rayJob.getInternalName() + "-pod",
+            "step-" + TEKTON_JOB_NAME,
+            new String[]{"down-sky"}
+        );
     }
 
     public void loadInternalsAndDumpTrainingConfig(RayJobDTO rayJobDTO) {

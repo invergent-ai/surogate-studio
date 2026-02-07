@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonElement;
 import io.kubernetes.client.custom.V1Patch;
+import io.kubernetes.client.extended.kubectl.exception.KubectlException;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.ApiResponse;
 import io.kubernetes.client.openapi.apis.AppsV1Api;
@@ -26,6 +27,7 @@ import redis.clients.jedis.Jedis;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static io.kubernetes.client.extended.kubectl.Kubectl.exec;
 import static net.statemesh.config.Constants.DOCKER_HUB_REGISTRY_NAME;
 import static net.statemesh.k8s.util.K8SConstants.*;
 import static net.statemesh.k8s.util.NamingUtils.folderName;
@@ -385,6 +387,20 @@ public class ApiUtils {
             .sorted(Comparator.comparing(V1ObjectMeta::getCreationTimestamp).reversed())
             .map(V1ObjectMeta::getName)
             .toList();
+    }
+
+    public static void executeInsidePod(ApiStub apiStub, String namespace, String podName, String container, String[] command) {
+        try {
+            exec()
+                .apiClient(apiStub.getApiClient())
+                .namespace(namespace)
+                .name(podName)
+                .container(container)
+                .command(command)
+                .execute();
+        } catch (KubectlException e) {
+            log.warn("Could not execute command inside pod {} in namespace {} with message {}", podName, namespace, e.getMessage());
+        }
     }
 
     private static void forceDeletePod(ApiStub apiStub, String namespace, String podName, boolean deleteFinalizers) {
