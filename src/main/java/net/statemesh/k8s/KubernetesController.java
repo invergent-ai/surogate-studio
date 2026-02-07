@@ -7,6 +7,7 @@ import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.models.V1Node;
 import io.kubernetes.client.openapi.models.V1NodeList;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
+import io.kubernetes.client.openapi.models.V1ServiceList;
 import io.kubernetes.client.util.CallGeneratorParams;
 import io.kubernetes.client.util.Config;
 import lombok.Getter;
@@ -748,6 +749,10 @@ public class KubernetesController {
 
     public V1NodeList listNodes(CoreV1Api coreV1Api) throws ApiException {
         return coreV1Api.listNode().execute();
+    }
+
+    public V1ServiceList listServices(ClusterDTO cluster, String namespace) throws ApiException {
+        return getApi(cluster).getCoreV1Api().listNamespacedService(namespace).execute();
     }
 
     public V1Node getNodeStatus(NodeDTO node) throws ApiException {

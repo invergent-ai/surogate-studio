@@ -1,5 +1,6 @@
 package net.statemesh.k8s.flow;
 
+import io.kubernetes.client.openapi.ApiException;
 import lombok.extern.slf4j.Slf4j;
 import net.statemesh.k8s.KubernetesController;
 import net.statemesh.k8s.exception.K8SException;
@@ -18,6 +19,8 @@ import java.util.concurrent.TimeoutException;
 
 import static net.statemesh.config.K8Timeouts.DELETE_FLOW_TIMEOUT_SECONDS;
 import static net.statemesh.k8s.flow.CreateRayJobFlow.VLLM_CONTROLLER_PORT;
+import static net.statemesh.k8s.util.K8SConstants.DEFAULT_NAMESPACE;
+import static net.statemesh.k8s.util.K8SConstants.SKY_MANAGED_SERVICE_LABEL;
 import static net.statemesh.k8s.util.NamingUtils.pvcName;
 import static net.statemesh.k8s.util.NamingUtils.serviceName;
 
@@ -66,6 +69,7 @@ public class DeleteTaskRunFlow extends ResourceDeletionFlow<TaskRunDTO> {
             return CompletableFuture.completedFuture(null);
         }
 
+        cleanupSkyManagedServices(resource);
         return this.kubernetesController.deleteService(
             getNamespace(resource),
             setCluster(resource, kubernetesController, clusterService),
@@ -84,6 +88,34 @@ public class DeleteTaskRunFlow extends ResourceDeletionFlow<TaskRunDTO> {
             resource,
             VLLM_CONTROLLER_PORT.toString()
         );
+    }
+
+    private void cleanupSkyManagedServices(TaskRunDTO resource) {
+        if (!Optional.ofNullable(resource.getSkyToK8s()).orElse(Boolean.FALSE)) {
+            return;
+        }
+
+        try {
+            kubernetesController.listServices(
+                    setCluster(resource, kubernetesController, clusterService),
+                    DEFAULT_NAMESPACE
+                ).getItems().stream()
+                .filter(service -> service.getMetadata() != null)
+                .filter(service -> service.getMetadata().getLabels() != null)
+                .filter(service -> service.getMetadata().getLabels().containsKey(SKY_MANAGED_SERVICE_LABEL))
+                .filter(service -> service.getMetadata().getLabels().get(SKY_MANAGED_SERVICE_LABEL) != null)
+                .filter(service ->
+                    service.getMetadata().getLabels().get(SKY_MANAGED_SERVICE_LABEL).startsWith(resource.getInternalName()))
+                .forEach(service ->
+                    kubernetesController.deleteService(
+                        DEFAULT_NAMESPACE,
+                        setCluster(resource, kubernetesController, clusterService),
+                        service.getMetadata().getName()
+                    )
+                );
+        } catch (ApiException e) {
+            log.error("Could not cleanup sky managed services", e);
+        }
     }
 
     @Override

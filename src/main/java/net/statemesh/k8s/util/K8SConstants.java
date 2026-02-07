@@ -230,6 +230,7 @@ public class K8SConstants {
     public static final String NFS_AIM_PATH = "/data/aim";
 
     public static final String SKY_TASK_TIMEOUT = "720h";
+    public static final String SKY_MANAGED_SERVICE_LABEL = "skypilot-cluster";
 
     public static final String NAD_SELECTOR_ANNOTATION = "k8s.v1.cni.cncf.io/networks";
     public static final String SRIOV_NAD_NAME = "default/sriov-rdma-network";
