@@ -16,6 +16,7 @@ public class ApplicationProperties {
     private Long nodeReservationDuration;
     private Boolean checkNodeResourceUpdates;
     private String skypilotServerUrl;
+    private Boolean disableLocalInfraTraining;
     private final RateLimiter rateLimiter = new RateLimiter();
     private final Metrics metrics = new Metrics();
     private final Pipeline pipeline = new Pipeline();

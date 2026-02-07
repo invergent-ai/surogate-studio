@@ -32,14 +32,10 @@ spring:
     serialization:
       indent-output: true
   datasource:
-#    type: com.zaxxer.hikari.HikariDataSource
-#    url: jdbc:postgresql://localhost:5432/sment
-#    username: sment
-#    password: sment
-    driver-class-name: org.h2.Driver
-    url: jdbc:h2:file:./data/sment:sment;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1
-    username: sa
-    password:
+    type: com.zaxxer.hikari.HikariDataSource
+    url: jdbc:postgresql://localhost:5432/sment
+    username: sment
+    password: sment
     hikari:
       poolName: Hikari
       auto-commit: false
@@ -109,6 +105,7 @@ app:
   node-reservation-duration: 60 # Minutes
   check-node-resource-updates: true
   skypilot-server-url: http://skypilot:skypilot@skypilot-api-service.skypilot.svc
+  disable-local-infra-training: false
   job:
     delete-terminating-schedule: 0 0/1 * * * ? # Every 1 minute
     update-node-status-schedule: 0/30 * * * * ? # Every minute

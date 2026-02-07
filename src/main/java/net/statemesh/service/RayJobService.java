@@ -6,6 +6,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.statemesh.config.ApplicationProperties;
 import net.statemesh.domain.RayJob;
 import net.statemesh.domain.enumeration.ProcessEvent;
 import net.statemesh.domain.enumeration.RayJobProvisioningStatus;
@@ -66,6 +67,7 @@ public class RayJobService {
             .disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER)
             .build()
     );
+    private final ApplicationProperties applicationProperties;
 
     public RayJobDTO save(RayJobDTO rayJobDTO, String login) {
         log.debug("Request to save RayJob : {}", rayJobDTO);
@@ -86,6 +88,12 @@ public class RayJobService {
 
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public RayJobDTO deploy(RayJobDTO rayJobDTO, String login) {
+        if (Optional.ofNullable(applicationProperties.getDisableLocalInfraTraining()).orElse(Boolean.FALSE) &&
+            (!Optional.ofNullable(rayJobDTO.getRunInTheSky()).orElse(Boolean.FALSE) ||
+            Optional.ofNullable(rayJobDTO.getSkyToK8s()).orElse(Boolean.FALSE))) {
+            throw new RuntimeException("Training on local infrastructure is disabled");
+        }
+
         try {
             rayJobDTO.setProvisioningStatus(RayJobProvisioningStatus.DEPLOYING);
             updateProvisioningStatus(rayJobDTO.getId(), RayJobProvisioningStatus.DEPLOYING);

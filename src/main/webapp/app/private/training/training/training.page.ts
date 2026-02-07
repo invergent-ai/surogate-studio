@@ -173,7 +173,7 @@ export class TrainingPage implements OnInit {
       gateProj: new FormControl<boolean>(true),
       fromCheckpoint: new FormControl<boolean>(false),
       runInTheSky: new FormControl<boolean>(false),
-      skyToK8s: new FormControl<boolean>(true),
+      skyToK8s: new FormControl<boolean>(false),
       numNodes: new FormControl<number>(1, [Validators.required]),
       gpusPerWorker: new FormControl<number>(2, [Validators.required]),
       headGpus: new FormControl<number>(2, [Validators.required]),
@@ -610,6 +610,7 @@ export class TrainingPage implements OnInit {
           await lastValueFrom(launch && this.mustRelaunch() ? this.rayJobService.redeploy(saved) : this.rayJobService.deploy(saved));
           displaySuccess(this.store, 'Job launched successfully');
         } catch (err) {
+          displayError(this.store, err);
           console.log(err);
         }
       } else {
