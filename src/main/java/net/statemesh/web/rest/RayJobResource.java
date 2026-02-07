@@ -45,6 +45,7 @@ public class RayJobResource {
         rayJobService.initNames(rayJobDTO);
         rayJobService.loadInternalsAndDumpTrainingConfig(rayJobDTO);
         RayJobDTO result = rayJobService.save(rayJobDTO, principal.getName());
+        rayJobService.restoreTransient(rayJobDTO, result);
         return ResponseEntity
             .created(new URI("/api/jobs/" + result.getId()))
             .headers(HeaderUtil.createEntityCreationAlert(applicationName, true, ENTITY_NAME, result.getId()))

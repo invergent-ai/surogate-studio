@@ -53,7 +53,9 @@ public class SkyUtil {
                 .project(rayJob.getProject())
                 .deployedNamespace(rayJob.getDeployedNamespace())
                 .workDirVolumeName(rayJob.getWorkDirVolumeName())
+                .runInTheSky(rayJob.getRunInTheSky())
                 .skyToK8s(rayJob.getSkyToK8s())
+                .rayClusterShape(rayJob.getRayClusterShapePojo())
                 .type(Optional.of(rayJob.getType()).map(type ->
                     switch (type) {
                         case TRAIN -> TaskRunType.TRAIN;

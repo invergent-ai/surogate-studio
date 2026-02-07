@@ -74,6 +74,7 @@ public class K8SConstants {
     public static final String SERVICE_SELECTOR_LABEL_RAY_HEAD_SELECT = "head-select";
     public static final String SERVICE_SELECTOR_LABEL_RAY_CLUSTER_TYPE = "ray.io/node-type";
     public static final String SERVICE_SELECTOR_LABEL_KUBEVIRT_DOMAIN = "kubevirt.io/domain";
+    public static final String SERVICE_SELECTOR_TASK_RUN = "tekton.dev/taskRun";
 
     public static final String DEFAULT_GROUP = "";
     public static final String PODS_PLURAL = "pods";

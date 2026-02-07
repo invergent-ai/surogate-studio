@@ -425,6 +425,12 @@ public class RayJobService {
         notificationService.notifyUser(rayJobDTO, login, ProcessEvent.DELETED, null, false);
     }
 
+    public void restoreTransient(RayJobDTO source, RayJobDTO dest) {
+        dest.setRayClusterShapePojo(source.getRayClusterShapePojo());
+        dest.setSkyConfigPojo(source.getSkyConfigPojo());
+        dest.setTrainingConfigPojo(source.getTrainingConfigPojo());
+    }
+
     public void notifyUser(@Nullable RayJobDTO rayJobDTO, String login, MessageDTO.MessageType type) {
         log.debug("Notifying user {} of ray job {} update type {}", login,
             Objects.requireNonNull(rayJobDTO).getName(), type);

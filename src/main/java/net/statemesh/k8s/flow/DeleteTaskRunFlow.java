@@ -10,13 +10,16 @@ import net.statemesh.service.dto.TaskRunDTO;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static net.statemesh.config.K8Timeouts.DELETE_FLOW_TIMEOUT_SECONDS;
+import static net.statemesh.k8s.flow.CreateRayJobFlow.VLLM_CONTROLLER_PORT;
 import static net.statemesh.k8s.util.NamingUtils.pvcName;
+import static net.statemesh.k8s.util.NamingUtils.serviceName;
 
 @Component
 @Slf4j
@@ -35,7 +38,9 @@ public class DeleteTaskRunFlow extends ResourceDeletionFlow<TaskRunDTO> {
                 setCluster(resource, kubernetesController, clusterService),
                 resource)
             .thenCompose(result -> CompletableFuture.allOf(
-                deleteWorkDirPVC(resource)
+                deleteWorkDirPVC(resource),
+                deleteService(resource),
+                deleteIngress(resource)
             ))
             .get(DELETE_FLOW_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException ex) {
@@ -48,10 +53,36 @@ public class DeleteTaskRunFlow extends ResourceDeletionFlow<TaskRunDTO> {
         if (StringUtils.isEmpty(resource.getWorkDirVolumeName())) {
             return CompletableFuture.completedFuture(null);
         }
+
         return this.kubernetesController.deleteVolumeClaim(
             getNamespace(resource),
             setCluster(resource, kubernetesController, clusterService),
             pvcName(resource.getWorkDirVolumeName())
+        );
+    }
+
+    protected CompletableFuture<TaskResult<Void>> deleteService(TaskRunDTO resource) {
+        if (!Optional.ofNullable(resource.getRunInTheSky()).orElse(Boolean.FALSE)) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        return this.kubernetesController.deleteService(
+            getNamespace(resource),
+            setCluster(resource, kubernetesController, clusterService),
+            serviceName(resource.getInternalName(), VLLM_CONTROLLER_PORT.toString())
+        );
+    }
+
+    protected CompletableFuture<TaskResult<Void>> deleteIngress(TaskRunDTO resource) {
+        if (!Optional.ofNullable(resource.getRunInTheSky()).orElse(Boolean.FALSE)) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        return this.kubernetesController.deleteIngress(
+            getNamespace(resource),
+            setCluster(resource, kubernetesController, clusterService),
+            resource,
+            VLLM_CONTROLLER_PORT.toString()
         );
     }
 

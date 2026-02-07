@@ -60,6 +60,7 @@ public class RayJobDTO implements ResourceDTO, Serializable {
     @NotNull
     private ProjectDTO project;
 
+    // Transient
     private TrainingConfigDTO trainingConfigPojo;
     private RayClusterShape rayClusterShapePojo;
     private SkyConfigDTO skyConfigPojo;

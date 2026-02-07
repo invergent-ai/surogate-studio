@@ -36,7 +36,21 @@ public class SkyTaskRunSpec extends V1TaskRunSpec implements TaskRunSpec {
                 .volumes(volumes(taskRun))
             )
             .computeResources(new V1PipelineRunSpecTaskRunSpecsInnerComputeResources()
-                .limits(Map.of("cpu", "4", "memory", "16Gi")));
+                .requests(
+                    Map.of(
+                        "cpu", "2",
+                        "memory", "4Gi",
+                        GPU_RESOURCE_NAME, taskRun.getRayClusterShape().getHeadGpus().toString()
+                    )
+                )
+                .limits(
+                    Map.of(
+                        "cpu", "4",
+                        "memory", "16Gi",
+                        GPU_RESOURCE_NAME, taskRun.getRayClusterShape().getHeadGpus().toString()
+                    )
+                )
+            );
     }
 
     private Object volumes(TaskRunDTO taskRun) {
