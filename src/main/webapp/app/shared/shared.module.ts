@@ -2,7 +2,7 @@ import { NgModule, SecurityContext } from '@angular/core';
 import {CommonModule, NgForOf, NgIf} from '@angular/common';
 import {TranslateModule} from '@ngx-translate/core';
 
-import FindLanguageFromKeyPipe from './language/find-language-from-key.pipe';
+import FindLanguageFromKeyPipe from './pipe/find-language-from-key.pipe';
 import TranslateDirective from './language/translate.directive';
 import {RippleModule} from "primeng/ripple";
 import {ButtonModule} from "primeng/button";

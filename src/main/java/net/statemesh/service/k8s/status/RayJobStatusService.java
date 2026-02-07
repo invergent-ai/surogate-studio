@@ -119,7 +119,7 @@ public class RayJobStatusService extends PollingEventStreamService {
                     }
                     job.setProvisioningStatus(RayJobProvisioningStatus.COMPLETED);
                     job.setCompletedStatus(status.getStage());
-                } else if ("RayJobCancelled".equals(status.getStage()) || "TaskRunCancelled".equals(status.getStage())) {
+                } else if ("RayJobCancelled".equalsIgnoreCase(status.getStage()) || "TaskRunCancelled".equalsIgnoreCase(status.getStage())) {
                     status.setProvisioningStatus(RayJobProvisioningStatus.CANCELLED);
                     rayJobService.updateProvisioningStatus(job.getId(), RayJobProvisioningStatus.CANCELLED);
                     job.setProvisioningStatus(RayJobProvisioningStatus.CANCELLED);

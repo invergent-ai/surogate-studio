@@ -32,6 +32,7 @@ public class SkyTaskRunSpec extends V1TaskRunSpec implements TaskRunSpec {
                 )
                 .volumeMounts(volumeMounts(taskRun))
             )))
+            .timeout(SKY_TASK_TIMEOUT)
             .podTemplate(new V1PipelineRunSpecTaskRunSpecsInnerPodTemplate()
                 .volumes(volumes(taskRun))
             )

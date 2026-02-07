@@ -75,6 +75,7 @@ public class K8SConstants {
     public static final String SERVICE_SELECTOR_LABEL_RAY_CLUSTER_TYPE = "ray.io/node-type";
     public static final String SERVICE_SELECTOR_LABEL_KUBEVIRT_DOMAIN = "kubevirt.io/domain";
     public static final String SERVICE_SELECTOR_TASK_RUN = "tekton.dev/taskRun";
+    public static final String TASK_RUN_STATUS_LABEL = "sky/state";
 
     public static final String DEFAULT_GROUP = "";
     public static final String PODS_PLURAL = "pods";
@@ -227,6 +228,8 @@ public class K8SConstants {
 
     public static final String NFS_SERVER = "192.168.1.156";
     public static final String NFS_AIM_PATH = "/data/aim";
+
+    public static final String SKY_TASK_TIMEOUT = "720h";
 
     public static final String NAD_SELECTOR_ANNOTATION = "k8s.v1.cni.cncf.io/networks";
     public static final String SRIOV_NAD_NAME = "default/sriov-rdma-network";

@@ -178,8 +178,7 @@
             </span>
           </td>
           <td class="p-0">
-<!--            <div class="text-sm mono" style="word-break: break-all">{{ log.message }}</div>-->
-            <code [highlight]="log.message" [language]="'vim'" class="hljs text-sm mono"
+            <code [highlight]="log.message | stripAnsi" [language]="'bash'" class="hljs text-sm mono"
                   style="white-space: pre-wrap; word-break: break-all; padding: 0"></code>
           </td>
         </tr>

@@ -10,7 +10,7 @@ import { NodeStats } from '../../../../shared/model/k8s/node-stats.model';
 import { AccountService } from '../../../../shared/service/account.service';
 import { Account } from '../../../../shared/model/account.model';
 import { NodeStatus } from '../../../../shared/model/enum/node-status.model';
-import DurationPipe from '../../../../shared/date/duration.pipe';
+import DurationPipe from '../../../../shared/pipe/duration.pipe';
 import { ApplicationStatus } from '../../../../shared/model/enum/application-status.model';
 import { Store } from '@ngxs/store';
 import { LoadNodesAction } from '../../../../shared/state/actions';

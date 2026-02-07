@@ -126,6 +126,15 @@ public class SkyUtil {
                 .value(USE_AXOLOTL_TRAINING_LIBRARY.toString())
                 .build()
         );
+        // Test vLLM TP
+        if (rayJob.getRayClusterShapePojo() != null) {
+            jobParams.add(
+                TaskRunParamDTO.builder()
+                    .key(RAY_JOB_ENV_VLLM_TP)
+                    .value(rayJob.getRayClusterShapePojo().getTestVllmTp() + "")
+                    .build()
+            );
+        }
         if (USE_SKYPILOT_SERVER) {
             jobParams.add(
                 TaskRunParamDTO.builder()

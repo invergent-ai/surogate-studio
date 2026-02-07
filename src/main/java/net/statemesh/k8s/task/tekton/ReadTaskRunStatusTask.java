@@ -9,11 +9,14 @@ import net.statemesh.k8s.task.TaskResult;
 import net.statemesh.k8s.util.ApiStub;
 import net.statemesh.service.dto.TaskRunDTO;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+
+import static net.statemesh.k8s.util.K8SConstants.TASK_RUN_STATUS_LABEL;
 
 @Slf4j
 public class ReadTaskRunStatusTask extends BaseTask<List<TaskRunStatus>> {
@@ -68,9 +71,15 @@ public class ReadTaskRunStatusTask extends BaseTask<List<TaskRunStatus>> {
                 .container(v1TaskRun.getStatus().getSteps().get(0).getContainer())
                 .completionTime(v1TaskRun.getStatus().getCompletionTime() != null ?
                     v1TaskRun.getStatus().getCompletionTime().toInstant() : null);
+
         }
         if (condition != null) {
             result.stage(condition.getReason());
+        }
+        if (v1TaskRun.getMetadata() != null && v1TaskRun.getMetadata().getLabels() != null &&
+            v1TaskRun.getMetadata().getLabels().containsKey(TASK_RUN_STATUS_LABEL)) {
+            result.stage(v1TaskRun.getMetadata().getLabels().get(TASK_RUN_STATUS_LABEL));
+            result.completionTime(Instant.now());
         }
 
         return result.build();

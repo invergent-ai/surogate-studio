@@ -26,6 +26,7 @@ import {ILog, ILogCriteria, TimeRange, TimeRangeOption} from '../../../../../sha
 import {LogService} from '../../../../../shared/service/k8s/log.service';
 import {SseEvent, SseEventTypeTimeout} from '../../../../../shared/model/k8s/event.model';
 import {HighlightModule} from "ngx-highlightjs";
+import StripAnsiPipe from '../../../../../shared/pipe/strip-ansi.pipe';
 
 @Component({
   selector: 'sm-logs',
@@ -42,10 +43,11 @@ import {HighlightModule} from "ngx-highlightjs";
     PaginatorModule,
     DatePipe,
     CalendarModule,
-    HighlightModule
+    HighlightModule,
+    StripAnsiPipe,
   ],
   templateUrl: './logs.component.html',
-  styleUrls: ['./logs.component.scss']
+  styleUrls: ['./logs.component.scss'],
 })
 export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewInit {
   @Input() resourceId!: string;
@@ -89,7 +91,7 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
     { label: 'Last 5 minutes', value: '5m', seconds: 5 * 60 },
     { label: 'Last 15 minutes', value: '15m', seconds: 15 * 60 },
     { label: 'Last 1 hour', value: '1h', seconds: 60 * 60 },
-    { label: 'Last 6 hours', value: '6h', seconds: 6 * 60 * 60 }
+    { label: 'Last 6 hours', value: '6h', seconds: 6 * 60 * 60 },
   ];
   selectedTimeRange?: TimeRange;
 
@@ -97,7 +99,7 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
   criteria: ILogCriteria = {
     applicationId: '',
     podName: '',
-    limit: 100
+    limit: 100,
   };
 
   private logSubscription?: Subscription;
@@ -106,9 +108,8 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
 
   constructor(
     private logService: LogService,
-    private messageService: MessageService
-  ) {
-  }
+    private messageService: MessageService,
+  ) {}
 
   async ngOnInit() {
     await this.initializeComponent();
@@ -117,11 +118,7 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
   }
 
   private setupSearchDebounce(): void {
-    this.searchSubject.pipe(
-      debounceTime(300),
-      distinctUntilChanged(),
-      takeUntil(this.destroy$)
-    ).subscribe(() => {
+    this.searchSubject.pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destroy$)).subscribe(() => {
       this.filterClientLogs();
     });
   }
@@ -167,9 +164,7 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
       limit: this.maxLogEntries,
       startDate: this.startDate,
       endDate: this.endDate,
-      sinceSeconds: this.startDate ?
-        Math.floor((new Date().getTime() - this.startDate.getTime()) / 1000) :
-        undefined
+      sinceSeconds: this.startDate ? Math.floor((new Date().getTime() - this.startDate.getTime()) / 1000) : undefined,
     };
 
     this.loading = true;
@@ -214,13 +209,12 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
       limit: this.maxLogEntries,
       sinceSeconds: this.sinceSeconds,
       startDate: undefined, // Don't include client-side filters in server query
-      endDate: undefined,   // Don't include client-side filters in server query
-      searchTerm: this.criteria.searchTerm
+      endDate: undefined, // Don't include client-side filters in server query
+      searchTerm: this.criteria.searchTerm,
     };
 
     this.fetchLogs(criteria);
   }
-
 
   private fetchLogs(criteria: ILogCriteria): void {
     this.loading = true;
@@ -230,11 +224,9 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
       this.logSubscription = null;
     }
 
-    this.logSubscription = this.logService.connectToLogStream(this.resourceId, this.resourceType, criteria)
-      .pipe(
-        distinctUntilChanged(),
-        takeUntil(this.destroy$)
-      )
+    this.logSubscription = this.logService
+      .connectToLogStream(this.resourceId, this.resourceType, criteria)
+      .pipe(distinctUntilChanged(), takeUntil(this.destroy$))
       .subscribe({
         next: (event: SseEvent<ILog[]>) => {
           if (event.type === SseEventTypeTimeout) {
@@ -268,7 +260,7 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
             }
           }
         },
-        error: (error) => this.handleError(error)
+        error: error => this.handleError(error),
       });
   }
 
@@ -298,8 +290,7 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
     }
 
     const oldLimit = this.maxLogEntries;
-    const newLimit = Math.max(this.minLogEntries,
-      Math.min(value, this.maxAllowedLogs));
+    const newLimit = Math.max(this.minLogEntries, Math.min(value, this.maxAllowedLogs));
 
     this.maxLogEntries = newLimit;
     this.maxLogEntriesInput = newLimit.toString();
@@ -317,7 +308,7 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
           sinceSeconds: this.sinceSeconds,
           startDate: this.startDate,
           endDate: this.endDate,
-          searchTerm: this.criteria.searchTerm
+          searchTerm: this.criteria.searchTerm,
         });
       }
     } else {
@@ -384,9 +375,7 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
 
       // Client-side search filter
       if (this.criteria.searchTerm?.trim()) {
-        matches = matches && log.message.toLowerCase().includes(
-          this.criteria.searchTerm.toLowerCase().trim()
-        );
+        matches = matches && log.message.toLowerCase().includes(this.criteria.searchTerm.toLowerCase().trim());
       }
 
       // Client-side date filter
@@ -458,7 +447,7 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
       severity: 'success',
       summary: 'Connection Restored',
       detail: 'The connection has been reestablished.',
-      life: 3000
+      life: 3000,
     });
   }
 
@@ -486,7 +475,7 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
     this.messageService.add({
       severity: 'error',
       summary: 'Error',
-      detail: error.message || 'An error occurred'
+      detail: error.message || 'An error occurred',
     });
     this.loading = false;
   }
@@ -518,9 +507,7 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
   }
 
   downloadLogs(): void {
-    const logsToDownload = this.paused ?
-      [...this.originalBufferedLogs, ...this.originalLogs] :
-      this.originalLogs;
+    const logsToDownload = this.paused ? [...this.originalBufferedLogs, ...this.originalLogs] : this.originalLogs;
 
     const sortedLogs = this.sortLogs(logsToDownload);
     const csvContent = this.convertLogsToCSV(sortedLogs);
@@ -535,15 +522,9 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
 
   private convertLogsToCSV(logs: ILog[]): string {
     const headers = ['Timestamp', 'Message'];
-    const rows = logs.map(log => [
-      new Date(log.timestamp).toISOString(),
-      `"${log.message.replace(/"/g, '""')}"`
-    ]);
+    const rows = logs.map(log => [new Date(log.timestamp).toISOString(), `"${log.message.replace(/"/g, '""')}"`]);
 
-    return [
-      headers.join(','),
-      ...rows.map(row => row.join(','))
-    ].join('\n');
+    return [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
   }
 
   clearLogs(): void {
