@@ -438,6 +438,10 @@ export class TrainingPage implements OnInit {
   }
 
   skyConfigToForm(skyConfig: ISkyConfig) {
+    if (!skyConfig) {
+      return;
+    }
+
     this.jobForm.patchValue({
       accelerators: skyConfig.resources.accelerators?.split(':')[0],
       cloudInfra: skyConfig.resources.infra !== 'k8s' ? skyConfig.resources.infra : null,
@@ -736,7 +740,7 @@ export class TrainingPage implements OnInit {
   }
 
   private providerToEnvVarKey(provider: string): string {
-    switch (provider.toLowerCase()) {
+    switch (provider?.toLowerCase()) {
       case ApiKeyProvider.AWS:
         return "AWS_API_KEY";
       case ApiKeyProvider.GCP:

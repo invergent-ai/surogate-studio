@@ -68,7 +68,8 @@ public class ReadTaskRunStatusTask extends BaseTask<List<TaskRunStatus>> {
             result.startTime(v1TaskRun.getStatus().getStartTime() != null ?
                     v1TaskRun.getStatus().getStartTime().toInstant() : null)
                 .podName(v1TaskRun.getStatus().getPodName())
-                .container(v1TaskRun.getStatus().getSteps().get(0).getContainer())
+                .container(v1TaskRun.getStatus().getSteps() != null ?
+                    v1TaskRun.getStatus().getSteps().get(0).getContainer() : null)
                 .completionTime(v1TaskRun.getStatus().getCompletionTime() != null ?
                     v1TaskRun.getStatus().getCompletionTime().toInstant() : null);
 

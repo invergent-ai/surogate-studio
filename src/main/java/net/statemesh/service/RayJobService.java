@@ -197,9 +197,10 @@ public class RayJobService {
         }
 
         try {
-            addSerializationMixins(yamlMapper, rayJobDTO);
+            var mapper = yamlMapper.copy();
+            addSerializationMixins(mapper, rayJobDTO);
             rayJobDTO.setTrainingConfig(
-                yamlMapper.writeValueAsString(
+                mapper.writeValueAsString(
                     Boolean.TRUE.equals(rayJobDTO.getUseAxolotl()) ?
                         loadAxolotlTrainingConfigInternals(
                             rayJobDTO.getTrainingConfigPojo(),
@@ -226,9 +227,10 @@ public class RayJobService {
         }
         if (!StringUtils.isEmpty(rayJobDTO.get().getTrainingConfig())) {
             try {
-                addDeserializationMixins(yamlMapper, rayJobDTO.get());
+                var mapper = yamlMapper.copy();
+                addDeserializationMixins(mapper, rayJobDTO.get());
                 rayJobDTO.get().setTrainingConfigPojo(
-                    yamlMapper.readValue(rayJobDTO.get().getTrainingConfig(), TrainingConfigDTO.class)
+                    mapper.readValue(rayJobDTO.get().getTrainingConfig(), TrainingConfigDTO.class)
                 );
                 if (Boolean.TRUE.equals(rayJobDTO.get().getUseAxolotl())) {
                     addValuesDeserializationMixin(rayJobDTO.get().getTrainingConfigPojo());
