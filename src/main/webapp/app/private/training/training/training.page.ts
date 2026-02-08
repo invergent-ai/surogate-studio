@@ -4,7 +4,7 @@ import { PageLoadComponent } from '../../../shared/components/page-load/page-loa
 import { CardModule } from 'primeng/card';
 import { ButtonDirective } from 'primeng/button';
 import { CardComponent } from '../../../shared/components/card/card.component';
-import { CheckboxModule } from 'primeng/checkbox';
+import { CheckboxChangeEvent, CheckboxModule } from 'primeng/checkbox';
 import { InputNumberModule } from 'primeng/inputnumber';
 import {
   ArrowRight,
@@ -29,18 +29,21 @@ import { InputTextModule } from 'primeng/inputtext';
 import { InputTextareaModule } from 'primeng/inputtextarea';
 import { NgIf } from '@angular/common';
 import { FormArray, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { DropdownModule } from 'primeng/dropdown';
+import { DropdownChangeEvent, DropdownModule } from 'primeng/dropdown';
 import { LabelTooltipComponent } from '../../../shared/components/label-tooltip/label-tooltip.component';
 import {
-  BASE_MODEL_REPOSITORY,
+  ACCELERATOR,
+  ACCELERATOR_ARGS,
+  API_KEY,
+  BASE_MODEL_REPOSITORY, CLOUD_PROVIDER, CPUS, GPU_TYPE,
   GPUS_PER_WORKER,
-  HEAD_GPUS,
+  HEAD_GPUS, INSTANCE_TYPE, LOCAL_K8S,
   LORA,
   LORA_ALPHA,
   LORA_DROPOUT,
   LORA_MERGE_ITERATIVELY,
   LORA_RANK,
-  LORA_TARGET_MODULES,
+  LORA_TARGET_MODULES, MEMORY,
   MERGE_LORA,
   NUM_NODES,
   QLORA_BNB,
@@ -48,8 +51,8 @@ import {
   QLORA_FP8,
   RAY_CLUSTER_SHAPE,
   RECOMPUTE_LORA,
-  TEST_VLLM_TP,
-  USE_HEAD_AS_WORKER,
+  TEST_VLLM_TP, USE_AXOLOTL,
+  USE_HEAD_AS_WORKER, USE_SPOT
 } from '../tooltips';
 import { MessagesModule } from 'primeng/messages';
 import { RayJobService } from '../../../shared/service/ray-job.service';
@@ -84,6 +87,9 @@ import { injectParams } from 'ngxtension/inject-params';
 import { ISkyConfig } from '../../../shared/model/sky-config.model';
 import { RadioButtonModule } from 'primeng/radiobutton';
 import { TargetSelectorComponent } from '../components/target/target-selector.component';
+import { ACCELERATORS, CLOUD_INFRA_PROVIDERS } from '../lovs';
+import { ApiKeyProvider } from '../../../shared/model/enum/api-key.enum';
+import { UserApiKey, UserApiKeyService } from '../../../shared/service/user-api-key.service';
 
 @Component({
   standalone: true,
@@ -143,6 +149,7 @@ export class TrainingPage implements OnInit {
   readonly store = inject(Store);
   readonly accountService = inject(AccountService);
   readonly router = inject(Router);
+  readonly userApiKeyService = inject(UserApiKeyService);
   jobForm: FormGroup;
 
   createForm() {
@@ -157,7 +164,7 @@ export class TrainingPage implements OnInit {
       qloraFp8: new FormControl<boolean>(false),
       qloraFp4: new FormControl<boolean>(true),
       qloraBnb: new FormControl<boolean>(true),
-      recomputeLora: new FormControl<boolean>(false),
+      recomputeLora: new FormControl<boolean>(true),
       mergeLora: new FormControl<boolean>(false),
       mergeIteratively: new FormControl<boolean>(false),
       loraR: new FormControl<number>(32, [Validators.required]),
@@ -174,6 +181,16 @@ export class TrainingPage implements OnInit {
       fromCheckpoint: new FormControl<boolean>(false),
       runInTheSky: new FormControl<boolean>(false),
       skyToK8s: new FormControl<boolean>(false),
+      accelerators: new FormControl<string | null>('RTX5090'),
+      cloudInfra: new FormControl<string | null>(ApiKeyProvider.RUNPOD),
+      apiKey: new FormControl<string | null>(null),
+      acceleratorsAdvanced: new FormControl<string | null>(null),
+      acceleratorArgs: new FormControl<string | null>(null),
+      cpus: new FormControl<string | null>(null),
+      memory: new FormControl<string | null>(null),
+      instanceType: new FormControl<string | null>(null),
+      useSpot: new FormControl<boolean>(false),
+      useAxolotl: new FormControl<boolean>(true),
       numNodes: new FormControl<number>(1, [Validators.required]),
       gpusPerWorker: new FormControl<number>(2, [Validators.required]),
       headGpus: new FormControl<number>(2, [Validators.required]),
@@ -242,7 +259,10 @@ export class TrainingPage implements OnInit {
 
   isSaving = false;
   isLaunching = false;
+  apiKeys: UserApiKey[];
+
   advanced = signal(false);
+  advancedInfra = signal(false);
   user = derivedAsync(() => this.accountService.identity(true));
   job = derivedAsync(() => {
     if (!this.user() || !this.type()) {
@@ -255,6 +275,8 @@ export class TrainingPage implements OnInit {
         catchError(e => displayErrorAndRethrow(this.store, e)),
         tap(job => this.initForm(job)),
       );
+    } else {
+      this.setApiKey(ApiKeyProvider.RUNPOD);
     }
 
     return of({
@@ -265,6 +287,9 @@ export class TrainingPage implements OnInit {
   });
   provisioningStatus = computed(() => {
     return this.job()?.provisioningStatus ?? null;
+  });
+  infra = computed(() => {
+    return this.job()?.runInTheSky ? 'cloud' : 'local';
   });
   mustRelaunch = computed(() => {
     return (
@@ -301,6 +326,10 @@ export class TrainingPage implements OnInit {
 
   ngOnInit() {
     this.layoutService.state.helpItems = this.welcomeItems;
+    this.userApiKeyService.getAll('CLOUD').subscribe({
+      next: keys => (this.apiKeys = keys),
+      error: () => displayError(this.store, 'Failed to load Cloud API keys')
+    });
   }
 
   initForm(job: IRayJob) {
@@ -318,6 +347,9 @@ export class TrainingPage implements OnInit {
     const mergeLora = !!(envVars.find(ev => ev.key === 'MERGE_LORA')?.value === 'true' || false);
     const mergeIteratively = !!(envVars.find(ev => ev.key === 'MERGE_ITERATIVELY')?.value === 'true' || false);
 
+    const providerKey = this.providerToEnvVarKey(this.jobForm.get('cloudInfra').value)
+    const apiKey = envVars.find(ev => ev.key === providerKey)?.value || '';
+
     this.jobForm.patchValue({
       baseModelRepo: baseModel.split('/')[0],
       baseModelBranch: {
@@ -327,6 +359,7 @@ export class TrainingPage implements OnInit {
       branch,
       mergeLora,
       mergeIteratively,
+      apiKey
     });
   }
 
@@ -405,7 +438,15 @@ export class TrainingPage implements OnInit {
   }
 
   skyConfigToForm(skyConfig: ISkyConfig) {
-    this.jobForm.patchValue({});
+    this.jobForm.patchValue({
+      accelerators: skyConfig.resources.accelerators?.split(':')[0],
+      cloudInfra: skyConfig.resources.infra !== 'k8s' ? skyConfig.resources.infra : null,
+      acceleratorArgs: skyConfig.resources.acceleratorArgs,
+      cpus: skyConfig.resources.cpus,
+      memory: skyConfig.resources.memory,
+      instanceType: skyConfig.resources.instanceType,
+      useSpot: skyConfig.resources.useSpot
+    });
   }
 
   rayClusterShapeToForm(rayClusterShape: IRayClusterShape) {
@@ -420,15 +461,15 @@ export class TrainingPage implements OnInit {
 
   formToEnvVars(formValues: any): IJobEnvironmentVariable[] {
     const envVars: IJobEnvironmentVariable[] = [];
-    const { baseModelRepo, baseModelBranch, branch, datasets, testDatasets, lora, mergeLora, mergeIteratively } = formValues;
+    const { baseModelRepo, baseModelBranch, branch, datasets, testDatasets,
+      lora, mergeLora, mergeIteratively, apiKey, cloudInfra } = formValues;
 
     envVars.push({ id: null, key: 'BASE_MODEL', value: `${baseModelRepo}/${baseModelBranch.id}` });
     envVars.push({ id: null, key: 'BRANCH', value: branch ?? null });
     envVars.push({ id: null, key: 'MERGE_LORA', value: mergeLora ?? null });
     envVars.push({ id: null, key: 'LORA', value: lora ?? null });
     envVars.push({ id: null, key: 'MERGE_ITERATIVELY', value: mergeIteratively ?? null });
-
-    envVars.push({ id: null, key: 'RUNPOD_API_KEY', value: 'rpa_5CS79KNGQKU6VMY1A47JFPC3GS9DMIMB5SWY1P2Qq9knjy' });
+    envVars.push({ id: null, key: this.providerToEnvVarKey(cloudInfra), value: apiKey });
 
     if (datasets?.length || testDatasets?.length) {
       const dsts = [...datasets];
@@ -449,26 +490,10 @@ export class TrainingPage implements OnInit {
   }
 
   formToTrainingConfig(formValues: any): ITrainingConfig {
-    const {
-      lora,
-      loraR,
-      loraAlpha,
-      loraDropout,
-      qProj,
-      kProj,
-      vProj,
-      oProj,
-      upProj,
-      downProj,
-      gateProj,
-      qloraFp8,
-      qloraFp4,
-      qloraBnb,
-      recomputeLora,
-      mergeLora,
-      datasets,
-      testDatasets,
-      trainingForm,
+    const {lora, loraR, loraAlpha, loraDropout,
+      qProj, kProj, vProj, oProj, upProj, downProj, gateProj,
+      qloraFp8, qloraFp4, qloraBnb, recomputeLora, mergeLora,
+      datasets, testDatasets, trainingForm,
     } = formValues;
     const loraTargetModules: string[] = [];
     if (qProj) {
@@ -559,10 +584,18 @@ export class TrainingPage implements OnInit {
   }
 
   formToSkyConfig(formValues: any): ISkyConfig {
+    const {accelerators, skyToK8s, gpusPerWorker, cloudInfra, acceleratorsAdvanced,
+      acceleratorArgs, cpus, memory, instanceType, useSpot} = formValues;
+
     return {
       resources: {
-        infra: 'k8s',
-        accelerators: 'RTX5090:2',
+        accelerators: acceleratorsAdvanced ?? (accelerators + ':' + gpusPerWorker),
+        infra: skyToK8s ? 'k8s' : cloudInfra,
+        acceleratorArgs,
+        cpus,
+        memory,
+        instanceType,
+        useSpot
       },
     };
   }
@@ -628,8 +661,57 @@ export class TrainingPage implements OnInit {
     return Promise.reject();
   }
 
+  qloraFp8Changed(event: CheckboxChangeEvent) {
+    this.jobForm.patchValue({
+      qloraFp4: !event.checked,
+      qloraBnb: false,
+    });
+  }
+
+  qloraFp4Changed(event: CheckboxChangeEvent) {
+    this.jobForm.patchValue({
+      qloraFp8: !event.checked,
+    });
+    if (!event.checked) {
+      this.jobForm.patchValue({
+        qloraBnb: false,
+      });
+    }
+  }
+
+  qloraBnbChanged(_: CheckboxChangeEvent) {
+    this.jobForm.patchValue({
+      qloraFp8: false,
+      qloraFp4: true,
+    });
+  }
+
+  targetInfraChanged(infra: string) {
+    this.jobForm.patchValue({
+      runInTheSky: infra === 'cloud',
+      skyToK8s: false,
+    });
+  }
+
+  cloudProviderChanged(event: DropdownChangeEvent) {
+    this.setApiKey(event.value);
+  }
+
+  setApiKey(provider: string) {
+    if (!this.apiKeys) {
+      return;
+    }
+    const apiKey = this.apiKeys.filter(apiKey => apiKey.provider === provider);
+    if (!apiKey?.length) {
+      this.jobForm.patchValue({apiKey: ''});
+      return;
+    }
+    this.jobForm.patchValue({apiKey: apiKey[0].apiKey});
+  }
+
   crossValidate(): boolean {
-    const { lora, qProj, kProj, vProj, oProj, upProj, downProj, gateProj, datasets, trainingForm } = this.jobForm.getRawValue();
+    const { lora, qProj, kProj, vProj, oProj, upProj, downProj, gateProj, datasets, trainingForm,
+      runInTheSky, skyToK8s, numNodes, cloudInfra, apiKey } = this.jobForm.getRawValue();
     if (!trainingForm.numEpochs && !trainingForm.maxSteps) {
       displayError(this.store, 'Please set at least one of "Number of epochs" or "Max steps".');
       return false;
@@ -642,7 +724,30 @@ export class TrainingPage implements OnInit {
       displayError(this.store, 'Please add at least one training dataset.');
       return false;
     }
+    if (runInTheSky && !skyToK8s && cloudInfra === ApiKeyProvider.RUNPOD && numNodes > 1) {
+      displayError(this.store, 'RunPod doesn\'t support multi-node. Please keep number of nodes to 1 for RunPod.');
+      return false;
+    }
+    if (runInTheSky && !skyToK8s && !apiKey) {
+      displayError(this.store, 'Please provide an API Key for ' + cloudInfra);
+      return false;
+    }
     return true;
+  }
+
+  private providerToEnvVarKey(provider: string): string {
+    switch (provider.toLowerCase()) {
+      case ApiKeyProvider.AWS:
+        return "AWS_API_KEY";
+      case ApiKeyProvider.GCP:
+        return "GCP_API_KEY";
+      case ApiKeyProvider.OCI:
+        return "OCI_API_KEY";
+      case ApiKeyProvider.RUNPOD:
+        return "RUNPOD_API_KEY";
+      default:
+        return "K8S";
+    }
   }
 
   protected readonly Database = Database;
@@ -675,6 +780,20 @@ export class TrainingPage implements OnInit {
   protected readonly HEAD_GPUS = HEAD_GPUS;
   protected readonly USE_HEAD_AS_WORKER = USE_HEAD_AS_WORKER;
   protected readonly TEST_VLLM_TP = TEST_VLLM_TP;
+  protected readonly GPU_TYPE = GPU_TYPE;
+  protected readonly CLOUD_PROVIDER = CLOUD_PROVIDER;
+  protected readonly API_KEY = API_KEY;
+  protected readonly LOCAL_K8S = LOCAL_K8S;
+  protected readonly USE_AXOLOTL = USE_AXOLOTL;
+  protected readonly ACCELERATOR = ACCELERATOR;
+  protected readonly ACCELERATOR_ARGS = ACCELERATOR_ARGS;
+  protected readonly CPUS = CPUS;
+  protected readonly MEMORY = MEMORY;
+  protected readonly INSTANCE_TYPE = INSTANCE_TYPE;
+  protected readonly USE_SPOT = USE_SPOT;
+
+  protected readonly ACCELERATORS = ACCELERATORS;
+  protected readonly CLOUD_INFRA_PROVIDERS = CLOUD_INFRA_PROVIDERS;
 
   protected readonly RayJobProvisioningStatus = RayJobProvisioningStatus;
   protected readonly RAY_CLUSTER_SHAPE = RAY_CLUSTER_SHAPE;

@@ -74,6 +74,7 @@ public class UserApiKeyService {
             .type(entity.getType())
             .provider(entity.getProvider())
             .maskedApiKey(masked)
+            .apiKey(decryptedKey)
             .build();
     }
 

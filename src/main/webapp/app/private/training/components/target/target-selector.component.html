@@ -1,14 +1,15 @@
 <div class="grid">
   <div *ngFor="let item of items()" class="md:col-6 sm:col-12">
     <ng-container [ngTemplateOutlet]="card"
-                  [ngTemplateOutletContext]="{imgBg: item.imgBg, img: item.img, title: item.title,
-                        description: item.description, tags: item.tags, disabled: item.disabled}">
+                  [ngTemplateOutletContext]="{imgBg: item.imgBg, img: item.img, title: item.title, id: item.id,
+                        description: item.description, tags: item.tags, disabled: item.disabled, selected: item.selected}">
     </ng-container>
   </div>
 </div>
 
-<ng-template #card let-imgBg="imgBg" let-img="img" let-title="title" let-description="description" let-tags="tags">
-  <div class="card h-full w-full surface-card border-1 border-50 border-round-xl shadow-1 hover:shadow-2 hover:border-500 cursor-pointer flex flex-column pb-3">
+<ng-template #card let-id="id" let-imgBg="imgBg" let-img="img" let-title="title" let-description="description" let-tags="tags" let-selected="selected">
+  <div class="card h-full w-full surface-card border-1 border-50 border-round-xl shadow-1 hover:shadow-2 hover:border-500 cursor-pointer flex flex-column pb-3"
+       [ngClass]="{'shadow-2 border-500': selected}" (click)="cardSelected(id)">
     <div class="flex gap-3 align-items-start">
       <div>
         <div class="flex justify-content-center align-items-center w-2.5rem h-3rem border-round-xl align-items-center text-white shadow-1 {{imgBg}}" >

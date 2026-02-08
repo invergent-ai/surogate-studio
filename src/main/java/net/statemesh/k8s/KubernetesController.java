@@ -440,11 +440,13 @@ public class KubernetesController {
     @Async
     public CompletableFuture<TaskResult<Metrics>> readAimMetrics(ClusterDTO cluster,
                                                                  String rayCluster,
-                                                                 String jobId) {
+                                                                 String jobId,
+                                                                 Boolean useAxolotl) {
         return new AimMetricsTask(
             getApi(cluster),
             rayCluster,
-            jobId
+            jobId,
+            useAxolotl
         ).call();
     }
 

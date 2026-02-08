@@ -7,30 +7,37 @@ import net.statemesh.service.dto.SkyConfigDTO;
 import net.statemesh.service.dto.TrainingConfigDTO;
 import net.statemesh.service.dto.mixin.*;
 
+import java.util.Map;
 import java.util.function.Consumer;
-
-import static net.statemesh.config.Constants.USE_AXOLOTL_TRAINING_LIBRARY;
 
 public class MixinUtil {
     public static void addSerializationMixins(ObjectMapper yamlMapper, RayJobDTO rayJobDTO) {
         yamlMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        if (USE_AXOLOTL_TRAINING_LIBRARY) {
-            yamlMapper.addMixIn(TrainingConfigDTO.class, TrainingConfigMixin.class);
-            yamlMapper.addMixIn(TrainingConfigDTO.Dataset.class, DatasetMixin.class);
+        if (Boolean.TRUE.equals(rayJobDTO.getUseAxolotl())) {
+            yamlMapper.setMixIns(Map.of(
+                TrainingConfigDTO.class, TrainingConfigMixin.class,
+                TrainingConfigDTO.Dataset.class, DatasetMixin.class
+            ));
             addValuesSerializationMixin(rayJobDTO.getTrainingConfigPojo());
         } else {
-            yamlMapper.addMixIn(TrainingConfigDTO.class, SurogateTrainingConfigMixin.class);
-            yamlMapper.addMixIn(TrainingConfigDTO.Dataset.class, SurogateDatasetMixin.class);
+            yamlMapper.setMixIns(Map.of(
+                TrainingConfigDTO.class, SurogateTrainingConfigMixin.class,
+                TrainingConfigDTO.Dataset.class, SurogateDatasetMixin.class
+            ));
         }
     }
 
-    public static void addDeserializationMixins(ObjectMapper yamlMapper) {
-        if (USE_AXOLOTL_TRAINING_LIBRARY) {
-            yamlMapper.addMixIn(TrainingConfigDTO.class, TrainingConfigMixin.class);
-            yamlMapper.addMixIn(TrainingConfigDTO.Dataset.class, DatasetMixin.class);
+    public static void addDeserializationMixins(ObjectMapper yamlMapper, RayJobDTO rayJobDTO) {
+        if (Boolean.TRUE.equals(rayJobDTO.getUseAxolotl())) {
+            yamlMapper.setMixIns(Map.of(
+                TrainingConfigDTO.class, TrainingConfigMixin.class,
+                TrainingConfigDTO.Dataset.class, DatasetMixin.class
+            ));
         } else {
-            yamlMapper.addMixIn(TrainingConfigDTO.class, SurogateTrainingConfigMixin.class);
-            yamlMapper.addMixIn(TrainingConfigDTO.Dataset.class, SurogateDatasetMixin.class);
+            yamlMapper.setMixIns(Map.of(
+                TrainingConfigDTO.class, SurogateTrainingConfigMixin.class,
+                TrainingConfigDTO.Dataset.class, SurogateDatasetMixin.class
+            ));
         }
     }
 

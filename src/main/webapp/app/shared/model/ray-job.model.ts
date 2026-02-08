@@ -20,6 +20,7 @@ export interface IRayJob extends IBaseResource {
   type?: keyof typeof RayJobType;
   runInTheSky?: boolean;
   skyToK8s?: boolean;
+  useAxolotl?: boolean;
   provisioningStatus?: keyof typeof RayJobProvisioningStatus;
   trainingConfig?: string | null;
   rayClusterShape?: string | null;

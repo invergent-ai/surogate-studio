@@ -4,7 +4,6 @@ import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.generic.options.CreateOptions;
 import net.statemesh.domain.enumeration.PullImageMode;
-import net.statemesh.domain.enumeration.RayJobType;
 import net.statemesh.k8s.crd.rayjob.models.*;
 import net.statemesh.k8s.exception.SkippedExistsException;
 import net.statemesh.k8s.task.BaseMutationTask;
@@ -21,16 +20,11 @@ import org.yaml.snakeyaml.Yaml;
 import java.util.*;
 import java.util.stream.IntStream;
 
-import static net.statemesh.config.Constants.USE_AXOLOTL_TRAINING_LIBRARY;
 import static net.statemesh.k8s.util.K8SConstants.*;
 import static net.statemesh.k8s.util.NamingUtils.pvcName;
 
 public class RayJobTask extends BaseMutationTask<String> {
     private final Logger log = LoggerFactory.getLogger(RayJobTask.class);
-    private final Map<RayJobType, String> entrypoints = Map.of(
-        RayJobType.FINE_TUNE, "job-entry " + (USE_AXOLOTL_TRAINING_LIBRARY ? "train-axolotl train-axolotl" : "train train"),
-        RayJobType.TRAIN, "job-entry " + (USE_AXOLOTL_TRAINING_LIBRARY ? "train-axolotl train-axolotl" : "train train")
-    );
 
     private final RayJobDTO rayJob;
     private final RayClusterShape rayClusterShape;
@@ -87,7 +81,9 @@ public class RayJobTask extends BaseMutationTask<String> {
 
     private V1RayJobSpec rayJobSpec() {
         return new V1RayJobSpec()
-            .entrypoint(entrypoints.get(rayJob.getType()))
+            .entrypoint("job-entry " +
+                (Boolean.TRUE.equals(rayJob.getUseAxolotl()) ? "train-axolotl train-axolotl" : "train train")
+            )
             .shutdownAfterJobFinishes(Boolean.FALSE)
             .runtimeEnvYAML(toRuntimeEnvYaml())
             .submitterPodTemplate(
@@ -338,8 +334,8 @@ public class RayJobTask extends BaseMutationTask<String> {
         rayJob.getEnvVars().forEach(
             envVar -> envVars.put(envVar.getKey(), envVar.getValue()));
         root.put("env_vars", envVars);
-        root.put("py_executable",
-            "/opt/densemax/" + (USE_AXOLOTL_TRAINING_LIBRARY ? "train-axolotl" : "train") + "/.venv/bin/python");
+        root.put("py_executable", "/opt/densemax/" +
+            (Boolean.TRUE.equals(rayJob.getUseAxolotl()) ? "train-axolotl" : "train") + "/.venv/bin/python");
 
         DumperOptions options = new DumperOptions();
         options.setPrettyFlow(true);

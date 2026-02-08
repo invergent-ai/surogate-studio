@@ -1,6 +1,6 @@
-import { Component, computed, OnInit, Signal } from '@angular/core';
+import { Component, computed, EventEmitter, input, OnInit, Output, Signal } from '@angular/core';
 import { CardModule } from 'primeng/card';
-import { NgForOf, NgTemplateOutlet } from '@angular/common';
+import { NgClass, NgForOf, NgTemplateOutlet } from '@angular/common';
 import { Check, LucideAngularModule, Rocket, ServerIcon } from 'lucide-angular';
 import { TagModule } from 'primeng/tag';
 
@@ -13,12 +13,17 @@ import { TagModule } from 'primeng/tag';
     NgTemplateOutlet,
     LucideAngularModule,
     TagModule,
-    NgForOf
+    NgForOf,
+    NgClass
   ]
 })
 export class TargetSelectorComponent implements OnInit {
+  selected = input.required<string>();
+  @Output() onSelect = new EventEmitter<string>();
+
   items: Signal<any[]> = computed(() => [
     {
+      id: 'local',
       imgBg: "bg-purple-400",
       img: ServerIcon,
       title: "Local infrastructure",
@@ -28,8 +33,10 @@ export class TargetSelectorComponent implements OnInit {
         {severity: "secondary", value: "Private", image: Check},
         {severity: "warning", value: "Powered by KubeRay", image: Rocket},
       ],
+      selected: this.selected() === 'local'
     },
     {
+      id: 'cloud',
       imgBg: "bg-orange-500",
       img: Rocket,
       title: "In the cloud",
@@ -39,8 +46,15 @@ export class TargetSelectorComponent implements OnInit {
         {severity: "secondary", value: "Unlimited resources", image: Check},
         {severity: "warning", value: "Powered by SkyPilot", image: Rocket},
       ],
+      selected: this.selected() === 'cloud'
     },
   ]);
 
   ngOnInit() {}
+
+  cardSelected(id: string) {
+    this.items().forEach(item => item.selected = false);
+    this.items().filter(item => item.id === id)[0].selected = true;
+    this.onSelect.emit(id);
+  }
 }

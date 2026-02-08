@@ -52,7 +52,7 @@ public class TaskRunDTO implements ResourceDTO, Serializable {
     // Transient
     private Boolean runInTheSky;
     private Boolean skyToK8s;
-    private RayClusterShape rayClusterShape;;
+    private RayClusterShape rayClusterShape;
 
     @Override
     public boolean equals(Object o) {

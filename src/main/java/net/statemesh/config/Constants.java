@@ -28,19 +28,8 @@ public final class Constants {
     public static final ZoneId DEFAULT_DENSEMAX_ZONE_ID = ZoneId.DENSEMAX;
 
     public static final String CLI_SESSION_PASSWORD = "smcliPass2025@@";
-
     public static final String PAYMENT_METHOD_CARD = "card";
-
     public static final String TEMP_UPLOAD_PATH = "/tmp";
-
-    // one minute
-    public static final long ONE_MINUTE = 60;
-    // one day in seconds
-    public static final long ONE_HOUR = 60 * ONE_MINUTE;
-    // one day in seconds
-    public static final long ONE_DAY = 24 * ONE_HOUR;
-    // one week in seconds
-    public static final long ONE_WEEK = 7 * ONE_DAY;
 
     public static final String PROFILE_CLOUD = "smcloud";
     public static final String PROFILE_APPLIANCE = "appliance";
@@ -65,9 +54,7 @@ public final class Constants {
     public static final String TASK_RUN_ENV_SKYPILOT_ENDPOINT = "SKYPILOT_API_SERVER_ENDPOINT";
     public static final String TASK_RUN_ENV_KUBE_CONFIG = "KUBE_CONFIG";
 
-    public static final Boolean USE_AXOLOTL_TRAINING_LIBRARY = true; // Axolotl vs Surogate training lib
     public static final Boolean USE_SKYPILOT_SERVER = false; // Set this to true only if the server has cloud providers preconfigured
 
-    private Constants() {
-    }
+    private Constants() {}
 }

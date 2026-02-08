@@ -40,7 +40,8 @@ public class RayJobMetricService extends PollingEventStreamService {
             var result = kubernetesController.readAimMetrics(
                 rayJob.getProject().getCluster(),
                 rayJob.getProject().getRayCluster(),
-                rayJob.getInternalName()
+                rayJob.getInternalName(),
+                rayJob.getUseAxolotl()
             ).get(READ_METRICS_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
             if (!result.isSuccess() && !Thread.currentThread().isInterrupted()) {

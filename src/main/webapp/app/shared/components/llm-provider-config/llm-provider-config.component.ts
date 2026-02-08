@@ -11,8 +11,7 @@ import { derivedAsync } from 'ngxtension/derived-async';
 import { map } from 'rxjs/operators';
 import { PaginatorModule } from 'primeng/paginator';
 import { AccordionModule } from 'primeng/accordion';
-import { ButtonDirective } from 'primeng/button';
-import { ChevronDown, ChevronUp, LucideAngularModule, SlidersHorizontal } from 'lucide-angular';
+import { LucideAngularModule, SlidersHorizontal } from 'lucide-angular';
 import { TooltipModule } from 'primeng/tooltip';
 import { UserApiKeyService } from '../../service/user-api-key.service';
 import { ApiKeyProvider, LLM_PROVIDERS_WITH_SAVED_KEYS } from '../../model/enum/api-key.enum';
@@ -51,7 +50,6 @@ interface DeployedModelOption extends IApplication {
     NgIf,
     PaginatorModule,
     AccordionModule,
-    ButtonDirective,
     LucideAngularModule,
     TooltipModule,
   ],
@@ -204,8 +202,6 @@ export class LlmProviderConfigComponent implements ControlValueAccessor {
 
   showAdvanced = false;
   protected readonly SlidersHorizontal = SlidersHorizontal;
-  protected readonly ChevronDown = ChevronDown;
-  protected readonly ChevronUp = ChevronUp;
 
   providers = [
     { name: 'Internal', code: ApiKeyProvider.INTERNAL },
@@ -232,7 +228,6 @@ export class LlmProviderConfigComponent implements ControlValueAccessor {
     vllm: '',
     ollama: 'http://localhost:11434/v1',
   };
-  private savedApiKeys = derivedAsync(() => this.userApiKeyService.getAll('LLM'));
 
   private modelPlaceholders: Record<string, string> = {
     internal: '',

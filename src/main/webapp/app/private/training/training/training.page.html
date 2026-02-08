@@ -157,27 +157,27 @@
               <div class="field col-12 md:col-2 flex align-items-center gap-2">
                 <sm-label-tooltip [tooltip]="QLORA_FP8">QLoRA FP8</sm-label-tooltip>
                 <p-checkbox [binary]="true" id="qloraFp8" formControlName="qloraFp8"
-                            [class.ng-dirty]="jobForm.dirty">
+                            (onChange)="qloraFp8Changed($event)" [class.ng-dirty]="jobForm.dirty">
                 </p-checkbox>
               </div>
               <!--        QLoRA FP4-->
               <div class="field col-12 md:col-2 flex align-items-center gap-2">
                 <sm-label-tooltip [tooltip]="QLORA_FP4">QLoRA FP4</sm-label-tooltip>
                 <p-checkbox [binary]="true" id="qloraFp4" formControlName="qloraFp4"
-                            [class.ng-dirty]="jobForm.dirty">
+                            (onChange)="qloraFp4Changed($event)" [class.ng-dirty]="jobForm.dirty">
                 </p-checkbox>
               </div>
               <!--        QLoRA BNB-->
               <div class="field col-12 md:col-2 flex align-items-center gap-2">
                 <sm-label-tooltip [tooltip]="QLORA_BNB">QLoRA BNB</sm-label-tooltip>
                 <p-checkbox [binary]="true" id="qloraBnb" formControlName="qloraBnb"
-                            [class.ng-dirty]="jobForm.dirty">
+                            (onChange)="qloraBnbChanged($event)" [class.ng-dirty]="jobForm.dirty">
                 </p-checkbox>
               </div>
               <!--        Recompute LoRA-->
               <div class="field col-12 md:col-2 flex align-items-center gap-2">
                 <sm-label-tooltip [tooltip]="RECOMPUTE_LORA">Recompute LoRA</sm-label-tooltip>
-                <p-checkbox [binary]="true" id="recomputeLora" formControlName="recomputeLora"
+                <p-checkbox [binary]="true" id="recomputeLora" formControlName="recomputeLora" [readonly]="true"
                             [class.ng-dirty]="jobForm.dirty">
                 </p-checkbox>
               </div>
@@ -191,7 +191,7 @@
               <!--        Merge iteratively-->
               <div class="field col-12 md:col-2 flex align-items-center gap-2" *ngIf="mergeLora">
                 <sm-label-tooltip [tooltip]="LORA_MERGE_ITERATIVELY">Merge Adapters iteratively</sm-label-tooltip>
-                <p-checkbox [binary]="true" id="mergeIteratively" formControlName="mergeIteratively"
+                <p-checkbox [binary]="true" id="mergeIteratively" formControlName="mergeIteratively" [readonly]="true"
                             [class.ng-dirty]="jobForm.dirty">
                 </p-checkbox>
               </div>
@@ -200,35 +200,112 @@
 
           <!--          Training infrastructure-->
           <sm-card header="Training infrastructure" [icon]="Server" [padContent]="false">
+            <ng-template pTemplate="toolbar">
+              <div class="flex align-items-center gap-2">
+                <button pButton size="small" type="button" severity="secondary" (click)="advancedInfra.set(!advancedInfra())">
+                  <div class="flex gap-2 align-items-center">
+                    <i-lucide [img]="SlidersHorizontal" class="w-1rem h-1rem"></i-lucide>
+                    <span>Advanced</span>
+                  </div>
+                </button>
+              </div>
+            </ng-template>
+
             <div class="mt-4">
-              <sm-target-selector></sm-target-selector>
+              <sm-target-selector [selected]="infra()" (onSelect)="targetInfraChanged($event)"></sm-target-selector>
             </div>
 
-            <div class="flex flex-wrap gap-3">
-              <div class="flex align-items-center">
-                <p-radioButton id="localInfra" [value]="false" inputId="localInfra" formControlName="runInTheSky" />
-                <label for="localInfra" class="ml-2 font-normal">Local infrastructure</label>
+            @if (jobForm.get('runInTheSky').value) {
+              <div class="mt-4">
+                <div class="flex align-items-center">
+                  <p-radioButton id="cloud" [value]="false" inputId="cloud" formControlName="skyToK8s" class="mr-2" />
+                  <label for="cloud">Public clouds</label>
+                  <p-tag severity="info" rounded styleClass="font-normal text-sm ml-4">Sky computing</p-tag>
+                </div>
+
+                @if (!jobForm.get('skyToK8s').value) {
+                  <div class="field col-12 md:col-8"></div>
+                  <div class="formgrid grid p-fluid">
+                    <div class="field col-12 md:col-2">
+                      <sm-label-tooltip [tooltip]="GPU_TYPE">GPU type</sm-label-tooltip>
+                      <p-dropdown [options]="ACCELERATORS" id="accelerators" styleClass="w-full" formControlName="accelerators">
+                      </p-dropdown>
+                    </div>
+                    <div class="field col-12 md:col-2">
+                      <sm-label-tooltip [tooltip]="CLOUD_PROVIDER">Cloud provider</sm-label-tooltip>
+                      <p-dropdown [options]="CLOUD_INFRA_PROVIDERS" styleClass="w-full"
+                                  (onChange)="cloudProviderChanged($event)"
+                                  formControlName="cloudInfra">
+                      </p-dropdown>
+                    </div>
+                    <div class="field col-12 md:col-4">
+                      <sm-label-tooltip [tooltip]="API_KEY">API Key</sm-label-tooltip>
+                      <input pInputText type="text" id="apiKey" formControlName="apiKey" />
+                    </div>
+                  </div>
+
+
+                  @if (advancedInfra()) {
+                    <!--              Accelerators (Advanced)-->
+                    <div class="formgrid grid p-fluid">
+                      <div class="field col-12 md:col-4">
+                        <sm-label-tooltip [tooltip]="ACCELERATOR">Accelerators</sm-label-tooltip>
+                        <input pInputText type="text" id="acceleratorsAdvanced" formControlName="acceleratorsAdvanced" />
+                      </div>
+                      <div class="field col-12 md:col-4">
+                        <sm-label-tooltip [tooltip]="ACCELERATOR_ARGS">Accelerators args</sm-label-tooltip>
+                        <input pInputText type="text" id="acceleratorArgs" formControlName="acceleratorArgs" [readonly]="true"/>
+                      </div>
+                      <div class="field col-12 md:col-2">
+                        <sm-label-tooltip [tooltip]="CPUS">CPUs</sm-label-tooltip>
+                        <input pInputText type="text" id="cpus" formControlName="cpus"
+                               placeholder="e.g.: 4+"/>
+                      </div>
+                      <div class="field col-12 md:col-2">
+                        <sm-label-tooltip [tooltip]="MEMORY">Memory</sm-label-tooltip>
+                        <input pInputText type="text" id="memory" formControlName="memory"
+                               placeholder="e.g.: 32+"/>
+                      </div>
+                      <div class="field col-12 md:col-2">
+                        <sm-label-tooltip [tooltip]="INSTANCE_TYPE">Instance type</sm-label-tooltip>
+                        <input pInputText type="text" id="instanceType" formControlName="instanceType"
+                               placeholder="e.g.: p3.8xlarge" />
+                      </div>
+                      <div class="field col-12 md:col-2 flex align-items-center gap-2">
+                        <sm-label-tooltip [tooltip]="USE_SPOT">Use spot</sm-label-tooltip>
+                        <p-checkbox [binary]="true" id="useSpot" formControlName="useSpot"></p-checkbox>
+                      </div>
+                    </div>
+                  }
+                }
+
+                <div class="flex align-items-center mt-4">
+                  <p-radioButton id="localK8s" [value]="true" inputId="localK8s" formControlName="skyToK8s" class="mr-2"/>
+                  <sm-label-tooltip [tooltip]="LOCAL_K8S">Local Kubernetes</sm-label-tooltip>
+                </div>
               </div>
-              <div class="flex align-items-center">
-                <p-radioButton id="cloud" [value]="true" inputId="cloud" formControlName="runInTheSky" />
-                <label for="cloud" class="ml-2 font-normal">Cloud</label>
+            }
+
+            @if (advancedInfra()) {
+              <div class="field col-12 md:col-8"></div>
+              <div class="field col-12 flex align-items-center gap-2">
+                <sm-label-tooltip [tooltip]="USE_AXOLOTL">Use Axolotl training library</sm-label-tooltip>
+                <p-checkbox [binary]="true" id="useAxolotl" formControlName="useAxolotl"></p-checkbox>
               </div>
-            </div>
+            }
           </sm-card>
 
           <!--          Ray cluster shape-->
           <sm-card header="Ray cluster shape" [icon]="Cpu" [padContent]="false">
             <ng-template pTemplate="toolbar">
-              @if (!jobForm.get('runInTheSky').value) {
-                <div class="flex align-items-center gap-2">
-                  <button pButton size="small" type="button" severity="secondary" (click)="advanced.set(!advanced())">
-                    <div class="flex gap-2 align-items-center">
-                      <i-lucide [img]="SlidersHorizontal" class="w-1rem h-1rem"></i-lucide>
-                      <span>Advanced</span>
-                    </div>
-                  </button>
-                </div>
-              }
+              <div class="flex align-items-center gap-2">
+                <button pButton size="small" type="button" severity="secondary" (click)="advanced.set(!advanced())">
+                  <div class="flex gap-2 align-items-center">
+                    <i-lucide [img]="SlidersHorizontal" class="w-1rem h-1rem"></i-lucide>
+                    <span>Advanced</span>
+                  </div>
+                </button>
+              </div>
             </ng-template>
             <p-messages severity="info">
               <ng-template pTemplate="content">
@@ -276,13 +353,15 @@
                   <small class="text-red-500" *ngIf="jobForm.dirty && jobForm.get('testVllmTp')?.errors?.required">
                     Test vLLM TP is required</small>
                 </div>
-                <!--              Use head as worker-->
-                <div class="field col-12 md:col-2 flex align-items-center gap-2">
-                  <sm-label-tooltip [tooltip]="USE_HEAD_AS_WORKER">Use head as worker</sm-label-tooltip>
-                  <p-checkbox [binary]="true" id="useHeadAsWorker" formControlName="useHeadAsWorker"
-                              [class.ng-dirty]="jobForm.dirty">
-                  </p-checkbox>
-                </div>
+                @if (!jobForm.get('runInTheSky').value) {
+                  <!--              Use head as worker-->
+                  <div class="field col-12 md:col-2 flex align-items-center gap-2">
+                    <sm-label-tooltip [tooltip]="USE_HEAD_AS_WORKER">Use head as worker</sm-label-tooltip>
+                    <p-checkbox [binary]="true" id="useHeadAsWorker" formControlName="useHeadAsWorker"
+                                [class.ng-dirty]="jobForm.dirty">
+                    </p-checkbox>
+                  </div>
+                }
               }
             </div>
           </sm-card>

@@ -46,6 +46,7 @@ public class RayJobDTO implements ResourceDTO, Serializable {
     private RayJobType type;
     private Boolean runInTheSky;
     private Boolean skyToK8s;
+    private Boolean useAxolotl;
 
     @NotNull
     private RayJobProvisioningStatus provisioningStatus;

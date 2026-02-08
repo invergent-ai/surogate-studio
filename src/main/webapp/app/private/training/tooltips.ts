@@ -1,7 +1,6 @@
 // Run Basics
 export const BASE_RUN_NAME = `Name of the training job`;
 export const BASE_MODEL_REPOSITORY = `Model to start from`;
-export const EVAL_MODEL_REPOSITORY = `Model to evaluate`;
 export const NEW_MODEL_REPOSITORY = `Repository to create for the trained model`;
 export const BASE_NEW_BRANCH = `Branch name to create for the resulting model`;
 export const BASE_CHECKPOINT = `Start from a specific checkpoint of the base model`;
@@ -61,19 +60,6 @@ export const LORA_TARGET_MODULES = `
 
 export const KD_NORMALIZE_TOP_K = `
 <p>Whether to normalize student logits during Knowledge Distillation</p>
-`;
-
-// Evaluation
-export const EVAL_JUDGE_URL = `
-<p>Public or Internal endpoint URL of model that will be used as a judge.</p>
-`;
-
-export const EVAL_USE_GATEWAY_MODEL = `
-<p>Check this if the Judge Model URL is a published model available on the gateway</p>
-`;
-
-export const EVAL_JUDGE_API_KEY = `
-<p>API Key required to access the Judge model</p>
 `;
 
 export const EVAL_TASKS = `
@@ -500,10 +486,63 @@ export const GPUS_PER_WORKER = `
 <p>The number of GPUs on each worker node.</p>`;
 
 export const HEAD_GPUS = `
-<p>The number of GPUs on head node.</p>`;
+<p>The number of GPUs on head node (or task node for cloud deployments).</p>`;
 
 export const USE_HEAD_AS_WORKER = `
 <p>Whether to use the head node as a worker also.</p>`;
 
 export const TEST_VLLM_TP = `
 <p>Degree of parallelism for the vLLM used for testing.</p>`;
+
+export const GPU_TYPE = `
+<p>Accelerator type to be requested from the cloud provider.</p>`;
+
+export const CLOUD_PROVIDER = `
+<p>Public infrastructure to use (AWS, GCP, OCI, RunPod). More options will be added in the future.</p>`;
+
+export const API_KEY = `
+<p>Access key from the cloud infrastructure provider selected.</p>`;
+
+export const LOCAL_K8S = `
+<p>Deploy on your local Kubernetes using SkyPilot. This has a slower setup than the deployment managed by Surogate Studio with KubeRay</p>`;
+
+export const USE_AXOLOTL = `
+<p>Keep this unchecked to use Surogate - the fastest training library in the world.</p>`;
+
+export const ACCELERATOR = `
+<p>Accelerator name and count per node (optional). If provided will override GPU type field (use with caution).</p>
+<p>The following three ways are valid for specifying accelerators for a cluster:</p>
+<ul>
+  <li>
+    <p><b>To specify a single type of accelerator:</b></p>
+    <p>Format: &lt;name&gt;:&lt;count&gt; (or simply &lt;name&gt;, short for a count of 1).</p>
+    <p>Example: H100:4</p>
+  </li>
+  <li>
+    <p><b>To specify an ordered list of accelerators (try the accelerators in the specified order):</b></p>
+    <p>Format: [&lt;name&gt;:&lt;count&gt;, ...]</p>
+    <p>Example: ['L4:1', 'H100:1', 'A100:1']</p>
+  </li>
+  <li>
+    <p><b>To specify an unordered set of accelerators (optimize all specified accelerators together, and try accelerator with lowest cost first):</b></p>
+    <p>Format: {&lt;name&gt;:&lt;count&gt;, ...}</p>
+    <p>Example: {'L4:1', 'H100:1', 'A100:1'}</p>
+  </li>
+</ul>
+`;
+
+export const ACCELERATOR_ARGS = `
+<p>Additional accelerator metadata (optional); only used for TPU node and TPU VM.</p>`;
+
+export const CPUS = `
+<p>Number of vCPUs per node (optional). Example: 4+ means first try to find an instance type with >= 4 vCPUs. If not found, use the next cheapest instance with more than 4 vCPUs.</p>`;
+
+export const MEMORY = `
+<p>Memory specification per node (optional). Example: 32+ means first try to find an instance type with >= 32 GiB. If not found, use the next cheapest instance with more than 32 GiB.</p>`;
+
+export const INSTANCE_TYPE = `
+<p>Instance type to use (optional). Usually the corresponding instance type is automatically inferred.</p>`;
+
+export const USE_SPOT = `
+<p>Whether the cluster should use spot instances.</p>`;
+

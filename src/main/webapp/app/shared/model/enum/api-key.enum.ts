@@ -1,5 +1,3 @@
-// src/app/shared/model/enum/api-key.enum.ts
-
 export type ApiKeyType = 'LLM' | 'CLOUD';
 
 export const ApiKeyProvider = {
@@ -27,16 +25,4 @@ export const LLM_PROVIDERS_WITH_SAVED_KEYS: ApiKeyProvider[] = [
   ApiKeyProvider.ANTHROPIC,
   ApiKeyProvider.OPENROUTER,
   ApiKeyProvider.AZURE,
-];
-
-export const CLOUD_PROVIDERS: ApiKeyProvider[] = [ApiKeyProvider.AWS, ApiKeyProvider.GCP, ApiKeyProvider.OCI, ApiKeyProvider.RUNPOD];
-
-export const ALL_LLM_PROVIDERS: ApiKeyProvider[] = [
-  ApiKeyProvider.INTERNAL,
-  ApiKeyProvider.OPENAI,
-  ApiKeyProvider.ANTHROPIC,
-  ApiKeyProvider.OPENROUTER,
-  ApiKeyProvider.AZURE,
-  ApiKeyProvider.VLLM,
-  ApiKeyProvider.OLLAMA,
 ];

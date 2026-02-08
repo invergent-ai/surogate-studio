@@ -16,14 +16,14 @@ public class SkyUtil {
         return skyConfig
             .withImageId(
                     Optional.ofNullable(rayJob.getSkyToK8s()).orElse(Boolean.TRUE) ? SUROGATE_IMAGE :
-                            USE_AXOLOTL_TRAINING_LIBRARY ?
+                        Boolean.TRUE.equals(rayJob.getUseAxolotl()) ?
                                     SUROGATE_TRAIN_AXOLOTL_IMAGE :
                                     SUROGATE_TRAIN_SUROGATE_IMAGE
             )
             .withSetup(String.format("""
                 echo "Setup runtime environment for model ${BASE_MODEL} training using %s library"
                 """,
-                USE_AXOLOTL_TRAINING_LIBRARY ? "Axolotl" : "Surogate"
+                Boolean.TRUE.equals(rayJob.getUseAxolotl()) ? "Axolotl" : "Surogate"
             ))
             .withRun(String.format("""
                 cd /opt/densemax/%s
@@ -34,9 +34,9 @@ public class SkyUtil {
                     job-entry-sky %s %s
                 fi
                 """,
-                USE_AXOLOTL_TRAINING_LIBRARY ? "train-axolotl" : "train",
-                USE_AXOLOTL_TRAINING_LIBRARY ? "train-axolotl" : "train",
-                USE_AXOLOTL_TRAINING_LIBRARY ? "train-sky-axolotl" : "train-sky"
+                Boolean.TRUE.equals(rayJob.getUseAxolotl()) ? "train-axolotl" : "train",
+                Boolean.TRUE.equals(rayJob.getUseAxolotl()) ? "train-axolotl" : "train",
+                Boolean.TRUE.equals(rayJob.getUseAxolotl()) ? "train-sky-axolotl" : "train-sky"
             ))
             .withConfig(
                 Optional.ofNullable(rayJob.getSkyToK8s()).orElse(Boolean.FALSE) ?
@@ -123,7 +123,7 @@ public class SkyUtil {
         jobParams.add(
             TaskRunParamDTO.builder()
                 .key(TASK_RUN_ENV_USE_AXOLOTL)
-                .value(USE_AXOLOTL_TRAINING_LIBRARY.toString())
+                .value(Optional.ofNullable(rayJob.getUseAxolotl()).orElse(Boolean.FALSE).toString())
                 .build()
         );
         // Test vLLM TP

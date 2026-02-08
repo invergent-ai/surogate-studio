@@ -119,7 +119,9 @@ public class TaskRunService {
     }
 
     private void resolveSavedApiKeys(TaskRunDTO taskRun, String login) {
-        if (login == null) return;
+        if (login == null) {
+            return;
+        }
 
         if ("true".equals(getParamValue(taskRun, "USE_SAVED_API_KEY"))) {
             String providerStr = getParamValue(taskRun, "SAVED_API_KEY_PROVIDER");

@@ -19,7 +19,7 @@ import {
 import { TagModule } from 'primeng/tag';
 import { ButtonDirective } from 'primeng/button';
 import { LayoutService } from '../../../shared/service/theme/app-layout.service';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 @Component({
   standalone: true,
@@ -120,6 +120,15 @@ export class TrainingWizardPage implements OnInit {
     this.layoutService.state.helpItems = this.welcomeItems;
   }
 
+  navigate(disabled: boolean, routerLink: string[]) {
+    if (disabled) {
+      return;
+    }
+
+    this.router.navigate(routerLink);
+  }
+
+  protected readonly router = inject(Router);
   protected readonly layoutService = inject(LayoutService);
   protected readonly ApplicationMode = ApplicationMode;
   protected readonly ArrowRight = ArrowRight;

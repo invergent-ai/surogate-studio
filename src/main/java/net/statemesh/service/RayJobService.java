@@ -36,7 +36,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
-import static net.statemesh.config.Constants.USE_AXOLOTL_TRAINING_LIBRARY;
 import static net.statemesh.config.K8Timeouts.DELETE_NODE_TIMEOUT_SECONDS;
 import static net.statemesh.k8s.util.ApiUtils.executeInsidePod;
 import static net.statemesh.k8s.util.K8SConstants.*;
@@ -167,6 +166,9 @@ public class RayJobService {
     }
 
     private void stopSkyCluster(RayJobDTO rayJob) {
+        if (StringUtils.isEmpty(rayJob.getDeployedNamespace())) {
+            return;
+        }
         executeInsidePod(
             kubernetesController.getApi(rayJob.getProject().getCluster()),
             rayJob.getDeployedNamespace(),
@@ -198,7 +200,7 @@ public class RayJobService {
             addSerializationMixins(yamlMapper, rayJobDTO);
             rayJobDTO.setTrainingConfig(
                 yamlMapper.writeValueAsString(
-                    USE_AXOLOTL_TRAINING_LIBRARY ?
+                    Boolean.TRUE.equals(rayJobDTO.getUseAxolotl()) ?
                         loadAxolotlTrainingConfigInternals(
                             rayJobDTO.getTrainingConfigPojo(),
                             rayJobDTO.getRayClusterShapePojo(),
@@ -224,11 +226,11 @@ public class RayJobService {
         }
         if (!StringUtils.isEmpty(rayJobDTO.get().getTrainingConfig())) {
             try {
-                addDeserializationMixins(yamlMapper);
+                addDeserializationMixins(yamlMapper, rayJobDTO.get());
                 rayJobDTO.get().setTrainingConfigPojo(
                     yamlMapper.readValue(rayJobDTO.get().getTrainingConfig(), TrainingConfigDTO.class)
                 );
-                if (USE_AXOLOTL_TRAINING_LIBRARY) {
+                if (Boolean.TRUE.equals(rayJobDTO.get().getUseAxolotl())) {
                     addValuesDeserializationMixin(rayJobDTO.get().getTrainingConfigPojo());
                 }
             } catch (JsonProcessingException e) {
@@ -259,7 +261,7 @@ public class RayJobService {
     private TrainingConfigDTO loadAxolotlTrainingConfigInternals(TrainingConfigDTO trainingConfig,
                                                                  RayClusterShape rayClusterShape,
                                                                  String jobId) {
-        return loadBaseTrainingConfigInternals(trainingConfig)
+        return loadBaseTrainingConfigInternals(trainingConfig, Boolean.TRUE)
             .withPlugins(
                 List.of(
                     "axolotl.integrations.aim.AimPlugin"
@@ -282,7 +284,7 @@ public class RayJobService {
     private TrainingConfigDTO loadTrainingConfigInternals(TrainingConfigDTO trainingConfig,
                                                           RayClusterShape rayClusterShape,
                                                           String jobId) {
-        return loadBaseTrainingConfigInternals(trainingConfig)
+        return loadBaseTrainingConfigInternals(trainingConfig, Boolean.FALSE)
             .withDistributed(TrainingConfigDTO.Distributed.builder()
                 .rayAddress("auto")
                 .numNodes(rayClusterShape.getNumNodes())
@@ -294,11 +296,11 @@ public class RayJobService {
             .withAimExperiment(jobId);
     }
 
-    private TrainingConfigDTO loadBaseTrainingConfigInternals(TrainingConfigDTO trainingConfig) {
+    private TrainingConfigDTO loadBaseTrainingConfigInternals(TrainingConfigDTO trainingConfig, Boolean useAxolotl) {
         return trainingConfig
             .withBaseModel(RAY_WORK_DIR + "/model")
             .withOutputDir(RAY_WORK_DIR + "/outputs" +
-                (USE_AXOLOTL_TRAINING_LIBRARY &&
+                (useAxolotl &&
                     Optional.ofNullable(trainingConfig.getLora()).orElse(Boolean.FALSE) ? "/lora" : ""))
             .withDatasetsPath(RAY_WORK_DIR);
     }

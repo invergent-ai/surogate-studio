@@ -86,6 +86,9 @@ public class RayJob extends AbstractAuditingEntity<String> implements Resource, 
     @Column(name = "sky_to_k8s")
     private Boolean skyToK8s;
 
+    @Column(name = "use_axolotl")
+    private Boolean useAxolotl;
+
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "provisioning_status", nullable = false)

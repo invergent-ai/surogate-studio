@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-import static net.statemesh.config.Constants.USE_AXOLOTL_TRAINING_LIBRARY;
 import static net.statemesh.k8s.api.AimClient.*;
 
 @Slf4j
@@ -23,13 +22,16 @@ public class AimMetricsTask {
     private final ApiStub apiStub;
     private final String rayCluster;
     private final String jobId;
+    private final Boolean useAxolotl;
 
     public AimMetricsTask(ApiStub apiStub,
                           String rayCluster,
-                          String jobId) {
+                          String jobId,
+                          Boolean useAxolotl) {
         this.apiStub = apiStub;
         this.rayCluster = rayCluster;
         this.jobId = jobId;
+        this.useAxolotl = useAxolotl;
     }
 
     public CompletableFuture<TaskResult<Metrics>> call() {
@@ -38,14 +40,14 @@ public class AimMetricsTask {
         }
         final AimClient client = this.apiStub.getAimClients().get(rayCluster);
         final List<AimMetric> metrics = client.getExperimentMetric(jobId,
-            USE_AXOLOTL_TRAINING_LIBRARY ? DEFAULT_METRICS : DEFAULT_SUROGATE_METRICS,
-            USE_AXOLOTL_TRAINING_LIBRARY ? DEFAULT_CONTEXT : DEFAULT_SUROGATE_CONTEXT);
+            Boolean.TRUE.equals(useAxolotl) ? DEFAULT_METRICS : DEFAULT_SUROGATE_METRICS,
+            Boolean.TRUE.equals(useAxolotl) ? DEFAULT_CONTEXT : DEFAULT_SUROGATE_CONTEXT);
 
         return CompletableFuture.completedFuture(
             TaskResult.<Metrics>builder()
                 .success(true)
                 .value(
-                    USE_AXOLOTL_TRAINING_LIBRARY ? metrics(metrics) : surogateMetrics(metrics)
+                    Boolean.TRUE.equals(useAxolotl) ? metrics(metrics) : surogateMetrics(metrics)
                 )
                 .build()
         );
