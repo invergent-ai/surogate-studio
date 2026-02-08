@@ -1,5 +1,12 @@
 # Surogate Studio
 
+## See it in action
+
+```shell
+https://demo.surogate.ai (admin@admin / admin)
+```
+
+
 ## Development
 
 Before you can build this project, you must install and configure the following dependencies on your machine:
