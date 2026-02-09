@@ -28,6 +28,9 @@ public final class MultiTokenResolver implements BearerTokenResolver {
     }
 
     public String resolve(final HttpServletRequest request) {
+        if (request.getRequestURI().startsWith("/api/lakefs-s3/")) {
+            return null;
+        }
         String authorizationHeaderToken = this.resolveFromAuthorizationHeader(request);
         String smIdAuthorizationHeaderToken = this.resolveFromSmIdHeader(request);
         String opencostHeaderToken = this.resolveFromOpencostAuthTokenHeader(request);

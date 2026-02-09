@@ -452,8 +452,7 @@ public class LakeFsService {
                 properties.getLakeFs().getKey(), properties.getLakeFs().getSecret()).getBytes()
         );
         var s3Auth = jwtService.createLakeFsToken();
-        var s3Endpoint = properties.getLakeFs().getS3Endpoint();
-        return new DirectLakeFsServiceParamsDTO(properties.getLakeFs().getEndpoint(), auth, s3Auth, s3Endpoint);
+        return new DirectLakeFsServiceParamsDTO(properties.getLakeFs().getEndpoint(), auth, s3Auth, "/api/lakefs-s3");
     }
 
     public CredentialsWithSecret createUser(String username) {

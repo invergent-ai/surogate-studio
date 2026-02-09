@@ -21,7 +21,7 @@ import { tap } from 'rxjs/operators';
 
 @Injectable({ providedIn: 'root' })
 export class LakeFsService {
-  private resourceUrl: string;
+  public resourceUrl: string;
   s3Auth: string;
   s3Endpoint: string;
 

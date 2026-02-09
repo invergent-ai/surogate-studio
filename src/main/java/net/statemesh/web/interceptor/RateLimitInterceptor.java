@@ -26,6 +26,21 @@ public class RateLimitInterceptor implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request,
                              @NotNull HttpServletResponse response,
                              @NotNull Object handler) {
+        if (request.getRequestURI().startsWith("/api/lakefs-s3/")) {
+            return true;
+        }
+        final String referer = request.getHeader("Referer");
+        if ("https://checkout.stripe.com/".equals(referer)) {
+            return true;
+        }
+
+        final String userAgent = request.getHeader("User-Agent");
+        if ("meshd".equals(userAgent)) { // TODO - This is prone to DDoS - make/use separate bucket [internals]
+            return true;
+        }
+        if (!StringUtils.isEmpty(request.getHeader(OPENCOST_AUTH_HEADER))) { // TODO - This is prone to DDoS - make/use separate bucket [internals]
+            return true;
+        }
         if (request.getRequestURL().toString().endsWith("/api/files/download")) { // TODO - This is prone to DDoS and insecure - do authenticated downloads
             return true;
         }

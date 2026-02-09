@@ -3,7 +3,6 @@ import * as duckdb from '@duckdb/duckdb-wasm';
 import { BehaviorSubject, Observable } from 'rxjs';
 
 import { LakeFsService } from './lake-fs.service';
-import { DuckDBDataProtocol } from '@duckdb/duckdb-wasm';
 
 const assetUrl = (p: string) => new URL(p, document.baseURI).toString();
 
@@ -55,20 +54,11 @@ export class DuckDbService {
       await this.connection.query('LOAD httpfs;');
       await this.connection.query('INSTALL nanoarrow FROM community;');
       await this.connection.query('LOAD nanoarrow;');
-      await this.connection.query(`SET s3_region='us-east-1';`);
-      await this.connection.query(`SET s3_access_key_id='densemax/${this.lakeFsService.s3Auth}';`);
-      await this.connection.query(`SET s3_secret_access_key='dummy2';`);
-      await this.connection.query(`SET s3_endpoint='${this.lakeFsService.s3Endpoint}';`);
 
-      const fileMap = await this.extractFiles(sql);
-      const fileNames = Object.getOwnPropertyNames(fileMap);
+      const rewrittenSql = await this.rewriteSql(sql);
+      console.log('Rewritten SQL:', rewrittenSql);
 
-      await Promise.all(fileNames.map(fileName => this.db.registerFileURL(fileName, fileMap[fileName], DuckDBDataProtocol.S3, true)));
-
-      const result = await this.connection.query(sql);
-
-      await Promise.all(fileNames.map(fileName => this.db.dropFile(fileName)));
-
+      const result = await this.connection.query(rewrittenSql);
       return result.toArray().map(row => row.toJSON());
     } catch (error) {
       console.error('Query error:', error);
@@ -76,6 +66,38 @@ export class DuckDbService {
     } finally {
       await this.connection.close();
     }
+  }
+
+  async rewriteSql(sql: string): Promise<string> {
+    const DUCKDB_STRING_CONSTANT = 2;
+    const LAKEFS_URI_PATTERN = /^(['"]?)(lakefs:\/\/(.*))(['"])\s*$/;
+
+    const baseUrl = this.lakeFsService.resourceUrl.replace('/api/lakefs', '/api/lakefs-s3');
+
+    const tokenized = await this.connection.bindings.tokenize(sql);
+    let prev = 0;
+    let newSql = '';
+
+    tokenized.offsets.forEach((offset, i) => {
+      let currentToken = sql.length;
+      if (i < tokenized.offsets.length - 1) {
+        currentToken = tokenized.offsets[i + 1];
+      }
+      const part = sql.substring(prev, currentToken);
+      prev = currentToken;
+
+      if (tokenized.types[i] === DUCKDB_STRING_CONSTANT) {
+        const matches = part.match(LAKEFS_URI_PATTERN);
+        if (matches !== null) {
+          const httpUrl = `${baseUrl}/${matches[3]}`;
+          newSql += `${matches[1]}${httpUrl}${matches[4]}`;
+          return;
+        }
+      }
+      newSql += part;
+    });
+
+    return newSql;
   }
 
   async insertData(tableName: string, data: any[]): Promise<void> {
@@ -164,30 +186,5 @@ export class DuckDbService {
       await this.db.terminate();
     }
     this.isInitialized.next(false);
-  }
-
-  async extractFiles(sql: string): Promise<{ [name: string]: string }> {
-    const DUCKDB_STRING_CONSTANT = 2;
-    const LAKEFS_URI_PATTERN = /^(['"]?)(lakefs:\/\/(.*))(['"])\s*$/;
-
-    const tokenized = await this.connection.bindings.tokenize(sql);
-    const r = Math.random();
-    let prev = 0;
-    const fileMap: { [name: string]: string } = {};
-    tokenized.offsets.forEach((offset, i) => {
-      let currentToken = sql.length;
-      if (i < tokenized.offsets.length - 1) {
-        currentToken = tokenized.offsets[i + 1];
-      }
-      const part = sql.substring(prev, currentToken);
-      prev = currentToken;
-      if (tokenized.types[i] === DUCKDB_STRING_CONSTANT) {
-        const matches = part.match(LAKEFS_URI_PATTERN);
-        if (matches !== null) {
-          fileMap[matches[2]] = `s3://${matches[3]}?r=${r}`;
-        }
-      }
-    });
-    return fileMap;
   }
 }
