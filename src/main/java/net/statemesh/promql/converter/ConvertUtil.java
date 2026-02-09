@@ -298,7 +298,6 @@ public abstract class ConvertUtil {
 							}
 							reader.endObject();
 							seriesResult.addData(seriesData);
-//							System.out.println(seriesData);
 						}
 						reader.endArray();
 					}

@@ -211,7 +211,6 @@ public class LakeFsService {
     }
 
     public void deleteRepository(String id) {
-        System.out.println("deleteRepository() - id: " + id);
         var api = new RepositoriesApi(client);
         try {
             var request = api.deleteRepository(id);
