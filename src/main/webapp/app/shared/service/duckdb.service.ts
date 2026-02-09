@@ -62,6 +62,7 @@ export class DuckDbService {
 
       const fileMap = await this.extractFiles(sql);
       const fileNames = Object.getOwnPropertyNames(fileMap);
+
       await Promise.all(fileNames.map(fileName => this.db.registerFileURL(fileName, fileMap[fileName], DuckDBDataProtocol.S3, true)));
 
       const result = await this.connection.query(sql);
