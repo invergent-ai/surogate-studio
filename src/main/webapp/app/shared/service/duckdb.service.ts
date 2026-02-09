@@ -2,19 +2,19 @@ import { Injectable, inject } from '@angular/core';
 import * as duckdb from '@duckdb/duckdb-wasm';
 import { BehaviorSubject, Observable } from 'rxjs';
 
-import { DirectLakeFsService } from './direct-lake-fs.service';
+import { LakeFsService } from './lake-fs.service';
 import { DuckDBDataProtocol } from '@duckdb/duckdb-wasm';
 
 const assetUrl = (p: string) => new URL(p, document.baseURI).toString();
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class DuckDbService {
   private db: duckdb.AsyncDuckDB | null = null;
   private connection: duckdb.AsyncDuckDBConnection | null = null;
   private isInitialized = new BehaviorSubject<boolean>(false);
-  private directLakeFsService = inject(DirectLakeFsService);
+  private lakeFsService = inject(LakeFsService);
   public isReady$: Observable<boolean> = this.isInitialized.asObservable();
 
   constructor() {
@@ -40,7 +40,6 @@ export class DuckDbService {
       this.db = new duckdb.AsyncDuckDB(logger, worker);
       await this.db.instantiate(bundle.mainModule!, bundle.pthreadWorker);
 
-      // Create a connection
       this.isInitialized.next(true);
     } catch (error) {
       console.error('Failed to initialize DuckDB:', error);
@@ -52,27 +51,22 @@ export class DuckDbService {
     this.connection = await this.db.connect();
 
     try {
-
       await this.connection.query('INSTALL httpfs;');
       await this.connection.query('LOAD httpfs;');
       await this.connection.query('INSTALL nanoarrow FROM community;');
       await this.connection.query('LOAD nanoarrow;');
-      await this.connection.query(`SET s3_region='us-east-1';`)
-      await this.connection.query(`SET s3_access_key_id='densemax/${this.directLakeFsService.s3Auth}';`)
-      await this.connection.query(`SET s3_secret_access_key='dummy2';`)
-      await this.connection.query(`SET s3_endpoint='${this.directLakeFsService.s3Endpoint}';`)
+      await this.connection.query(`SET s3_region='us-east-1';`);
+      await this.connection.query(`SET s3_access_key_id='densemax/${this.lakeFsService.s3Auth}';`);
+      await this.connection.query(`SET s3_secret_access_key='dummy2';`);
+      await this.connection.query(`SET s3_endpoint='${this.lakeFsService.s3Endpoint}';`);
 
-      // register lakefs uri-ed files as s3 files
       const fileMap = await this.extractFiles(sql);
       const fileNames = Object.getOwnPropertyNames(fileMap);
-      await Promise.all(fileNames.map(
-        fileName => this.db.registerFileURL(fileName, fileMap[fileName], DuckDBDataProtocol.S3, true)
-      ))
+      await Promise.all(fileNames.map(fileName => this.db.registerFileURL(fileName, fileMap[fileName], DuckDBDataProtocol.S3, true)));
 
       const result = await this.connection.query(sql);
 
-      // remove registrations
-      await Promise.all(fileNames.map(fileName => this.db.dropFile(fileName)))
+      await Promise.all(fileNames.map(fileName => this.db.dropFile(fileName)));
 
       return result.toArray().map(row => row.toJSON());
     } catch (error) {
@@ -88,15 +82,11 @@ export class DuckDbService {
       throw new Error('DuckDB not initialized');
     }
     try {
-      // Register the data as a table
       await this.db.registerFileText(`${tableName}.json`, JSON.stringify(data));
-
-      // Create table from JSON
       await this.connection.query(`
         CREATE TABLE IF NOT EXISTS ${tableName} AS
         SELECT * FROM read_json_auto('${tableName}.json')
       `);
-
       console.log(`Data inserted into ${tableName} table`);
     } catch (error) {
       console.error('Insert error:', error);
@@ -123,15 +113,11 @@ export class DuckDbService {
       throw new Error('DuckDB not initialized');
     }
     try {
-      // Register CSV content
       await this.db.registerFileText(`${tableName}.csv`, csvContent);
-
-      // Create table from CSV
       await this.connection.query(`
         CREATE TABLE IF NOT EXISTS ${tableName} AS
         SELECT * FROM read_csv_auto('${tableName}.csv')
       `);
-
       console.log(`CSV loaded into ${tableName} table`);
     } catch (error) {
       console.error('CSV load error:', error);
@@ -149,7 +135,6 @@ export class DuckDbService {
         FROM information_schema.tables
         WHERE table_schema = 'main'
       `);
-
       return result.toArray().map(row => row.toJSON().table_name);
     } catch (error) {
       console.error('Get tables error:', error);
@@ -185,23 +170,23 @@ export class DuckDbService {
     const LAKEFS_URI_PATTERN = /^(['"]?)(lakefs:\/\/(.*))(['"])\s*$/;
 
     const tokenized = await this.connection.bindings.tokenize(sql);
-    const r = Math.random(); // random number to make sure the S3 gateway picks up the request
+    const r = Math.random();
     let prev = 0;
     const fileMap: { [name: string]: string } = {};
     tokenized.offsets.forEach((offset, i) => {
       let currentToken = sql.length;
       if (i < tokenized.offsets.length - 1) {
-        currentToken = tokenized.offsets[i+1];
+        currentToken = tokenized.offsets[i + 1];
       }
       const part = sql.substring(prev, currentToken);
       prev = currentToken;
       if (tokenized.types[i] === DUCKDB_STRING_CONSTANT) {
-        const matches = part.match(LAKEFS_URI_PATTERN)
+        const matches = part.match(LAKEFS_URI_PATTERN);
         if (matches !== null) {
           fileMap[matches[2]] = `s3://${matches[3]}?r=${r}`;
         }
       }
-    })
+    });
     return fileMap;
   }
 }

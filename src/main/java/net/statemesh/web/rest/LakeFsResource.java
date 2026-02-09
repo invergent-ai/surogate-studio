@@ -9,6 +9,7 @@ import net.statemesh.service.lakefs.LakeFsService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -267,6 +268,56 @@ public class LakeFsResource {
         } catch (LakeFsException ex) {
             log.error("Problem getting eval result: {}", filename, ex);
             return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/objects/{repoId}/{ref}/content")
+    public ResponseEntity<byte[]> getObjectContent(
+        @PathVariable("repoId") String repoId,
+        @PathVariable("ref") String ref,
+        @RequestParam("path") String path) {
+        try {
+            byte[] content = lakeFsService.getObjectContent(repoId, ref, path);
+            return ResponseEntity.ok(content);
+        } catch (LakeFsException ex) {
+            log.error("Problem getting object content", ex);
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @GetMapping("/objects/{repoId}/{ref}/download")
+    public ResponseEntity<byte[]> downloadObject(
+        @PathVariable("repoId") String repoId,
+        @PathVariable("ref") String ref,
+        @RequestParam("path") String path) {
+        try {
+            byte[] content = lakeFsService.getObjectContent(repoId, ref, path);
+            String filename = path.contains("/") ? path.substring(path.lastIndexOf('/') + 1) : path;
+            return ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
+                .header("Content-Type", "application/octet-stream")
+                .body(content);
+        } catch (LakeFsException ex) {
+            log.error("Problem downloading object", ex);
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PostMapping("/objects/{repoId}/{branch}/upload")
+    public ResponseEntity<Void> uploadObject(
+        @PathVariable("repoId") String repoId,
+        @PathVariable("branch") String branch,
+        @RequestParam("path") String path,
+        @RequestParam("content") MultipartFile file) {
+        try {
+            lakeFsService.uploadObject(repoId, branch, path, file.getBytes());
+            return ResponseEntity.ok().build();
+        } catch (LakeFsException ex) {
+            log.error("Problem uploading object", ex);
+            return ResponseEntity.badRequest().build();
+        } catch (java.io.IOException e) {
+            log.error("Problem reading uploaded file", e);
+            return ResponseEntity.badRequest().build();
         }
     }
 }

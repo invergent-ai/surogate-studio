@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { Store } from '@ngxs/store';
 import { Selectors } from '../state/selectors';
 import {
@@ -14,20 +14,22 @@ import {
   ILakeFsRef,
   ILakeFsRepository,
   ILakeFsTagCreation,
-  LakeFsRepositoryType
 } from '../model/lakefs.model';
 import { Observable } from 'rxjs';
-import {User} from "../model/user.model";
+import { User } from '../model/user.model';
+import { tap } from 'rxjs/operators';
 
 @Injectable({ providedIn: 'root' })
 export class LakeFsService {
   private resourceUrl: string;
+  s3Auth: string;
+  s3Endpoint: string;
 
   constructor(
     protected http: HttpClient,
     protected store: Store,
   ) {
-    store.select(Selectors.getEndpointFor('/api/lakefs')).subscribe((url) => {
+    store.select(Selectors.getEndpointFor('/api/lakefs')).subscribe(url => {
       this.resourceUrl = url;
     });
   }
@@ -65,7 +67,9 @@ export class LakeFsService {
   }
 
   deleteObject(repoId: string, branch: string, path: string): Observable<any> {
-    return this.http.delete(`${this.resourceUrl}/objects/${encodeURIComponent(repoId)}/${encodeURIComponent(branch)}?path=${encodeURIComponent(path)}`);
+    return this.http.delete(
+      `${this.resourceUrl}/objects/${encodeURIComponent(repoId)}/${encodeURIComponent(branch)}?path=${encodeURIComponent(path)}`,
+    );
   }
 
   createRepository(repo: ICreateLakeFsRepository): Observable<ILakeFsRepository> {
@@ -85,7 +89,9 @@ export class LakeFsService {
   }
 
   diff(repoId: string, leftRefId: string, rightRefId: string): Observable<ILakeFsDiff[]> {
-    return this.http.get<ILakeFsDiff[]>(`${this.resourceUrl}/diff/${encodeURIComponent(repoId)}/${encodeURIComponent(leftRefId)}/${encodeURIComponent(rightRefId)}`);
+    return this.http.get<ILakeFsDiff[]>(
+      `${this.resourceUrl}/diff/${encodeURIComponent(repoId)}/${encodeURIComponent(leftRefId)}/${encodeURIComponent(rightRefId)}`,
+    );
   }
 
   getCommit(repoId: string, commitId: string): Observable<ILakeFsCommit> {
@@ -93,26 +99,68 @@ export class LakeFsService {
   }
 
   getCommits(repoId: string, refId: string): Observable<ILakeFsCommit[]> {
-    return this.http.get<ILakeFsCommit[]>(`${this.resourceUrl}/commits/${encodeURIComponent(repoId)}/${encodeURIComponent(refId)}`)
+    return this.http.get<ILakeFsCommit[]>(`${this.resourceUrl}/commits/${encodeURIComponent(repoId)}/${encodeURIComponent(refId)}`);
   }
 
   getStat(repoId: string, refId: string, path: string): Observable<ILakeFsObjectStats> {
-    return this.http.get<ILakeFsObjectStats>(`${this.resourceUrl}/stat/${encodeURIComponent(repoId)}/${encodeURIComponent(refId)}?path=${encodeURIComponent(path)}`);
+    return this.http.get<ILakeFsObjectStats>(
+      `${this.resourceUrl}/stat/${encodeURIComponent(repoId)}/${encodeURIComponent(refId)}?path=${encodeURIComponent(path)}`,
+    );
   }
 
   getDirectServiceParams(): Observable<IDirectLakeFsServiceParams> {
     return this.http.get<IDirectLakeFsServiceParams>(`${this.resourceUrl}/config`);
   }
 
-  addUserToRepoGroup(repoId: string, username: string){
-    return this.http.post(`${this.resourceUrl}/repos/${encodeURIComponent(repoId)}/users`, {username});
+  addUserToRepoGroup(repoId: string, username: string) {
+    return this.http.post(`${this.resourceUrl}/repos/${encodeURIComponent(repoId)}/users`, { username });
   }
 
-  getGroupMembers(groupId: string): Observable<User[]>{
+  getGroupMembers(groupId: string): Observable<User[]> {
     return this.http.get<User[]>(`${this.resourceUrl}/group/${encodeURIComponent(groupId)}/members`);
   }
 
-  deleteGroupMember(groupId: string, username: string): Observable<any>{
-    return this.http.delete(`${this.resourceUrl}/group/${encodeURIComponent(groupId)}/members/${encodeURIComponent(username)}`)
+  deleteGroupMember(groupId: string, username: string): Observable<any> {
+    return this.http.delete(`${this.resourceUrl}/group/${encodeURIComponent(groupId)}/members/${encodeURIComponent(username)}`);
+  }
+
+  fetchObjectAsText(repoId: string, ref: string, path: string): Observable<string> {
+    return this.http.get(`${this.resourceUrl}/objects/${encodeURIComponent(repoId)}/${encodeURIComponent(ref)}/content`, {
+      params: new HttpParams().set('path', path),
+      responseType: 'text',
+    });
+  }
+  download(repoId: string, ref: string, path: string): Observable<HttpResponse<Blob>> {
+    return this.http.get(`${this.resourceUrl}/objects/${encodeURIComponent(repoId)}/${encodeURIComponent(ref)}/download`, {
+      params: new HttpParams().set('path', path),
+      responseType: 'blob',
+      observe: 'response',
+    });
+  }
+  objectUploadUrl(repoId: string, branchId: string, path: string, file: File): string {
+    const fpath = this.destinationPath(path, file);
+    return `${this.resourceUrl}/objects/${encodeURIComponent(repoId)}/${encodeURIComponent(branchId)}/upload?path=${encodeURIComponent(fpath)}`;
+  }
+
+  destinationPath = (path: string, file: File) => {
+    if (path?.trim() === '/') {
+      return file.name;
+    } else if (path) {
+      if (path.startsWith('/')) {
+        path = path.substring(1);
+      }
+      return path.endsWith('/') ? `${path}${file.name}` : `${path}/${file.name}`;
+    } else {
+      return file.name;
+    }
+  };
+
+  loadS3Config(): Observable<any> {
+    return this.http.get<any>(`${this.resourceUrl}/config`).pipe(
+      tap(config => {
+        this.s3Auth = config.s3Auth;
+        this.s3Endpoint = config.s3Endpoint;
+      }),
+    );
   }
 }

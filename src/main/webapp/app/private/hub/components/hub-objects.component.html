@@ -3,7 +3,8 @@
     <div class="flex justify-content-between">
       <div class="col">
         <div class="flex gap-3 align-items-center">
-          <sm-ref-selector type="any" buttonSize="small" [canSelect]="true" [repoId]="repository().id" [ngModel]="selectedRef()"
+          <sm-ref-selector type="any" buttonSize="small" [canSelect]="true" [repoId]="repository().id"
+                           [ngModel]="selectedRef()"
                            (ngModelChange)="chooseRef($event)"></sm-ref-selector>
 
           @if (selectedRef()?.metadata?.source_model) {
@@ -19,7 +20,7 @@
 
           <div *ngIf="showBreadcrumb()" class="flex gap-2">
             <a class="hover:underline hover:text-primary-800 font-medium"
-               (click)="selectRootFolder()">{{getRepoName()}}</a>
+               (click)="selectRootFolder()">{{ getRepoName() }}</a>
 
             @for (node of breadcrumb(); track node.key) {
               <span>/</span>
@@ -92,14 +93,14 @@
     <div class="mt-3">
       <div class="field p-fluid">
         <label for="path">Path</label>
-        <input pInputText id="path" formControlName="path" placeholder="Path in repository..."/>
+        <input pInputText id="path" formControlName="path" placeholder="Path in repository..." />
       </div>
     </div>
 
     <div class="mt-3">
       <div class="field p-fluid">
         <label for="message">Commit Message</label>
-        <input pInputText id="message" formControlName="message" placeholder="Enter a commit message..."/>
+        <input pInputText id="message" formControlName="message" placeholder="Enter a commit message..." />
       </div>
     </div>
   </form>
@@ -108,8 +109,8 @@
     <sm-file-uploader [parallel]="true" [multiple]="true" [maxFileSize]="10 * 1024 * 1024 * 1024"
                       [disabled]="!commitForm.valid"
                       [withCredentials]="true" name="content" (onUploadComplete)="uploadComplete()"
-                      [urlModifier]="uploadUrlModifier.bind(this)"
-                      [headers]="directLakeFsService.authHeaders()"></sm-file-uploader>
+                      [urlModifier]="uploadUrlModifier.bind(this)"></sm-file-uploader>
+
   </div>
 </p-dialog>
 
@@ -122,7 +123,7 @@
     <div class="mt-3">
       <div class="field p-fluid">
         <label for="path">Commit Message</label>
-        <input pInputText formControlName="message" placeholder="Enter a commit message..."/>
+        <input pInputText formControlName="message" placeholder="Enter a commit message..." />
       </div>
     </div>
   </form>

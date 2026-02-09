@@ -1,37 +1,36 @@
-import {Component, computed, inject, input, signal} from '@angular/core';
-import {ButtonDirective} from 'primeng/button';
-import {CardModule} from 'primeng/card';
-import {DropdownModule} from 'primeng/dropdown';
-import {Bot, Download, File, LucideAngularModule, RefreshCw, Upload} from 'lucide-angular';
-import {NgIf} from '@angular/common';
-import {MessageService, PrimeTemplate, TreeNode} from 'primeng/api';
-import {FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
-import {derivedAsync} from 'ngxtension/derived-async';
-import {catchError, tap} from 'rxjs/operators';
-import {displayError, displayErrorAndRethrow} from '../../../shared/util/error.util';
-import {ILakeFsObjectStats, ILakeFsRepository} from '../../../shared/model/lakefs.model';
-import {LakeFsService} from '../../../shared/service/lake-fs.service';
-import {Store} from '@ngxs/store';
-import {TableModule} from 'primeng/table';
+import { Component, computed, inject, input, signal } from '@angular/core';
+import { ButtonDirective } from 'primeng/button';
+import { CardModule } from 'primeng/card';
+import { DropdownModule } from 'primeng/dropdown';
+import { Bot, Download, File, LucideAngularModule, RefreshCw, Upload } from 'lucide-angular';
+import { NgIf } from '@angular/common';
+import { MessageService, PrimeTemplate, TreeNode } from 'primeng/api';
+import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { derivedAsync } from 'ngxtension/derived-async';
+import { catchError, tap } from 'rxjs/operators';
+import { displayError, displayErrorAndRethrow } from '../../../shared/util/error.util';
+import { ILakeFsObjectStats, ILakeFsRepository } from '../../../shared/model/lakefs.model';
+import { LakeFsService } from '../../../shared/service/lake-fs.service';
+import { Store } from '@ngxs/store';
+import { TableModule } from 'primeng/table';
 import dayjs from 'dayjs/esm';
-import {NgxFilesizeModule} from 'ngx-filesize';
-import {TreeTableModule} from 'primeng/treetable';
-import {FileActionEvent, FileNavigatorComponent} from './file-navigator.component';
-import {FileRendererComponent} from './file-renderer.component';
-import {DialogModule} from 'primeng/dialog';
-import {FileUploadModule} from 'primeng/fileupload';
-import {InputTextModule} from 'primeng/inputtext';
-import {DirectLakeFsService} from '../../../shared/service/direct-lake-fs.service';
-import {FileUploaderComponent} from '../../../shared/components/file-upload/file-uploader.component';
-import {Clipboard} from '@angular/cdk/clipboard';
-import {displaySuccess} from '../../../shared/util/success.util';
-import {lastValueFrom, of} from 'rxjs';
-import {saveAs} from 'file-saver';
-import {RefSelection, RefSelectorComponent} from './ref-selector.component';
-import {effectOnceIf} from 'ngxtension/effect-once-if';
-import {MarkdownRendererComponent} from "./renderers/markdown-renderer.component";
-import {repoDisplayNameOrId} from "../../../shared/util/naming.util";
-import {TagModule} from "primeng/tag";
+import { NgxFilesizeModule } from 'ngx-filesize';
+import { TreeTableModule } from 'primeng/treetable';
+import { FileActionEvent, FileNavigatorComponent } from './file-navigator.component';
+import { FileRendererComponent } from './file-renderer.component';
+import { DialogModule } from 'primeng/dialog';
+import { FileUploadModule } from 'primeng/fileupload';
+import { InputTextModule } from 'primeng/inputtext';
+import { FileUploaderComponent } from '../../../shared/components/file-upload/file-uploader.component';
+import { Clipboard } from '@angular/cdk/clipboard';
+import { displaySuccess } from '../../../shared/util/success.util';
+import { lastValueFrom, of } from 'rxjs';
+import { saveAs } from 'file-saver';
+import { RefSelection, RefSelectorComponent } from './ref-selector.component';
+import { effectOnceIf } from 'ngxtension/effect-once-if';
+import { MarkdownRendererComponent } from './renderers/markdown-renderer.component';
+import { repoDisplayNameOrId } from '../../../shared/util/naming.util';
+import { TagModule } from 'primeng/tag';
 
 @Component({
   selector: 'sm-hub-objects',
@@ -57,22 +56,22 @@ import {TagModule} from "primeng/tag";
     ReactiveFormsModule,
     RefSelectorComponent,
     MarkdownRendererComponent,
-    TagModule
+    TagModule,
   ],
   providers: [MessageService],
   styles: `
     ::ng-deep .p-card-body {
       padding: 1rem !important;
     }
-  `
+  `,
 })
 export class HubObjectsComponent {
   repository = input.required<ILakeFsRepository>();
   refId = input<string>();
   refType = input<'branch' | 'tag' | 'commit'>();
 
-  branches = derivedAsync(() => this.lakeFsService.listBranches(this.repository().id)
-    .pipe(
+  branches = derivedAsync(() =>
+    this.lakeFsService.listBranches(this.repository().id).pipe(
       tap(branches => {
         let branchToSelect = branches && branches.length > 0 ? branches[0] : null;
         if (this.refType() === 'branch' && this.refId()) {
@@ -82,28 +81,34 @@ export class HubObjectsComponent {
           }
         }
         if (!this.refType() || this.refType() === 'branch') {
-          this.selectedRef.set({id: branchToSelect.id, type: 'branch', metadata: branchToSelect.metadata});
+          this.selectedRef.set({ id: branchToSelect.id, type: 'branch', metadata: branchToSelect.metadata });
         }
       }),
-      catchError((e) => displayErrorAndRethrow(this.store, e))));
+      catchError(e => displayErrorAndRethrow(this.store, e)),
+    ),
+  );
 
-  tags = derivedAsync(() => this.lakeFsService.listTags(this.repository().id)
-    .pipe(
+  tags = derivedAsync(() =>
+    this.lakeFsService.listTags(this.repository().id).pipe(
       tap(tags => {
         if (this.refType() === 'tag' && this.refId()) {
           const existingTag = tags.find(b => b.id === this.refId());
           if (existingTag) {
-            this.selectedRef.set({id: existingTag.id, type: 'tag'});
+            this.selectedRef.set({ id: existingTag.id, type: 'tag' });
           }
         }
       }),
-      catchError((e) => displayErrorAndRethrow(this.store, e))));
+      catchError(e => displayErrorAndRethrow(this.store, e)),
+    ),
+  );
 
   objects = derivedAsync(() => {
     this.refreshObjects();
-    return this.selectedRef() ?
-      this.lakeFsService.listObjects(this.repository()?.id, this.selectedRef().id)
-        .pipe(catchError((e) => displayErrorAndRethrow(this.store, e))) : [] as ILakeFsObjectStats[]
+    return this.selectedRef()
+      ? this.lakeFsService
+          .listObjects(this.repository()?.id, this.selectedRef().id)
+          .pipe(catchError(e => displayErrorAndRethrow(this.store, e)))
+      : ([] as ILakeFsObjectStats[]);
   });
 
   refreshObjects = signal(1);
@@ -129,13 +134,12 @@ export class HubObjectsComponent {
   constructor() {
     effectOnceIf(
       () => this.refType() === 'commit',
-      (valueFromCondition) => {
+      valueFromCondition => {
         if (valueFromCondition) {
-          this.selectedRef.set({id: this.refId(), type: 'commit'});
+          this.selectedRef.set({ id: this.refId(), type: 'commit' });
         }
-      }
+      },
     );
-
   }
 
   readmeText = derivedAsync(() => {
@@ -152,11 +156,11 @@ export class HubObjectsComponent {
       return of(null);
     }
 
-    return this.directLakeFsService.fetchObjectAsText(repo, ref, readme.path).pipe(
+    return this.lakeFsService.fetchObjectAsText(repo, ref, readme.path).pipe(
       catchError(err => {
         console.error('❌ Eroare la încărcarea README.md', err);
         return of(null);
-      })
+      }),
     );
   });
 
@@ -205,16 +209,12 @@ export class HubObjectsComponent {
     this.addFileDialogVisible.set(true);
     this.commitForm.reset({
       path: this.selectedFolder() ? this.selectedFolder().key : '/',
-      message: null
-    })
+      message: null,
+    });
   }
 
   uploadUrlModifier(url: string, files: File[]): string {
-    return this.directLakeFsService.objectUploadUrl(
-      this.repository().id,
-      this.selectedRef().id,
-      this.commitForm.value.path,
-      files[0]);
+    return this.lakeFsService.objectUploadUrl(this.repository().id, this.selectedRef().id, this.commitForm.value.path, files[0]);
   }
 
   async uploadComplete() {
@@ -224,11 +224,9 @@ export class HubObjectsComponent {
     }, 2000);
 
     try {
-      await lastValueFrom(this.lakeFsService.commit(
-        this.repository().id,
-        this.selectedRef().id,
-        {message: this.commitForm.value.message}
-      ));
+      await lastValueFrom(
+        this.lakeFsService.commit(this.repository().id, this.selectedRef().id, { message: this.commitForm.value.message }),
+      );
     } catch (e) {
       displayError(this.store, e);
     }
@@ -244,32 +242,29 @@ export class HubObjectsComponent {
     } else if (event?.action === 'delete') {
       this.deleteForm.reset({
         message: null,
-        file: event.file
+        file: event.file,
       });
       this.deleteFileDialogVisible.set(true);
     } else if (event?.action === 'download') {
-      this.directLakeFsService.download(this.repository().id, this.selectedRef().id, event.file.path).subscribe({
-        next: (response) => {
+      this.lakeFsService.download(this.repository().id, this.selectedRef().id, event.file.path).subscribe({
+        next: response => {
           let fileName = event.file.path;
           if (fileName.lastIndexOf('/') > -1) {
             fileName = fileName.substring(fileName.lastIndexOf('/') + 1);
           }
           saveAs(response.body, fileName);
-        }
-      })
+        },
+      });
     }
   }
 
   async deleteFile() {
     try {
-      await lastValueFrom(this.lakeFsService.deleteObject(
-        this.repository().id, this.selectedRef().id, this.deleteForm.value.file.path));
+      await lastValueFrom(this.lakeFsService.deleteObject(this.repository().id, this.selectedRef().id, this.deleteForm.value.file.path));
 
-      await lastValueFrom(this.lakeFsService.commit(
-        this.repository().id,
-        this.selectedRef().id,
-        {message: this.deleteForm.value.message}
-      ));
+      await lastValueFrom(
+        this.lakeFsService.commit(this.repository().id, this.selectedRef().id, { message: this.deleteForm.value.message }),
+      );
 
       // this is needed because lakeFs might not update the list of objects instantly
       setTimeout(() => {
@@ -287,7 +282,6 @@ export class HubObjectsComponent {
   }
 
   readonly messageService = inject(MessageService);
-  readonly directLakeFsService = inject(DirectLakeFsService);
   readonly lakeFsService = inject(LakeFsService);
   readonly store = inject(Store);
   readonly clipboard = inject(Clipboard);

@@ -1,4 +1,4 @@
-import { Component, computed, inject, input } from '@angular/core';
+import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { ILakeFsObjectStats, ILakeFsRepository } from '../../../shared/model/lakefs.model';
 import { DuckDBRendererComponent } from './renderers/duckdb-renderer.component';
 import { PdfRendererComponent } from './renderers/pdf-renderer.component';
@@ -7,14 +7,12 @@ import { MarkdownRendererComponent } from './renderers/markdown-renderer.compone
 import { IpynbRendererComponent } from './renderers/ipynb-renderer.component';
 import { ImageRendererComponent } from './renderers/image-renderer.component';
 import { ToolargeRendererComponent } from './renderers/toolarge-renderer.component';
-import { derivedAsync } from 'ngxtension/derived-async';
-import { catchError } from 'rxjs/operators';
-import { displayErrorAndRethrow } from '../../../shared/util/error.util';
 import { Store } from '@ngxs/store';
-import { DirectLakeFsService } from '../../../shared/service/direct-lake-fs.service';
 import { LazyTextViewerComponent } from './lazy-text-viewer';
+import { LakeFsService } from '../../../shared/service/lake-fs.service';
+import { ProgressBarModule } from 'primeng/progressbar';
 
-const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+const MAX_FILE_SIZE = 100 * 5 * 1024 * 1024; // 500MB
 
 @Component({
   selector: 'sm-file-renderer',
@@ -29,12 +27,17 @@ const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
     ImageRendererComponent,
     ToolargeRendererComponent,
     LazyTextViewerComponent,
+    ProgressBarModule,
   ],
 })
 export class FileRendererComponent {
   repository = input.required<ILakeFsRepository>();
   ref = input.required<string>();
   object = input.required<ILakeFsObjectStats>();
+
+  loadProgress = signal<number>(0);
+  loading = signal<boolean>(true);
+  objectTextData = signal<string | null>(null);
 
   fileType = computed(() => {
     const obj = this.object();
@@ -49,10 +52,38 @@ export class FileRendererComponent {
     return null;
   });
 
-  objectTextData = derivedAsync(() =>
-    this.directLakeFsService
-      .fetchObjectAsText(this.repository().id, this.ref(), this.object().path, false)
-      .pipe(catchError(e => displayErrorAndRethrow(this.store, e))),
+  private trackProgress = effect(
+    () => {
+      const ft = this.fileType();
+      if (ft !== FileType.TEXT && ft !== FileType.MARKDOWN && ft !== FileType.IPYNB) {
+        this.loading.set(false);
+        return;
+      }
+      const repo = this.repository()?.id;
+      const ref = this.ref();
+      const path = this.object()?.path;
+      if (!repo || !ref || !path) return;
+
+      this.loading.set(true);
+      this.loadProgress.set(0);
+      this.objectTextData.set(null);
+
+      this.lakeFsService.fetchObjectAsTextWithProgress(repo, ref, path).subscribe({
+        next: event => {
+          if (event.data === null) {
+            this.loadProgress.set(event.progress);
+          } else {
+            this.loadProgress.set(100);
+            this.loading.set(false);
+            this.objectTextData.set(event.data);
+          }
+        },
+        error: () => {
+          this.loading.set(false);
+        },
+      });
+    },
+    { allowSignalWrites: true },
   );
 
   guessType(fileExtension: string | null): FileType {
@@ -96,14 +127,14 @@ export class FileRendererComponent {
     return FileType.UNSUPPORTED;
   }
 
-  readonly directLakeFsService = inject(DirectLakeFsService);
+  readonly lakeFsService = inject(LakeFsService);
   readonly store = inject(Store);
 
   protected readonly FileType = FileType;
 }
 
 export const getFileExtension = (objectName: string): string => {
-  const objectNameParts = objectName.split(".");
+  const objectNameParts = objectName.split('.');
   return objectNameParts[objectNameParts.length - 1];
 };
 

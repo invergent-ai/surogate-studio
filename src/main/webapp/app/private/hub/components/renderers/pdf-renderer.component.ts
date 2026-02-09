@@ -1,14 +1,12 @@
-import {Component, effect, inject, input, OnInit, signal} from '@angular/core';
-import {DomSanitizer, SafeResourceUrl, SafeUrl} from "@angular/platform-browser";
-import {DirectLakeFsService} from "../../../../shared/service/direct-lake-fs.service";
-import {NgIf} from "@angular/common";
+import { Component, effect, inject, input, signal } from '@angular/core';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { NgIf } from '@angular/common';
+import { LakeFsService } from '../../../../shared/service/lake-fs.service';
 
 @Component({
   selector: 'sm-pdf-renderer',
   standalone: true,
-  imports: [
-    NgIf
-  ],
+  imports: [NgIf],
   template: `
     <div class="object-viewer-pdf">
       <ng-container *ngIf="pdfUrl(); else loading">
@@ -18,7 +16,7 @@ import {NgIf} from "@angular/common";
         <div class="spinner">Loading PDF...</div>
       </ng-template>
     </div>
-  `
+  `,
 })
 export class PdfRendererComponent {
   repoId = input.required<string>();
@@ -26,7 +24,7 @@ export class PdfRendererComponent {
   path = input.required<string>();
 
   private sanitizer = inject(DomSanitizer);
-  private directLakeFsService = inject(DirectLakeFsService);
+  private lakeFsService = inject(LakeFsService);
 
   private pdfUrlSignal = signal<SafeResourceUrl | null>(null);
   pdfUrl = this.pdfUrlSignal.asReadonly();
@@ -38,17 +36,17 @@ export class PdfRendererComponent {
 
     if (!repo || !ref || !filePath) return;
 
-    this.directLakeFsService.download(repo, ref, filePath).subscribe({
-      next: (response) => {
+    this.lakeFsService.download(repo, ref, filePath).subscribe({
+      next: response => {
         const blob = response.body;
         if (blob) {
           const objectUrl = URL.createObjectURL(blob);
           this.pdfUrlSignal.set(this.sanitizer.bypassSecurityTrustResourceUrl(objectUrl));
         }
       },
-      error: (err) => {
+      error: err => {
         console.error('❌ Eroare la încărcarea PDF-ului', err);
-      }
+      },
     });
   });
 }

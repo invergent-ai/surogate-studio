@@ -89,7 +89,7 @@ public class LakeFsService {
         var metadata = new HashMap<String, String>();
         metadata.put("type", LakeFsRepositoryType.DATASET.getType());
 
-        if(!StringUtils.isEmpty(repoId)) {
+        if (!StringUtils.isEmpty(repoId)) {
             metadata.put("displayName", repoId);
         }
         if (!StringUtils.isEmpty(externalId)) {
@@ -211,7 +211,7 @@ public class LakeFsService {
     }
 
     public void deleteRepository(String id) {
-        System.out.println("deleteRepository() - id: "+ id);
+        System.out.println("deleteRepository() - id: " + id);
         var api = new RepositoriesApi(client);
         try {
             var request = api.deleteRepository(id);
@@ -667,6 +667,22 @@ public class LakeFsService {
         } catch (java.io.IOException e) {
             log.error("Failed to read object content: repository {} ref {} path {}", repository, ref, path, e);
             throw new LakeFsException("Failed to read object content", e);
+        }
+    }
+
+    public void uploadObject(String repository, String branch, String path, byte[] content) {
+        var api = new ObjectsApi(client);
+        try {
+            File tempFile = File.createTempFile("lakefs-upload", ".tmp");
+            java.nio.file.Files.write(tempFile.toPath(), content);
+            api.uploadObject(repository, branch, path).content(tempFile).execute();
+            tempFile.delete();
+        } catch (ApiException e) {
+            log.error("Failed to upload object: repository {} branch {} path {}", repository, branch, path, e);
+            throw new LakeFsException("Failed to upload object", e);
+        } catch (java.io.IOException e) {
+            log.error("Failed to write temp file for upload", e);
+            throw new LakeFsException("Failed to upload object", e);
         }
     }
 
