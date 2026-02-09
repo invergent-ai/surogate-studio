@@ -3,6 +3,7 @@ package net.statemesh.service.util;
 import net.statemesh.config.ApplicationProperties;
 import net.statemesh.domain.enumeration.TaskRunType;
 import net.statemesh.service.dto.*;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
 
 import java.util.*;
@@ -111,7 +112,8 @@ public class SkyUtil {
         jobParams.add(
             TaskRunParamDTO.builder()
                 .key(TASK_RUN_ENV_KUBE_CONFIG)
-                .value(rayJob.getProject().getCluster().getKubeConfig())
+                .value(StringUtils.isEmpty(rayJob.getKubeConfig()) ?
+                    rayJob.getProject().getCluster().getKubeConfig() : rayJob.getKubeConfig())
                 .build()
         );
         jobParams.add(

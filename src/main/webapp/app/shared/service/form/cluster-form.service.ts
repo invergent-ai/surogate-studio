@@ -20,12 +20,7 @@ type ClusterFormGroupContent = {
   name: FormControl<ICluster['name']>;
   cid: FormControl<ICluster['cid']>;
   kubeConfig: FormControl<ICluster['kubeConfig']>;
-  openCostUrl: FormControl<ICluster['openCostUrl']>;
-  prometheusUrl: FormControl<ICluster['prometheusUrl']>;
   redisUrl: FormControl<ICluster['redisUrl']>;
-  masterIp: FormControl<ICluster['masterIp']>;
-  publicIp: FormControl<ICluster['publicIp']>;
-  vpnAuth: FormControl<ICluster['vpnAuth']>;
   requestVsLimitsCoefficientCpu: FormControl<ICluster['requestVsLimitsCoefficientCpu']>;
   requestVsLimitsCoefficientMemory: FormControl<ICluster['requestVsLimitsCoefficientMemory']>;
   description: FormControl<ICluster['description']>;
@@ -56,12 +51,7 @@ export class ClusterFormService {
         validators: [Validators.required],
       }),
       kubeConfig: new FormControl(clusterRawValue.kubeConfig),
-      openCostUrl: new FormControl(clusterRawValue.openCostUrl),
-      prometheusUrl: new FormControl(clusterRawValue.prometheusUrl),
       redisUrl: new FormControl(clusterRawValue.redisUrl),
-      masterIp: new FormControl(clusterRawValue.masterIp),
-      publicIp: new FormControl(clusterRawValue.publicIp),
-      vpnAuth: new FormControl(clusterRawValue.vpnAuth),
       requestVsLimitsCoefficientCpu: new FormControl(clusterRawValue.requestVsLimitsCoefficientCpu),
       requestVsLimitsCoefficientMemory: new FormControl(clusterRawValue.requestVsLimitsCoefficientMemory),
       description: new FormControl(clusterRawValue.description, {

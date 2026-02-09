@@ -1,26 +1,24 @@
-import {Component, OnDestroy, OnInit, viewChild} from '@angular/core';
-import {AccountService} from '../../../../shared/service/account.service';
-import {lastValueFrom, Subject, Subscription} from 'rxjs';
-import {INode} from '../../../../shared/model/node.model';
-import {IApplication} from '../../../../shared/model/application.model';
-import {Store} from '@ngxs/store';
-import {IUpdateMessage, UpdateMessageAction} from '../../../../shared/state/actions';
-import {TrackerService} from '../../../../shared/service/tracker.service';
-import {map, takeUntil} from 'rxjs/operators';
-import {Selectors} from '../../../../shared/state/selectors';
-import {IVolume} from '../../../../shared/model/volume.model';
-import {IProject} from '../../../../shared/model/project.model';
-import {IDatabase} from '../../../../shared/model/database.model';
-import {ApplicationMode} from '../../../../shared/model/enum/application-mode.model';
+import { Component, OnDestroy, OnInit, viewChild } from '@angular/core';
+import { AccountService } from '../../../../shared/service/account.service';
+import { lastValueFrom, Subject, Subscription } from 'rxjs';
+import { INode } from '../../../../shared/model/node.model';
+import { IApplication } from '../../../../shared/model/application.model';
+import { Store } from '@ngxs/store';
+import { IUpdateMessage, UpdateMessageAction } from '../../../../shared/state/actions';
+import { TrackerService } from '../../../../shared/service/tracker.service';
+import { map, takeUntil } from 'rxjs/operators';
+import { Selectors } from '../../../../shared/state/selectors';
+import { IVolume } from '../../../../shared/model/volume.model';
+import { IProject } from '../../../../shared/model/project.model';
+import { IDatabase } from '../../../../shared/model/database.model';
+import { ApplicationMode } from '../../../../shared/model/enum/application-mode.model';
 import {
   AppWindow,
   Bot,
   Cpu,
   Database,
   ExternalLink,
-  FileText,
   Folder,
-  Grid2X2,
   HardDrive,
   LayoutDashboard,
   LogOut,
@@ -28,15 +26,14 @@ import {
   Rocket,
   Server,
   Settings,
-  Shield,
   SlidersHorizontal,
   Trophy,
   User,
   Users,
   WandSparkles,
-  Warehouse
+  Warehouse,
 } from 'lucide-angular';
-import {OverlayPanel} from 'primeng/overlaypanel';
+import { OverlayPanel } from 'primeng/overlaypanel';
 
 const PROJECTS_MENU_ITEM = 'Projects';
 const APPS_MENU_ITEM = 'Deployments';
@@ -159,12 +156,17 @@ export class AppMenuComponent implements OnInit, OnDestroy {
       authorities: ['ROLE_ADMIN'],
       class: 'uppercase text-500 text-sm',
       items: [
-        // {
-        //   label: 'System configuration',
-        //   lucide: Settings,
-        //   routerLink: ['/admin/system-configuration'],
-        //   reset: true
-        // },
+        {
+          label: 'Clusters',
+          lucide: Settings,
+          routerLink: ['/admin/cluster']
+        },
+        {
+          label: 'System configuration',
+          lucide: Settings,
+          routerLink: ['/admin/system-configuration'],
+          reset: true
+        },
         // {
         //   label: 'Gateway Admin',
         //   lucide: Shield,

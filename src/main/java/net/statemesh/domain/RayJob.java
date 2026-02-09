@@ -103,6 +103,10 @@ public class RayJob extends AbstractAuditingEntity<String> implements Resource, 
     @Column(name = "sky_config", columnDefinition = "text")
     private String skyConfig;
 
+    // Custom KubeConfig for SkyPilot
+    @Column(name = "kube_config", columnDefinition = "text")
+    private String kubeConfig;
+
     @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "job")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @JsonIgnoreProperties(value = {"job"}, allowSetters = true)

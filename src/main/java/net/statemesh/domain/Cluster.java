@@ -49,20 +49,6 @@ public class Cluster implements Serializable {
     @Column(name = "kube_config", columnDefinition = "text")
     private String kubeConfig;
 
-    @Column(name = "master_ip", nullable = false)
-    @JsonIgnore
-    private String masterIp;
-
-    @Column(name = "public_ip")
-    private String publicIp;
-
-    @Column(name = "vpn_auth")
-    @JsonIgnore
-    private String vpnAuth;
-
-    @Column(name = "open_cost_url")
-    private String openCostUrl;
-
     @Column(name = "prometheus_url")
     private String prometheusUrl;
 

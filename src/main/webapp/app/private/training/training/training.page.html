@@ -281,8 +281,14 @@
 
                 <div class="flex align-items-center mt-4">
                   <p-radioButton id="localK8s" [value]="true" inputId="localK8s" formControlName="skyToK8s" class="mr-2"/>
-                  <sm-label-tooltip [tooltip]="LOCAL_K8S">Local Kubernetes</sm-label-tooltip>
+                  <sm-label-tooltip [tooltip]="LOCAL_K8S">Kubernetes</sm-label-tooltip>
                 </div>
+                @if (jobForm.get('skyToK8s').value) {
+                  <div class="col-12 mt-2">
+                    <sm-label-tooltip [tooltip]="KUBECONFIG">KubeConfig</sm-label-tooltip>
+                    <textarea pInputTextarea id="kubeConfig" [rows]="10" formControlName="kubeConfig" class="w-full"></textarea>
+                  </div>
+                }
               </div>
             }
 

@@ -54,6 +54,7 @@ public class RayJobDTO implements ResourceDTO, Serializable {
     private String trainingConfig;
     private String rayClusterShape;
     private String skyConfig;
+    private String kubeConfig;
 
     @Builder.Default
     private Set<JobEnvironmentVariableDTO> envVars = new HashSet<>();

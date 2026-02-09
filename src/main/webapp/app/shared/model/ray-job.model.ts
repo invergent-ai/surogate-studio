@@ -25,6 +25,7 @@ export interface IRayJob extends IBaseResource {
   trainingConfig?: string | null;
   rayClusterShape?: string | null;
   skyConfig?: string | null;
+  kubeConfig?: string | null;
   envVars?: IJobEnvironmentVariable[] | null;
   createdDate?: string | null;
   startTime?: string | null;

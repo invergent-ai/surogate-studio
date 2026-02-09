@@ -504,7 +504,10 @@ export const API_KEY = `
 <p>Access key from the cloud infrastructure provider selected.</p>`;
 
 export const LOCAL_K8S = `
-<p>Deploy on your local Kubernetes using SkyPilot. This has a slower setup than the deployment managed by Surogate Studio with KubeRay</p>`;
+<p>Deploy on Kubernetes using SkyPilot. This has a slower setup than the deployment managed by Surogate Studio with KubeRay</p>`;
+
+export const KUBECONFIG = `
+<p>KubeConfig yaml for targeted k8s cluster connection. Keep this empty for the local cluster.</p>`;
 
 export const USE_AXOLOTL = `
 <p>Keep this unchecked to use Surogate - the fastest training library in the world.</p>`;

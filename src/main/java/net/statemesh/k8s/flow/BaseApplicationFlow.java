@@ -73,7 +73,9 @@ public abstract class BaseApplicationFlow extends ResourceCreationFlow<Applicati
             .filter(v -> !VolumeType.HOST_PATH.equals(v.getType()) && !VolumeType.SHM.equals(v.getType()))
             .collect(Collectors.toSet());
 
-        if (volumes.isEmpty()) return CompletableFuture.completedFuture(null);
+        if (volumes.isEmpty()) {
+            return CompletableFuture.completedFuture(null);
+        }
         if (StringUtils.isEmpty(cluster.getRedisUrl())) {
             log.error("Skipping storage class creation; redis not configured on cluster {}", cluster.getCid());
             return CompletableFuture.completedFuture(null);

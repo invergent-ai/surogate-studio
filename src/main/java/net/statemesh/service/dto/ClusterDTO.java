@@ -24,18 +24,9 @@ public class ClusterDTO implements Serializable {
     @NotNull
     private String cid;
 
-    @NotNull
-    private String masterIp;
-
-    private String publicIp;
-
-    @NotNull
-    private String vpnAuth;
-
     @Lob
     private String kubeConfig;
 
-    private String openCostUrl;
     private String prometheusUrl;
     private String redisUrl;
     private Double requestVsLimitsCoefficientCpu;

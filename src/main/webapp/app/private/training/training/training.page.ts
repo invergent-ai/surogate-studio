@@ -37,7 +37,7 @@ import {
   API_KEY,
   BASE_MODEL_REPOSITORY, CLOUD_PROVIDER, CPUS, GPU_TYPE,
   GPUS_PER_WORKER,
-  HEAD_GPUS, INSTANCE_TYPE, LOCAL_K8S,
+  HEAD_GPUS, INSTANCE_TYPE, KUBECONFIG, LOCAL_K8S,
   LORA,
   LORA_ALPHA,
   LORA_DROPOUT,
@@ -189,6 +189,7 @@ export class TrainingPage implements OnInit {
       cpus: new FormControl<string | null>(null),
       memory: new FormControl<string | null>(null),
       instanceType: new FormControl<string | null>(null),
+      kubeConfig: new FormControl<string | null>(null),
       useSpot: new FormControl<boolean>(false),
       useAxolotl: new FormControl<boolean>(true),
       numNodes: new FormControl<number>(1, [Validators.required]),
@@ -788,6 +789,7 @@ export class TrainingPage implements OnInit {
   protected readonly CLOUD_PROVIDER = CLOUD_PROVIDER;
   protected readonly API_KEY = API_KEY;
   protected readonly LOCAL_K8S = LOCAL_K8S;
+  protected readonly KUBECONFIG = KUBECONFIG;
   protected readonly USE_AXOLOTL = USE_AXOLOTL;
   protected readonly ACCELERATOR = ACCELERATOR;
   protected readonly ACCELERATOR_ARGS = ACCELERATOR_ARGS;

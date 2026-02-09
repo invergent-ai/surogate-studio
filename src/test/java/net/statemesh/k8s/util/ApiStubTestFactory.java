@@ -139,8 +139,6 @@ public final class ApiStubTestFactory {
             c.setId("cluster-test");
             c.setName("cluster-test-name");
             c.setCid("cid-test");
-            c.setMasterIp("127.0.0.1");
-            c.setVpnAuth("dummy");
             c.setKubeConfig("apiVersion: v1\nclusters: []\n");
             ZoneDTO zone = new ZoneDTO();
             zone.setId("zone-id");

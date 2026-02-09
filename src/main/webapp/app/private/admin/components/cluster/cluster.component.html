@@ -92,48 +92,6 @@
 
         <div class="col-12 mb-3">
           <span class="p-float-label">
-            <input pInputText id="openCostUrl" formControlName="openCostUrl"/>
-            <label for="openCostUrl">OpenCost URL</label>
-          </span>
-        </div>
-
-        <div class="col-12 mb-3">
-          <span class="p-float-label">
-            <input pInputText id="prometheusUrl" formControlName="prometheusUrl"/>
-            <label for="prometheusUrl">Prometheus URL</label>
-          </span>
-        </div>
-
-        <div class="col-12 mb-3">
-          <span class="p-float-label">
-            <input pInputText id="redisUrl" formControlName="redisUrl"/>
-            <label for="redisUrl">Redis URL</label>
-          </span>
-        </div>
-
-        <div class="col-12 mb-3">
-          <span class="p-float-label">
-            <input pInputText id="masterIp" formControlName="masterIp"/>
-            <label for="masterIp">Master IP (LB)</label>
-          </span>
-        </div>
-
-        <div class="col-12 mb-3">
-          <span class="p-float-label">
-            <input pInputText id="publicIp" formControlName="publicIp"/>
-            <label for="publicIp">Public IP (Ingress)</label>
-          </span>
-        </div>
-
-        <div class="col-12 mb-3">
-          <span class="p-float-label">
-            <input pInputText id="vpnAuth" formControlName="vpnAuth"/>
-            <label for="vpnAuth">VPN Auth key</label>
-          </span>
-        </div>
-
-        <div class="col-12 mb-3">
-          <span class="p-float-label">
             <p-inputNumber id="requestVsLimitsCoefficientCpu" mode="decimal" inputId="requestVsLimitsCoefficientCpu"
                            [minFractionDigits]="2" [maxFractionDigits]="3" [step]="0.01"
                            formControlName="requestVsLimitsCoefficientCpu" [showButtons]="true" [min]="0.001" [max]="1"></p-inputNumber>
