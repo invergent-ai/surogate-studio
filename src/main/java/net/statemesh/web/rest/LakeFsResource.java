@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.statemesh.service.dto.*;
 import net.statemesh.service.lakefs.LakeFsException;
+import net.statemesh.service.lakefs.LakeFsNoChangesException;
 import net.statemesh.service.lakefs.LakeFsService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -169,10 +170,13 @@ public class LakeFsResource {
         try {
             lakeFsService.commit(repoId, branchId, body);
             return ResponseEntity.ok().build();
+        } catch (LakeFsNoChangesException ex) {
+            log.debug("No changes to commit for repo {} branch {}", repoId, branchId);
+            return ResponseEntity.ok().build();
         } catch (LakeFsException ex) {
-            log.error("Problem deleting repository", ex);
+            log.error("Problem committing", ex);
+            return ResponseEntity.badRequest().build();
         }
-        return ResponseEntity.badRequest().build();
     }
 
     @GetMapping("/commit/{repoId}/{commitId}")
@@ -278,7 +282,9 @@ public class LakeFsResource {
         @RequestParam("path") String path) {
         try {
             byte[] content = lakeFsService.getObjectContent(repoId, ref, path);
-            return ResponseEntity.ok(content);
+            return ResponseEntity.ok()
+                .header("Content-Length", String.valueOf(content.length))
+                .body(content);
         } catch (LakeFsException ex) {
             log.error("Problem getting object content", ex);
             return ResponseEntity.badRequest().build();

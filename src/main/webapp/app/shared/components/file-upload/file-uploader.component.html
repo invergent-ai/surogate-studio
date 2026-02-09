@@ -20,14 +20,17 @@
               [disabled]="disabled || !hasFiles() || isFileLimitExceeded()">
       <i-lucide [img]="CloudUpload" class="w-1rem h-1rem p-button-icon p-button-icon-left"></i-lucide>
     </p-button>
-    <p-button *ngIf="showCancelButton" type="button" label="Cancel" size="small" outlined (onClick)="clear()" [disabled]="!hasFiles() || uploading">
+    <p-button *ngIf="showCancelButton" type="button" label="Cancel" size="small" outlined (onClick)="clear()"
+              [disabled]="!hasFiles() || uploading">
       <i-lucide [img]="X" class="w-1rem h-1rem p-button-icon p-button-icon-left"></i-lucide>
     </p-button>
 
     <ng-container *ngTemplateOutlet="toolbarTemplate"></ng-container>
   </div>
-  <div #content class="sm-fileupload-content" (dragenter)="onDragEnter($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event)">
-    <p-progressBar class="sm-fileupload-top-progress" [value]="progress" [showValue]="false" *ngIf="hasFiles() && !parallel"></p-progressBar>
+  <div #content class="sm-fileupload-content" (dragenter)="onDragEnter($event)" (dragleave)="onDragLeave($event)"
+       (drop)="onDrop($event)">
+    <p-progressBar class="sm-fileupload-top-progress" [value]="progress" [showValue]="false"
+                   *ngIf="hasFiles() && !parallel"></p-progressBar>
 
     <p-messages [value]="msgs" [enableService]="false"></p-messages>
 
@@ -37,12 +40,14 @@
           <div class="col sm-fileupload-filename text-sm">
             {{ file.name }}
             <div *ngIf="parallel" class="pt-1">
-              <p-progressBar class="sm-fileupload-file-progress" [value]="25*i" [showValue]="false"></p-progressBar>
+              <p-progressBar class="sm-fileupload-file-progress" [value]="fileProgress[i]"
+                             [showValue]="false"></p-progressBar>
             </div>
           </div>
           <div class="col-2 text-sm text-center">{{ file.size | filesize }}</div>
           <div class="col-1 text-center">
-            <button type="button" pButton (click)="remove($event, i)" [disabled]="uploading" class="p-button-icon-only" size="small" severity="danger" outlined>
+            <button type="button" pButton (click)="remove($event, i)" [disabled]="uploading" class="p-button-icon-only"
+                    size="small" severity="danger" outlined>
               <i-lucide [img]="X" class="w-1rem h-1rem"></i-lucide>
             </button>
           </div>

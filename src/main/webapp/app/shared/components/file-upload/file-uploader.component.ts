@@ -58,13 +58,13 @@ import { NgxFilesizeModule } from 'ngx-filesize';
     ButtonDirective,
     NgTemplateOutlet,
     NgIf,
-    NgxFilesizeModule
+    NgxFilesizeModule,
   ],
   host: {
-    class: 'p-element'
+    class: 'p-element',
   },
   changeDetection: ChangeDetectionStrategy.OnPush,
-  encapsulation: ViewEncapsulation.None
+  encapsulation: ViewEncapsulation.None,
 })
 export class FileUploaderComponent implements AfterViewInit, AfterContentInit, OnInit, OnDestroy, BlockableUI {
   /**
@@ -283,12 +283,11 @@ export class FileUploaderComponent implements AfterViewInit, AfterContentInit, O
     public zone: NgZone,
     private http: HttpClient,
     public cd: ChangeDetectorRef,
-    public config: PrimeNGConfig
-  ) {
-  }
+    public config: PrimeNGConfig,
+  ) {}
 
   ngAfterContentInit() {
-    this.templates?.forEach((item) => {
+    this.templates?.forEach(item => {
       switch (item.getType()) {
         case 'content':
           this.contentTemplate = item.template;
@@ -384,7 +383,7 @@ export class FileUploaderComponent implements AfterViewInit, AfterContentInit, O
       this.msgs.push({
         severity: 'error',
         summary: this.invalidFileTypeMessageSummary.replace('{0}', file.name),
-        detail: this.invalidFileTypeMessageDetail.replace('{0}', this.accept)
+        detail: this.invalidFileTypeMessageDetail.replace('{0}', this.accept),
       });
       return false;
     }
@@ -393,7 +392,7 @@ export class FileUploaderComponent implements AfterViewInit, AfterContentInit, O
       this.msgs.push({
         severity: 'error',
         summary: this.invalidFileSizeMessageSummary.replace('{0}', file.name),
-        detail: this.invalidFileSizeMessageDetail.replace('{0}', this.formatSize(this.maxFileSize))
+        detail: this.invalidFileSizeMessageDetail.replace('{0}', this.formatSize(this.maxFileSize)),
       });
       return false;
     }
@@ -402,9 +401,11 @@ export class FileUploaderComponent implements AfterViewInit, AfterContentInit, O
   }
 
   private isFileTypeValid(file: File): boolean {
-    let acceptableTypes = this.accept?.split(',').map((type) => type.trim());
+    let acceptableTypes = this.accept?.split(',').map(type => type.trim());
     for (let type of acceptableTypes!) {
-      let acceptable = this.isWildcard(type) ? this.getTypeClass(file.type) === this.getTypeClass(type) : file.type == type || this.getFileExtension(file).toLowerCase() === type.toLowerCase();
+      let acceptable = this.isWildcard(type)
+        ? this.getTypeClass(file.type) === this.getTypeClass(type)
+        : file.type == type || this.getFileExtension(file).toLowerCase() === type.toLowerCase();
 
       if (acceptable) {
         return true;
@@ -445,64 +446,67 @@ export class FileUploaderComponent implements AfterViewInit, AfterContentInit, O
     this.files.forEach(() => this.fileProgress.push(0));
 
     const abortController = new AbortController();
-    await pMap(this.files, async (file, index) => {
-      let formData = new FormData();
-      formData.append(this.name!, this.files[index], this.files[index].name);
-      this.onBeforeUpload.emit({
-        formData: formData
-      });
+    await pMap(
+      this.files,
+      (file, index) => {
+        let formData = new FormData();
+        formData.append(this.name!, this.files[index], this.files[index].name);
+        this.onBeforeUpload.emit({ formData });
 
-      let url = this.url;
-      if (this.urlModifier) {
-        url = this.urlModifier(this.url, [this.files[index]]);
-      }
+        let url = this.url;
+        if (this.urlModifier) {
+          url = this.urlModifier(this.url, [this.files[index]]);
+        }
 
-      this.http.request(<string>this.method, url as string, {
-        body: formData,
-        headers: this.headers,
-        reportProgress: true,
-        observe: 'events',
-        withCredentials: this.withCredentials
-      }).subscribe({
-        next: (event: HttpEvent<any>) => {
-          switch (event.type) {
-            case HttpEventType.Sent:
-              this.onSend.emit({
-                originalEvent: event,
-                formData: formData,
-                files: [this.files[index]]
-              });
-              break;
-            case HttpEventType.Response:
-              this.uploading = false;
-              this.fileProgress[index] = 0;
-
-              if (event['status'] >= 200 && event['status'] < 300) {
-                if (this.fileLimit) {
-                  this.uploadedFileCount += this.files.length;
+        return new Promise<void>((resolve, reject) => {
+          this.http
+            .request(<string>this.method, url as string, {
+              body: formData,
+              headers: this.headers,
+              reportProgress: true,
+              observe: 'events',
+              withCredentials: this.withCredentials,
+            })
+            .subscribe({
+              next: (event: HttpEvent<any>) => {
+                switch (event.type) {
+                  case HttpEventType.Sent:
+                    this.onSend.emit({ originalEvent: event, formData, files: [this.files[index]] });
+                    this.cd.markForCheck();
+                    break;
+                  case HttpEventType.Response:
+                    this.uploading = false;
+                    this.fileProgress[index] = 0;
+                    if (event['status'] >= 200 && event['status'] < 300) {
+                      if (this.fileLimit) {
+                        this.uploadedFileCount += this.files.length;
+                      }
+                      this.onUpload.emit({ originalEvent: event, files: [this.files[index]] });
+                    } else {
+                      this.onError.emit({ files: [this.files[index]] });
+                    }
+                    this.clear();
+                    resolve();
+                    break;
+                  case HttpEventType.UploadProgress:
+                    if (event['loaded']) {
+                      this.fileProgress[index] = Math.round((event['loaded'] * 100) / event['total']!);
+                    }
+                    this.onProgress.emit({ originalEvent: event, progress: this.fileProgress[index], files: [this.files[index]] });
+                    this.cd.markForCheck();
+                    break;
                 }
-
-                this.onUpload.emit({ originalEvent: event, files: [this.files[index]] });
-              } else {
-                this.onError.emit({ files: [this.files[index]] });
-              }
-
-              this.clear();
-              break;
-            case HttpEventType.UploadProgress: {
-              if (event['loaded']) {
-                this.fileProgress[index] = Math.round((event['loaded'] * 100) / event['total']!);
-              }
-              this.onProgress.emit({ originalEvent: event, progress: this.fileProgress[index], files: [this.files[index]] });
-              break;
-            }
-          }
-        },
-        error: (error: ErrorEvent) => {
-          this.uploading = false;
-          this.onError.emit({ files: [this.files[index]], error: error });
-        }});
-    }, { concurrency: 5, signal: abortController.signal });
+              },
+              error: (error: ErrorEvent) => {
+                this.uploading = false;
+                this.onError.emit({ files: [this.files[index]], error });
+                reject(error);
+              },
+            });
+        });
+      },
+      { concurrency: 5, signal: abortController.signal },
+    );
 
     this.onUploadComplete.emit();
   }
@@ -515,7 +519,7 @@ export class FileUploaderComponent implements AfterViewInit, AfterContentInit, O
       formData.append(this.name!, this.files[i], this.files[i].name);
     }
     this.onBeforeUpload.emit({
-      formData: formData
+      formData: formData,
     });
 
     let url = this.url;
@@ -523,56 +527,58 @@ export class FileUploaderComponent implements AfterViewInit, AfterContentInit, O
       url = this.urlModifier(this.url, this.files);
     }
 
-    this.http.request(<string>this.method, url as string, {
-      body: formData,
-      headers: this.headers,
-      reportProgress: true,
-      observe: 'events',
-      withCredentials: this.withCredentials
-    }).subscribe({
-      next: (event: HttpEvent<any>) => {
-        switch (event.type) {
-          case HttpEventType.Sent:
-            this.onSend.emit({
-              originalEvent: event,
-              formData: formData,
-              files: this.files
-            });
-            break;
-          case HttpEventType.Response:
-            this.uploading = false;
-            this.progress = 0;
+    this.http
+      .request(<string>this.method, url as string, {
+        body: formData,
+        headers: this.headers,
+        reportProgress: true,
+        observe: 'events',
+        withCredentials: this.withCredentials,
+      })
+      .subscribe({
+        next: (event: HttpEvent<any>) => {
+          switch (event.type) {
+            case HttpEventType.Sent:
+              this.onSend.emit({
+                originalEvent: event,
+                formData: formData,
+                files: this.files,
+              });
+              break;
+            case HttpEventType.Response:
+              this.uploading = false;
+              this.progress = 0;
 
-            if (event['status'] >= 200 && event['status'] < 300) {
-              if (this.fileLimit) {
-                this.uploadedFileCount += this.files.length;
+              if (event['status'] >= 200 && event['status'] < 300) {
+                if (this.fileLimit) {
+                  this.uploadedFileCount += this.files.length;
+                }
+
+                this.onUpload.emit({ originalEvent: event, files: this.files });
+                this.onUploadComplete.emit();
+              } else {
+                this.onError.emit({ files: this.files });
               }
 
-              this.onUpload.emit({ originalEvent: event, files: this.files });
-              this.onUploadComplete.emit();
-            } else {
-              this.onError.emit({ files: this.files });
-            }
+              this.clear();
+              break;
+            case HttpEventType.UploadProgress: {
+              if (event['loaded']) {
+                this.progress = Math.round((event['loaded'] * 100) / event['total']!);
+              }
 
-            this.clear();
-            break;
-          case HttpEventType.UploadProgress: {
-            if (event['loaded']) {
-              this.progress = Math.round((event['loaded'] * 100) / event['total']!);
+              this.onProgress.emit({ originalEvent: event, progress: this.progress, files: this.files });
+              break;
             }
-
-            this.onProgress.emit({ originalEvent: event, progress: this.progress, files: this.files });
-            break;
           }
-        }
 
-        this.cd.markForCheck();
-      },
-      error: (error: ErrorEvent) => {
-        this.uploading = false;
-        this.onError.emit({ files: this.files, error: error });
-      }
-    });
+          this.cd.markForCheck();
+        },
+        error: (error: ErrorEvent) => {
+          this.uploading = false;
+          this.onError.emit({ files: this.files, error: error });
+        },
+      });
   }
 
   /**
@@ -613,7 +619,7 @@ export class FileUploaderComponent implements AfterViewInit, AfterContentInit, O
       this.msgs.push({
         severity: 'error',
         summary: this.invalidFileLimitMessageSummary.replace('{0}', (this.fileLimit as number).toString()),
-        detail: this.invalidFileLimitMessageDetail.replace('{0}', (this.fileLimit as number).toString())
+        detail: this.invalidFileLimitMessageDetail.replace('{0}', (this.fileLimit as number).toString()),
       });
     }
   }

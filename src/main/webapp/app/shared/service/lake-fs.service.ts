@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
+import { HttpClient, HttpEventType, HttpParams, HttpResponse } from '@angular/common/http';
 import { Store } from '@ngxs/store';
 import { Selectors } from '../state/selectors';
 import {
@@ -162,5 +162,32 @@ export class LakeFsService {
         this.s3Endpoint = config.s3Endpoint;
       }),
     );
+  }
+
+  fetchObjectAsTextWithProgress(repoId: string, ref: string, path: string): Observable<{ progress: number; data: string | null }> {
+    return new Observable(observer => {
+      this.http
+        .get(`${this.resourceUrl}/objects/${encodeURIComponent(repoId)}/${encodeURIComponent(ref)}/content`, {
+          params: new HttpParams().set('path', path),
+          responseType: 'text',
+          reportProgress: true,
+          observe: 'events',
+        })
+        .subscribe({
+          next: (event: any) => {
+            switch (event.type) {
+              case HttpEventType.DownloadProgress:
+                const progress = event.total ? Math.round((event.loaded * 100) / event.total) : -1;
+                observer.next({ progress, data: null });
+                break;
+              case HttpEventType.Response:
+                observer.next({ progress: 100, data: event.body });
+                observer.complete();
+                break;
+            }
+          },
+          error: err => observer.error(err),
+        });
+    });
   }
 }

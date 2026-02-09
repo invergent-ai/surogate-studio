@@ -29,20 +29,29 @@ import { LakeFsService } from '../../../shared/service/lake-fs.service';
   ],
 })
 export class LazyTextViewerComponent {
-  repository = input.required<any>();
-  ref = input.required<string>();
-  object = input.required<any>();
+  repository = input<any>();
+  ref = input<string>();
+  object = input<any>();
+  preloadedText = input<string | null>(null);
   CHUNK_SIZE = 10000;
 
-  objectTextData = derivedAsync<string>(() =>
-    this.lakeFsService.fetchObjectAsText(this.repository().id, this.ref(), this.object().path).pipe(
+  objectTextData = derivedAsync<string>(() => {
+    const preloaded = this.preloadedText();
+    if (preloaded !== null) {
+      return of(preloaded);
+    }
+    const repo = this.repository();
+    const ref = this.ref();
+    const obj = this.object();
+    if (!repo || !ref || !obj) return of('');
+    return this.lakeFsService.fetchObjectAsText(repo.id, ref, obj.path).pipe(
       map(text => text ?? ''),
       catchError(e => {
         displayErrorAndRethrow(this.store, e);
         return of('');
       }),
-    ),
-  );
+    );
+  });
 
   visibleLength = signal(this.CHUNK_SIZE);
 
