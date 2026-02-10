@@ -117,6 +117,9 @@ export class ClusterComponent implements OnInit {
       if (this.isNewCluster) {
         this.subscribeToSaveResponse(this.clusterService.create(cluster));
       } else {
+        const existing = this.clusters.filter(c => c.id === cluster.id)[0];
+        cluster.redisUrl = existing.redisUrl;
+        cluster.prometheusUrl = existing.prometheusUrl;
         this.subscribeToSaveResponse(this.clusterService.update(cluster));
       }
     }
