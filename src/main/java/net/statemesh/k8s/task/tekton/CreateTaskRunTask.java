@@ -5,6 +5,7 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.generic.options.CreateOptions;
 import lombok.extern.slf4j.Slf4j;
 import net.statemesh.config.ApplicationProperties;
+import net.statemesh.domain.enumeration.TaskRunType;
 import net.statemesh.k8s.crd.tekton.models.V1TaskRun;
 import net.statemesh.k8s.crd.tekton.models.V1TaskRunSpec;
 import net.statemesh.k8s.exception.SkippedExistsException;
@@ -16,8 +17,11 @@ import net.statemesh.k8s.task.tekton.spec.ImportHfTaskRunSpec;
 import net.statemesh.k8s.task.tekton.spec.QuantizationTaskRunSpec;
 import net.statemesh.k8s.task.tekton.spec.SkyTaskRunSpec;
 import net.statemesh.k8s.util.ApiStub;
+import net.statemesh.repository.ApplicationRepository;
 import net.statemesh.service.dto.TaskRunDTO;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
 
 import static net.statemesh.k8s.util.K8SConstants.*;
@@ -26,15 +30,18 @@ import static net.statemesh.k8s.util.K8SConstants.*;
 public class CreateTaskRunTask extends BaseMutationTask<String> {
     private final TaskRunDTO taskRun;
     private final ApplicationProperties applicationProperties;
+    private final ApplicationRepository applicationRepository;
 
     public CreateTaskRunTask(ApiStub apiStub,
                              TaskConfig taskConfig,
                              String namespace,
                              TaskRunDTO taskRun,
-                             ApplicationProperties applicationProperties) {
+                             ApplicationProperties applicationProperties,
+                             ApplicationRepository applicationRepository) {
         super(apiStub, taskConfig, namespace);
         this.taskRun = taskRun;
         this.applicationProperties = applicationProperties;
+        this.applicationRepository = applicationRepository;
     }
 
     @Override
@@ -52,6 +59,7 @@ public class CreateTaskRunTask extends BaseMutationTask<String> {
                 .apiVersion(TEKTON_GROUP + "/" + TEKTON_API_VERSION)
                 .kind(TEKTON_TASK_RUN_KIND)
                 .metadata(new V1ObjectMeta()
+                    .annotations(sky() ? Map.of(NAD_SELECTOR_ANNOTATION, SRIOV_NAD_NAME) : Collections.emptyMap())
                     .name(taskRun.getInternalName())
                     .namespace(getNamespace()))
                 .spec(taskRunSpec()),
@@ -63,11 +71,15 @@ public class CreateTaskRunTask extends BaseMutationTask<String> {
 
     private V1TaskRunSpec taskRunSpec() {
         return switch (taskRun.getType()) {
-            case EVALUATION -> new EvaluationTaskRunSpec().create(taskRun, applicationProperties);
+            case EVALUATION -> new EvaluationTaskRunSpec(applicationRepository).create(taskRun, applicationProperties);
             case IMPORT_HF_MODEL, IMPORT_HF_DATASET -> new ImportHfTaskRunSpec().create(taskRun, applicationProperties);
             case QUANTIZATION -> new QuantizationTaskRunSpec().create(taskRun, applicationProperties);
             case TRAIN, FINE_TUNE -> new SkyTaskRunSpec().create(taskRun, applicationProperties);
         };
+    }
+
+    private boolean sky() {
+        return TaskRunType.TRAIN.equals(taskRun.getType()) || TaskRunType.FINE_TUNE.equals(taskRun.getType());
     }
 
     @Override

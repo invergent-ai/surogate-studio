@@ -145,6 +145,16 @@ public class SkyUtil {
                     .build()
             );
         }
+        // NCCL params
+        jobParams.add(TaskRunParamDTO.builder().key("NVIDIA_VISIBLE_DEVICES").value("all").build());
+        jobParams.add(TaskRunParamDTO.builder().key("NCCL_IB_DISABLE").value("0").build());
+        jobParams.add(TaskRunParamDTO.builder().key("NCCL_P2P_DISABLE").value("1").build());
+        jobParams.add(TaskRunParamDTO.builder().key("NCCL_SHM_DISABLE").value("0").build());
+        jobParams.add(TaskRunParamDTO.builder().key("NCCL_DEBUG").value("info").build());
+        jobParams.add(TaskRunParamDTO.builder().key("NCCL_SOCKET_IFNAME").value("net1").build());
+        jobParams.add(TaskRunParamDTO.builder().key("NCCL_IB_PORT").value("1").build());
+        jobParams.add(TaskRunParamDTO.builder().key("NCCL_DEBUG_SUBSYS").value("INIT,NET,ENV").build());
+        jobParams.add(TaskRunParamDTO.builder().key("NCCL_IB_HCA").value("mlx5_1,mlx5_2,mlx5_3,mlx5_4,mlx5_5,mlx5_6,mlx5_7").build());
 
         return jobParams;
     }
