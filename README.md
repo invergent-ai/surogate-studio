@@ -38,7 +38,7 @@ It unifies **deployment**, **fine-tuning**, **evaluation**, **safeguarding**, an
 - Smart CPU offloading.
 - Dense + MoE model support.
 - Broad NVIDIA SM coverage.
-- Integration with Axolotl and SOTA Surogate training libraries.
+- Integration with Axolotl and SOTA **[Surogate](https://github.com/invergent-ai/surogate)** training libraries.
 - Benchmark with MMLU, ARC, GSM8k, TruthfulQA, HellaSwag, and more. Red-team for toxicity, bias, misinformation, PII, and harms.
 - Custom benchmarks with judge and simulators.
 - Workload deployment on local or remote Kubernetes clusters and on public clouds.
