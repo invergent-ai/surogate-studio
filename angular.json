@@ -20,7 +20,7 @@
         "build": {
           "builder": "@angular-builders/custom-esbuild:application",
           "options": {
-            "plugins": ["build-plugins/i18n-default-esbuild.mjs", "build-plugins/define-esbuild.mjs"],
+            "plugins": ["build-plugins/i18n-default-esbuild.mjs", "build-plugins/define-esbuild.mjs", "build-plugins/node-polyfills-esbuild.mjs", "build-plugins/wasm-url-esbuild.mjs"],
             "outputPath": {
               "base": "target/classes/static/",
               "browser": "",
