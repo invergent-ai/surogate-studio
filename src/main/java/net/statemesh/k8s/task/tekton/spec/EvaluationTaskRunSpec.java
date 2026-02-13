@@ -3,9 +3,14 @@ package net.statemesh.k8s.task.tekton.spec;
 import lombok.extern.slf4j.Slf4j;
 import net.statemesh.config.ApplicationProperties;
 import net.statemesh.domain.enumeration.PullImageMode;
+import net.statemesh.domain.Port;
 import net.statemesh.k8s.crd.tekton.models.*;
+import net.statemesh.repository.ApplicationRepository;
+import net.statemesh.service.ApplicationService;
+import net.statemesh.service.dto.PortDTO;
 import net.statemesh.service.dto.TaskRunDTO;
 import net.statemesh.service.dto.TaskRunParamDTO;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,6 +24,12 @@ import static net.statemesh.k8s.util.NamingUtils.serviceName;
 
 @Slf4j
 public class EvaluationTaskRunSpec extends V1TaskRunSpec implements TaskRunSpec {
+    private final ApplicationRepository applicationRepository;
+
+    public EvaluationTaskRunSpec(ApplicationRepository applicationRepository) {
+        this.applicationRepository = applicationRepository;
+    }
+
     @Override
     public V1TaskRunSpec create(TaskRunDTO taskRun, ApplicationProperties applicationProperties) {
         resolveAndOverrideJudgeEndpoint(taskRun);
@@ -45,6 +56,19 @@ public class EvaluationTaskRunSpec extends V1TaskRunSpec implements TaskRunSpec 
             .computeResources(new V1PipelineRunSpecTaskRunSpecsInnerComputeResources()
                 .requests(Map.of("cpu", "2", "memory", "8Gi"))
                 .limits(Map.of("cpu", "8", "memory", "32Gi")));
+    }
+
+    private String resolvePortName(String internalName) {
+        if (internalName == null) return "80";
+
+        return applicationRepository.findByInternalName(internalName)
+            .map(app -> app.getContainers().stream()
+                .flatMap(c -> c.getPorts().stream())
+                .filter(p -> Integer.valueOf(80).equals(p.getServicePort()))
+                .findFirst()
+                .map(Port::getName)
+                .orElse("80"))
+            .orElse("80");
     }
 
     private List<Map<String, Object>> volumes() {
@@ -74,13 +98,16 @@ public class EvaluationTaskRunSpec extends V1TaskRunSpec implements TaskRunSpec 
                 new V1PipelineRunSpecTaskRunSpecsInnerPodTemplateEnvInner()
                     .name("DEPLOYED_MODEL_NAME").value("$(params.DEPLOYED_MODEL_NAME)"),
                 new V1PipelineRunSpecTaskRunSpecsInnerPodTemplateEnvInner()
-                    .name("DEPLOYED_MODEL_NAMESPACE").value("$(params.DEPLOYED_MODEL_NAMESPACE)"),
-                new V1PipelineRunSpecTaskRunSpecsInnerPodTemplateEnvInner()
                     .name("USE_GATEWAY").value("$(params.USE_GATEWAY)"),
                 new V1PipelineRunSpecTaskRunSpecsInnerPodTemplateEnvInner()
                     .name("LANGUAGE").value("$(params.LANGUAGE)")
             )
         );
+
+        if (hasParam(taskRun, "DEPLOYED_MODEL_NAMESPACE")) {
+            envVars.add(new V1PipelineRunSpecTaskRunSpecsInnerPodTemplateEnvInner()
+                .name("DEPLOYED_MODEL_NAMESPACE").value("$(params.DEPLOYED_MODEL_NAMESPACE)"));
+        }
 
         envVars.addAll(
             Stream.of("SECURITY_TESTS", "CUSTOM_EVAL_DATASETS", "RED_TEAMING_CONFIG", "MODEL_TOKENIZER",
@@ -88,7 +115,8 @@ public class EvaluationTaskRunSpec extends V1TaskRunSpec implements TaskRunSpec 
                     "MODEL_PRESENCE_PENALTY", "MODEL_ENABLE_THINKING", "CUSTOM_EVAL_DATASETS", "JUDGE_MODEL",
                     "JUDGE_MODEL_API", "JUDGE_MODEL_BASE_URL", "SIMULATOR_MODEL", "SIMULATOR_MODEL_API",
                     "SIMULATOR_MODEL_BASE_URL", "QUALITY_METRICS", "CONVERSATION_METRICS", "PERFORMANCE_METRICS",
-                    "JUDGE_MODEL_PROVIDER", "SIMULATOR_MODEL_PROVIDER", "JOB_NAME", "JOB_DESCRIPTION", "BENCHMARKS")
+                    "JUDGE_MODEL_PROVIDER", "SIMULATOR_MODEL_PROVIDER", "JOB_NAME", "JOB_DESCRIPTION", "BENCHMARKS",
+                    "DEPLOYED_MODEL_API")
                 .filter(param -> hasParam(taskRun, param))
                 .map(param -> new V1PipelineRunSpecTaskRunSpecsInnerPodTemplateEnvInner()
                     .name(param).value("$(params." + param + ")")
@@ -96,12 +124,24 @@ public class EvaluationTaskRunSpec extends V1TaskRunSpec implements TaskRunSpec 
                 .toList()
         );
 
-        // Model endpoints - internal (preferred) and ingress (fallback)
-        String modelEndpoint = resolveInternalModelEndpoint(getParamValue(taskRun, "DEPLOYED_MODEL_INTERNAL_NAME"));
-        if (modelEndpoint != null) {
+        // Model endpoints - internal (preferred), external base URL, or ingress (fallback)
+        String internalEndpoint = resolveInternalModelEndpoint(
+            getParamValue(taskRun, "DEPLOYED_MODEL_INTERNAL_NAME")
+        );
+
+
+        if (internalEndpoint != null) {
             envVars.add(new V1PipelineRunSpecTaskRunSpecsInnerPodTemplateEnvInner()
-                .name("MODEL_ENDPOINT").value(modelEndpoint));
+                .name("MODEL_ENDPOINT").value(internalEndpoint));
+        } else {
+            // External provider - use base URL from params
+            String baseUrl = getParamValue(taskRun, "DEPLOYED_MODEL_BASE_URL");
+            if (baseUrl != null) {
+                envVars.add(new V1PipelineRunSpecTaskRunSpecsInnerPodTemplateEnvInner()
+                    .name("MODEL_ENDPOINT").value(baseUrl));
+            }
         }
+
         String ingressEndpoint = resolveIngressEndpoint(taskRun);
         if (ingressEndpoint != null) {
             envVars.add(new V1PipelineRunSpecTaskRunSpecsInnerPodTemplateEnvInner()
@@ -112,7 +152,9 @@ public class EvaluationTaskRunSpec extends V1TaskRunSpec implements TaskRunSpec 
     }
 
     private void resolveAndOverrideJudgeEndpoint(TaskRunDTO taskRun) {
-        String judgeEndpoint = resolveInternalModelEndpoint(getParamValue(taskRun, "JUDGE_MODEL_INTERNAL_NAME"));
+        String judgeEndpoint = resolveInternalModelEndpoint(
+            getParamValue(taskRun, "JUDGE_MODEL_INTERNAL_NAME")
+        );
         if (judgeEndpoint != null) {
             taskRun.getParams().removeIf(p -> "JUDGE_MODEL_BASE_URL".equals(p.getKey()));
             taskRun.getParams().add(TaskRunParamDTO.builder()
@@ -123,7 +165,9 @@ public class EvaluationTaskRunSpec extends V1TaskRunSpec implements TaskRunSpec 
     }
 
     private void resolveAndOverrideSimulatorEndpoint(TaskRunDTO taskRun) {
-        String simulatorEndpoint = resolveInternalModelEndpoint(getParamValue(taskRun, "SIMULATOR_MODEL_INTERNAL_NAME"));
+        String simulatorEndpoint = resolveInternalModelEndpoint(
+            getParamValue(taskRun, "SIMULATOR_MODEL_INTERNAL_NAME")
+        );
         if (simulatorEndpoint != null) {
             taskRun.getParams().removeIf(p -> "SIMULATOR_MODEL_BASE_URL".equals(p.getKey()));
             taskRun.getParams().add(TaskRunParamDTO.builder()
@@ -142,13 +186,31 @@ public class EvaluationTaskRunSpec extends V1TaskRunSpec implements TaskRunSpec 
     }
 
     private String resolveInternalModelEndpoint(String internalName) {
-        if (internalName == null) {
-            return null;
-        }
+        if (internalName == null) return null;
 
-        // TODO - Test and fix if portName is ok for the three scenarios: modelEndpoint,judgeEndpoint,simulatorEndpoint. If not ok bring it as param
-        String endpoint = String.format("http://%s/v1", serviceName(internalName, "80"));
-        log.info("Resolved internal model endpoint: {}", endpoint);
-        return endpoint;
+        return applicationRepository.findByInternalName(internalName)
+            .map(app -> {
+                String portName = app.getContainers().stream()
+                    .flatMap(c -> c.getPorts().stream())
+                    .filter(p -> Integer.valueOf(80).equals(p.getServicePort()))
+                    .findFirst()
+                    .map(Port::getName)
+                    .orElse("80");
+
+                String namespace = app.getProject() != null ? app.getProject().getNamespace() : null;
+                String svcName = serviceName(internalName, portName);
+                String endpoint = String.format("http://%s%s/v1",
+                    svcName,
+                    StringUtils.isEmpty(namespace) ? "" : ("." + namespace));
+
+                log.info("Resolved internal model endpoint: {}", endpoint);
+                return endpoint;
+            })
+            .orElseGet(() -> {
+                String portName = resolvePortName(internalName);
+                String endpoint = String.format("http://%s/v1", serviceName(internalName, portName));
+                log.warn("Could not find application by internalName {}, falling back to: {}", internalName, endpoint);
+                return endpoint;
+            });
     }
 }
