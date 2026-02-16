@@ -1,4 +1,4 @@
-name: Publish Docker (GHCR)
+name: Publish Docker
 
 on:
   release:
