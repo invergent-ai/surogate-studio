@@ -1,8 +1,6 @@
 {
   "release-type": "node",
-  "packages": {
-    ".": {}
-  },
+  "packages": { ".": {} },
   "include-v-in-tag": true,
   "changelog-path": "CHANGELOG.md",
   "pull-request-title-pattern": "chore(release): ${version}"
