@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/logo.png" alt="Surogate Studio" width="420" />
+  <img src="./assets/logo.png" alt="Surogate Studio" width="512" />
 </p>
 
 <h1 align="center">From experiment to enterprise — faster</h1>
@@ -65,6 +65,22 @@ Explore:
 - Built-in evaluation benchmarks
 - Safety / red-team evaluation dashboards
 - Kubernetes & cloud workload orchestration
+
+---
+
+## Detailed architecture and data flow
+
+<p align="center">
+  <img src="./assets/Surogate_Architecture.png" alt="Detailed architecture and data flow" />
+</p>
+
+---
+
+## Deployment options
+
+<p align="center">
+  <img src="./assets/Surogate_Deployment.png" alt="Deployment options" />
+</p>
 
 ---
 
