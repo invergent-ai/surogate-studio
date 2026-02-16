@@ -56,7 +56,7 @@ It unifies **deployment**, **fine-tuning**, **evaluation**, **safeguarding**, an
 
 See Surogate Studio in action:
 
-🌍 **Live Demo:** https://demo.surogate.ai  (User/Pass: admin@admin/admin)<br/>
+🌍 **Live Demo:** https://demo.surogate.ai<br/>
 📘 **Documentation:** https://docs.surogate.ai
 
 Explore:
@@ -81,6 +81,10 @@ Explore:
 <p align="center">
   <img src="./assets/Surogate_Deployment.png" alt="Deployment options" />
 </p>
+
+---
+
+<video src="./assets/demo.mp4" autoplay loop muted style="max-width: 100%; min-width: 100%; width: 100%; height: auto;"></video>
 
 ---
 
