@@ -1,51 +1,49 @@
-import {Component, ElementRef, Input, OnInit, ViewChild} from '@angular/core';
-import {NgForOf, NgIf} from '@angular/common';
-import {ProgressSpinnerModule} from 'primeng/progressspinner';
-import {Router, RouterLink} from '@angular/router';
-import {lastValueFrom} from 'rxjs';
-import {map} from 'rxjs/operators';
-import {HttpResponse} from '@angular/common/http';
-import {BadgeModule} from 'primeng/badge';
-import {InputTextModule} from 'primeng/inputtext';
-import {IconFieldModule} from 'primeng/iconfield';
-import {InputIconModule} from 'primeng/inputicon';
-import {DropdownModule} from 'primeng/dropdown';
-import {FormGroup, FormsModule, ReactiveFormsModule} from '@angular/forms';
-import {uniq} from 'lodash';
-import {ImageModule} from 'primeng/image';
-import {AvatarModule} from 'primeng/avatar';
-import {PageLoadComponent} from '../page-load/page-load.component';
-import {IAppTemplate} from '../../model/app-template.model';
-import {AppTemplateService} from '../../service/app-template.service';
-import {ApplicationService} from '../../service/application.service';
-import {AccountService} from '../../service/account.service';
-import {IApplication} from '../../model/application.model';
-import {IContainer} from '../../model/container.model';
-import {dummyText} from '../../util/form.util';
-import {truncate} from '../../util/display.util';
-import {MenuService} from '../../../private/layout/service/app-menu.service';
-import {ApplicationMode} from '../../model/enum/application-mode.model';
-import {ButtonDirective} from 'primeng/button';
-import {CardModule} from 'primeng/card';
-import {TagModule} from 'primeng/tag';
-import {BookOpen, CodeXml, LucideAngularModule, Rocket, Server} from 'lucide-angular';
-import {LayoutService} from '../../service/theme/app-layout.service';
-import {Authority} from '../../../config/constant/authority.constants';
-import {Account} from '../../model/account.model';
-import {AppTemplateFormService} from '../../service/form/app-template-form.service';
-import {DialogModule} from 'primeng/dialog';
-import {InputNumberModule} from 'primeng/inputnumber';
-import {InputTextareaModule} from 'primeng/inputtextarea';
-import {ConfirmationService} from 'primeng/api';
-import {ConfirmDialogModule} from 'primeng/confirmdialog';
-import {TooltipModule} from "primeng/tooltip";
-import {OverlayPanel, OverlayPanelModule} from "primeng/overlaypanel";
-import {RefSelection, RefSelectorComponent} from "../../../private/hub/components/ref-selector.component";
-import {RepoSelectorComponent} from "../repo-selector/repo-selector.component";
-import {ContainerType} from "../../model/enum/container-type.model";
-import {RadioButtonModule} from "primeng/radiobutton";
-import {LakeFsService} from "../../service/lake-fs.service";
-import {MessagesModule} from "primeng/messages";
+import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
+import { NgForOf, NgIf } from '@angular/common';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { Router, RouterLink } from '@angular/router';
+import { lastValueFrom } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { HttpResponse } from '@angular/common/http';
+import { BadgeModule } from 'primeng/badge';
+import { InputTextModule } from 'primeng/inputtext';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
+import { DropdownModule } from 'primeng/dropdown';
+import { FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { uniq } from 'lodash';
+import { ImageModule } from 'primeng/image';
+import { AvatarModule } from 'primeng/avatar';
+import { PageLoadComponent } from '../page-load/page-load.component';
+import { IAppTemplate } from '../../model/app-template.model';
+import { AppTemplateService } from '../../service/app-template.service';
+import { ApplicationService } from '../../service/application.service';
+import { AccountService } from '../../service/account.service';
+import { truncate } from '../../util/display.util';
+import { MenuService } from '../../../private/layout/service/app-menu.service';
+import { ApplicationMode } from '../../model/enum/application-mode.model';
+import { ButtonDirective } from 'primeng/button';
+import { CardModule } from 'primeng/card';
+import { TagModule } from 'primeng/tag';
+import { BookOpen, CodeXml, LucideAngularModule, Rocket, Server } from 'lucide-angular';
+import { LayoutService } from '../../service/theme/app-layout.service';
+import { Authority } from '../../../config/constant/authority.constants';
+import { Account } from '../../model/account.model';
+import { AppTemplateFormService } from '../../service/form/app-template-form.service';
+import { DialogModule } from 'primeng/dialog';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { InputTextareaModule } from 'primeng/inputtextarea';
+import { ConfirmationService } from 'primeng/api';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { TooltipModule } from 'primeng/tooltip';
+import { OverlayPanel, OverlayPanelModule } from 'primeng/overlaypanel';
+import { RefSelection, RefSelectorComponent } from '../../../private/hub/components/ref-selector.component';
+import { RepoSelectorComponent } from '../repo-selector/repo-selector.component';
+import { ContainerType } from '../../model/enum/container-type.model';
+import { RadioButtonModule } from 'primeng/radiobutton';
+import { LakeFsService } from '../../service/lake-fs.service';
+import { MessagesModule } from 'primeng/messages';
+import { createAppFromTemplate } from '../../util/template.util';
 
 interface ICategory {
   name: string;
@@ -293,43 +291,13 @@ export class TemplatesComponent implements OnInit {
       .slice(0, 5);
   }
 
-  async createAppFromTemplate(template: IAppTemplate) {
+  async createApp(template: IAppTemplate) {
     if (this.public) {
       await this.router.navigate(['/login']);
       return;
     }
 
-    const app = JSON.parse(template.template!) as IApplication;
-    app.project = this.user.defaultProject;
-    app.containers.forEach((container: IContainer) => {
-      if (container.ports) {
-        container.ports.forEach(port => {
-          if (!port.name.endsWith("-x")) {
-            port.name = (dummyText(5).toLowerCase() + port.name).substring(0, 7);
-          }
-        });
-      }
-      if (container.volumeMounts) {
-        container.volumeMounts.forEach(volumeMount => {
-          if (volumeMount.volume) {
-            volumeMount.volume.name += dummyText(5).toLowerCase();
-            volumeMount.volume.project = this.user.defaultProject;
-          }
-        });
-      }
-    });
-    app.fromTemplate = true;
-    if (!app.mode) {
-      app.mode = ApplicationMode.APPLICATION;
-    }
-
-    const created = await lastValueFrom(this.applicationService.save(app));
-    await this.router.navigate([app.mode === ApplicationMode.MODEL ? 'models' : '/apps'], {
-      queryParams: {
-        id: created.id
-      }
-    });
-    this.menuService.reload(app.project?.id);
+    await createAppFromTemplate(template, this.router, this.menuService, this.applicationService, this.user.defaultProject);
   }
 
   async deployTemplate(event: Event, template: IAppTemplate) {
@@ -381,7 +349,7 @@ export class TemplatesComponent implements OnInit {
       this.selectedTemplate.template = JSON.stringify(templateJSON, null, 2);
       await lastValueFrom(this.appTemplateService.update(this.selectedTemplate));
 
-      await this.createAppFromTemplate(this.selectedTemplate);
+      await this.createApp(this.selectedTemplate);
     }
   }
 

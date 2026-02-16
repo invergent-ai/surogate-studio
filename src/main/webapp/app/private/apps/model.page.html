@@ -12,9 +12,9 @@
                           [showStatus]="false"
                           [showControls]="false"></sm-app-header-card>
 
-      @if (modelStatusCreated()) {
+      @if (modelStatusCreated() && !isPublishing) {
         <div class="m-2">
-          <p-messages [(value)]="publishWarn" [enableService]="false" />
+          <p-messages [(value)]="publishWarn" [enableService]="false" (click)="publish()" class="cursor-pointer"/>
         </div>
       }
 
@@ -173,7 +173,7 @@
       <p-tabView styleClass="mt-3 px-2" [(activeIndex)]="activeTab" *ngIf="application">
         <p-tabPanel header="Configuration" [disabled]="modelStatusDeployingOrBuilding() || ciCdError(application)">
           <ng-template pTemplate="content">
-            <sm-app-config (publishing)="publishing($event)"
+            <sm-app-config (publishing)="publishing($event)" #config
                            [application]="application"></sm-app-config>
           </ng-template>
         </p-tabPanel>

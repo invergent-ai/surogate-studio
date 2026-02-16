@@ -6,6 +6,14 @@ import {IAnnotation} from "../model/annotation.model";
 import {IApplication} from "../model/application.model";
 import {ApplicationStatus} from "../model/enum/application-status.model";
 import {IVolumeMount} from "../model/volume-mount.model";
+import { IAppTemplate } from '../model/app-template.model';
+import { dummyText } from './form.util';
+import { lastValueFrom } from 'rxjs';
+import { Router } from '@angular/router';
+import { IProject } from '../model/project.model';
+import { MenuService } from '../../private/layout/service/app-menu.service';
+import { ApplicationMode } from '../model/enum/application-mode.model';
+import { ApplicationService } from '../service/application.service';
 
 export const getTemplate = (application: IApplication): string => {
   if (!application) {
@@ -53,4 +61,40 @@ export const getTemplate = (application: IApplication): string => {
   }
 
   return JSON.stringify(app, null, 4);
+}
+
+export const createAppFromTemplate =
+  async (template: IAppTemplate, router: Router, menuService: MenuService,
+         applicationService: ApplicationService, project: IProject) => {
+  const app = JSON.parse(template.template!) as IApplication;
+  app.project = project;
+  app.containers.forEach((container: IContainer) => {
+    if (container.ports) {
+      container.ports.forEach(port => {
+        if (!port.name.endsWith("-x")) {
+          port.name = (dummyText(5).toLowerCase() + port.name).substring(0, 7);
+        }
+      });
+    }
+    if (container.volumeMounts) {
+      container.volumeMounts.forEach(volumeMount => {
+        if (volumeMount.volume) {
+          volumeMount.volume.name += dummyText(5).toLowerCase();
+          volumeMount.volume.project = project;
+        }
+      });
+    }
+  });
+  app.fromTemplate = true;
+  if (!app.mode) {
+    app.mode = ApplicationMode.APPLICATION;
+  }
+
+  const created = await lastValueFrom(applicationService.save(app));
+  await router.navigate([app.mode === ApplicationMode.MODEL ? 'models' : '/apps'], {
+    queryParams: {
+      id: created.id
+    }
+  });
+  menuService.reload(app.project?.id);
 }

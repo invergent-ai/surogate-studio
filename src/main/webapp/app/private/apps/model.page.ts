@@ -89,6 +89,7 @@ import {ChatVllmComponent} from "./components/chat-vllm/chat-vllm.component";
 })
 export class ModelPage implements OnInit, OnDestroy {
   @ViewChild('status') statusComponent: AppStatusComponent;
+  @ViewChild('config') configComponent: AppConfigComponent;
 
   readonly welcomeItems = [
     { title: 'What is Surogate ?', link: 'https://surogate.ai/' },
@@ -364,6 +365,18 @@ export class ModelPage implements OnInit, OnDestroy {
       }
     }
     return false;
+  }
+
+  async publish() {
+    if (!this.configComponent) {
+      return;
+    }
+
+    const el = document.querySelector('.layout-content-wrapper') as HTMLElement;
+    if (el) {
+      el.scrollTop = el.scrollHeight;
+    }
+    await this.configComponent.saveApplication(true);
   }
 
   modelStatusCreated(): boolean {

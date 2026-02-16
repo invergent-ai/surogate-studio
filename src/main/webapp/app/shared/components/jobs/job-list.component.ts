@@ -26,7 +26,7 @@ import {derivedAsync} from 'ngxtension/derived-async';
 import {LogsComponent} from '../../../private/apps/components/status/logs/logs.component';
 import {NgClass, NgIf, NgTemplateOutlet} from '@angular/common';
 import {DialogModule} from 'primeng/dialog';
-import {Copy, Download, LucideAngularModule, MessageSquare, Pencil, Plus, Trash} from 'lucide-angular';
+import { Copy, Download, LucideAngularModule, MessageSquare, Pencil, Plus, Rocket, Trash } from 'lucide-angular';
 import {OverlayPanel, OverlayPanelModule} from 'primeng/overlaypanel';
 import {ButtonDirective} from 'primeng/button';
 import {IJob, IJobRunStatus, IJobStatus, IJobType, JobTypeLabels} from "../../model/job.model";
@@ -39,6 +39,15 @@ import {InputTextModule} from "primeng/inputtext";
 import {FormsModule} from "@angular/forms";
 import {Router} from "@angular/router";
 import {TooltipModule} from "primeng/tooltip";
+import { HttpResponse } from '@angular/common/http';
+import { IAppTemplate } from '../../model/app-template.model';
+import { AppTemplateService } from '../../service/app-template.service';
+import { RayJobType } from '../../model/enum/ray-job-type.model';
+import { LakeFsService } from '../../service/lake-fs.service';
+import { createAppFromTemplate } from '../../util/template.util';
+import { AccountService } from '../../service/account.service';
+import { MenuService } from '../../../private/layout/service/app-menu.service';
+import { ApplicationService } from '../../service/application.service';
 
 @Component({
   selector: 'sm-job-list',
@@ -244,7 +253,11 @@ import {TooltipModule} from "primeng/tooltip";
           </div>
           <div *ngIf="shouldShowLogsLink()" (click)="showLogs()" class="px-2 py-1 flex gap-2 align-items-center cursor-pointer hover:bg-primary-50">
             <i-lucide [img]="Download" class="w-1rem h-1rem"></i-lucide>
-            <span>View Logs</span>
+            <span>Logs</span>
+          </div>
+          <div *ngIf="shouldShowDeployLink()" (click)="deploy()" class="px-2 py-1 flex gap-2 align-items-center cursor-pointer hover:bg-primary-50">
+            <i-lucide [img]="Rocket" class="w-1rem h-1rem"></i-lucide>
+            <span>Deploy</span>
           </div>
           <div *ngIf="!cancelLoading().includes(currentJob().id) && shouldShowCancelLink()" class="p-2 flex gap-2 align-items-center cursor-pointer hover:bg-primary-50" (click)="cancel($event)">
             <i-lucide [img]="Copy" class="w-1rem h-1rem"></i-lucide>
@@ -274,6 +287,11 @@ export class JobListComponent implements AfterContentInit, OnDestroy {
   readonly taskRunService = inject(TaskRunService);
   readonly rayJobService = inject(RayJobService);
   readonly router = inject(Router);
+  readonly appTemplateService = inject(AppTemplateService);
+  readonly lakeFsService = inject(LakeFsService);
+  readonly accountService = inject(AccountService);
+  readonly menuService = inject(MenuService);
+  readonly applicationService = inject(ApplicationService);
 
   @ContentChildren(PrimeTemplate) templates: QueryList<PrimeTemplate> | undefined;
   createButtonTemplate: TemplateRef<any> | undefined;
@@ -299,6 +317,8 @@ export class JobListComponent implements AfterContentInit, OnDestroy {
   typeFilter = signal<IJobType>(null);
   statusFilter = signal<IJobStatus>(null);
   timeFilter = signal<number>(null);
+
+  user = derivedAsync(() => this.accountService.identity(true));
 
   getJobs(history?: boolean): () => Observable<IJob[]> {
     return (): Observable<IJob[]> => {
@@ -560,6 +580,53 @@ export class JobListComponent implements AfterContentInit, OnDestroy {
     await this.router.navigate([this.editRoute(), this.currentJob().id]);
   }
 
+  async deploy() {
+    const repos = await lastValueFrom(this.lakeFsService.listRepositories());
+    const rayJob = await lastValueFrom(this.rayJobService.find(this.currentJob().id));
+
+    const repoId = rayJob.envVars.filter(envVar => envVar.key === 'BASE_MODEL')[0].value.split('/')[0];
+    const branch = rayJob.envVars.filter(envVar => envVar.key === 'BRANCH')[0].value;
+    const repo = repos.filter(r => r.id === repoId);
+    if (!repo?.length) {
+      displayError(this.store, `Repo with id ${repoId} could not be found.`);
+      return;
+    }
+
+    const branches = await lastValueFrom(this.lakeFsService.listBranches(repoId));
+    const branchToDeploy = branches.filter(b => b.id === branch);
+    if (!branchToDeploy?.length) {
+      displayError(this.store, `Branch with id ${branch} could not be found for repo ${repoId}.`);
+      return;
+    }
+
+    const templates = await lastValueFrom(
+      this.appTemplateService.query()
+        .pipe(map((res: HttpResponse<IAppTemplate[]>) => res.body ?? []))
+    );
+    const template = templates
+      .filter(tpl => tpl.template && JSON.parse(tpl.template).extraConfig
+        && JSON.parse(JSON.parse(tpl.template).extraConfig).modelName)
+      .filter(tpl => JSON.parse(JSON.parse(tpl.template).extraConfig)
+        .modelName.split('/')[0] === repo[0].metadata?.displayName);
+
+    if (!template?.length) {
+      displayError(this.store, `There is no model template configured for ${repo[0].metadata?.displayName} repo.`);
+      return;
+    }
+
+    const tpl = JSON.parse(template[0].template);
+    const extraConfig = JSON.parse(tpl.extraConfig);
+    extraConfig.source = 'hub';
+    extraConfig.branchToDeploy = repoId + '/' + branch;
+    extraConfig.branchToDeployDisplayName = repo[0].metadata?.displayName + '/' + branch;
+    extraConfig.loraSourceModel = branchToDeploy[0].metadata?.lora_adapter === 'true' ?
+      branchToDeploy[0].metadata?.source_model : null;
+    tpl.extraConfig = JSON.stringify(extraConfig);
+    template[0].template = JSON.stringify(tpl);
+
+    await createAppFromTemplate(template[0], this.router, this.menuService, this.applicationService, this.user().defaultProject);
+  }
+
   shouldShowLogsLink() {
     if (!this.currentJob() || this.detailPaneMode() === 'logs') {
       return false;
@@ -570,6 +637,23 @@ export class JobListComponent implements AfterContentInit, OnDestroy {
         || job.provisioningStatus === IJobStatus.CANCELLED
         || job.provisioningStatus === IJobStatus.ERROR) &&
       (job.stage !== 'TaskRunCancelled' && job.stage !== 'TaskRunTimeout');
+  }
+
+  shouldShowDeployLink() {
+    if (!this.currentJob()) {
+      return false;
+    }
+    if (this.executor() !== ExecutorType.RAY) {
+      return false;
+    }
+
+    const job = this.currentJob();
+    if ([RayJobType.TRAIN.valueOf(), RayJobType.FINE_TUNE.valueOf()].indexOf(job.type) < 0) {
+      return false;
+    }
+
+    return job.provisioningStatus === IJobStatus.COMPLETED
+      && (job.stage?.toUpperCase() === 'SUCCEEDED' || job.completedStatus?.toUpperCase() === 'SUCCEEDED');
   }
 
   shouldShowEditLink() {
@@ -694,4 +778,5 @@ export class JobListComponent implements AfterContentInit, OnDestroy {
   protected readonly Plus = Plus;
   protected readonly ExecutorType = ExecutorType;
   protected readonly IJobStatus = IJobStatus;
+  protected readonly Rocket = Rocket;
 }
