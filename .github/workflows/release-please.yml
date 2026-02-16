@@ -1,4 +1,4 @@
-name: Release Please
+name: Release Please (and publish Docker)
 
 on:
   push:
@@ -8,13 +8,87 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  packages: write
 
 jobs:
-  release-please:
+  release:
     runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.rp.outputs.release_created }}
+      tag_name: ${{ steps.rp.outputs.tag_name }}
     steps:
-      - uses: googleapis/release-please-action@v4
+      - name: Release Please
+        id: rp
+        uses: googleapis/release-please-action@v4
         with:
           release-type: node
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+
+  docker:
+    needs: release
+    if: ${{ needs.release.outputs.release_created == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the released tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release.outputs.tag_name }}
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build jar (copies to docker/app.jar)
+        run: npm run java:jar
+
+      - name: Derive version from tag
+        id: ver
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${{ needs.release.outputs.tag_name }}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/studio
+          tags: |
+            type=raw,value=${{ steps.ver.outputs.version }}
+            type=raw,value=latest
+            type=sha
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: docker
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
