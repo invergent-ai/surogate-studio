@@ -512,7 +512,8 @@ public class KubernetesController {
             this.taskConfig,
             namespace,
             taskRun,
-            this.applicationProperties
+            this.applicationProperties,
+            this.applicationRepository
         ).call();
     }
 

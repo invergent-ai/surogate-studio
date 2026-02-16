@@ -2,15 +2,13 @@ package net.statemesh.k8s.task.tekton.spec;
 
 import lombok.extern.slf4j.Slf4j;
 import net.statemesh.config.ApplicationProperties;
-import net.statemesh.domain.enumeration.PullImageMode;
 import net.statemesh.domain.Port;
+import net.statemesh.domain.enumeration.PullImageMode;
 import net.statemesh.k8s.crd.tekton.models.*;
 import net.statemesh.repository.ApplicationRepository;
-import net.statemesh.service.ApplicationService;
-import net.statemesh.service.dto.PortDTO;
 import net.statemesh.service.dto.TaskRunDTO;
 import net.statemesh.service.dto.TaskRunParamDTO;
-import org.springframework.util.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -186,7 +184,9 @@ public class EvaluationTaskRunSpec extends V1TaskRunSpec implements TaskRunSpec 
     }
 
     private String resolveInternalModelEndpoint(String internalName) {
-        if (internalName == null) return null;
+        if (internalName == null) {
+            return null;
+        }
 
         return applicationRepository.findByInternalName(internalName)
             .map(app -> {
@@ -197,7 +197,8 @@ public class EvaluationTaskRunSpec extends V1TaskRunSpec implements TaskRunSpec 
                     .map(Port::getName)
                     .orElse("80");
 
-                String namespace = app.getProject() != null ? app.getProject().getNamespace() : null;
+                String namespace = app.getProject() != null ?
+                    app.getProject().getNamespace() : app.getDeployedNamespace();
                 String svcName = serviceName(internalName, portName);
                 String endpoint = String.format("http://%s%s/v1",
                     svcName,
