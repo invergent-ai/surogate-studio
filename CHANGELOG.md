@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/invergent-ai/surogate-studio/compare/v1.0.0...v1.0.1) (2026-02-16)
+
+
+### Bug Fixes
+
+* docker-publish ([aad00d8](https://github.com/invergent-ai/surogate-studio/commit/aad00d89ab6d3b76039dc75de859a7cc4cfbae10))
+
 ## 1.0.0 (2026-02-16)
 
 
