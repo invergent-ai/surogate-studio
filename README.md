@@ -84,7 +84,9 @@ Explore:
 
 ---
 
-<video src="./assets/demo.mp4" autoplay loop muted style="max-width: 100%; min-width: 100%; width: 100%; height: auto;"></video>
+<p align="center">
+  <img src="./assets/demo.gif" />
+</p>
 
 ---
 
