@@ -151,11 +151,15 @@ If not already, install the application on a k8s cluster:
 
 ## Contributing
 
-PRs and issues are welcome.
-If you’re adding kernels/recipes or touching build/tooling, please keep changes minimal and include:
-- a short description of the change,
-- how to reproduce/validate locally (`make test` where applicable),
-- and any GPU/arch assumptions.
+Contributions are welcome! Feel free to open an issue to report bugs or suggest improvements, and submit pull requests for fixes or new features.
+
+When submitting a PR, please include:
+
+- a clear description of the change  
+- steps to test/verify it locally  
+- relevant screenshots (UI changes) or API examples (backend changes)  
+
+Please make sure the project builds successfully and all tests pass before submitting.
 
 ---
 
