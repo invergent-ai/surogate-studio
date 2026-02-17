@@ -16,7 +16,7 @@ public class SkyUtil {
     public static SkyConfigDTO setupSkyConfig(SkyConfigDTO skyConfig, RayJobDTO rayJob) {
         return skyConfig
             .withImageId(
-                    Optional.ofNullable(rayJob.getSkyToK8s()).orElse(Boolean.TRUE) ? SUROGATE_IMAGE :
+                    Optional.ofNullable(rayJob.getSkyToK8s()).orElse(Boolean.TRUE) ? DENSEMAX_IMAGE :
                         Boolean.TRUE.equals(rayJob.getUseAxolotl()) ?
                                     SUROGATE_TRAIN_AXOLOTL_IMAGE :
                                     SUROGATE_TRAIN_SUROGATE_IMAGE

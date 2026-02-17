@@ -75,13 +75,7 @@ export class AppMenuComponent implements OnInit, OnDestroy {
       lucide: LayoutDashboard,
       routerLink: ['']
     });
-    // this.model[0].items.push({
-    //   label: 'Published Models',
-    //   lucide: Grid2X2,
-    //   command: () => {
-    //     window.open('https://proxy.densemax.local/ui/model_hub_table/', '_blank');
-    //   }
-    // });
+
     this.model[0].items.push({
       label: 'Data Hub',
       lucide: Warehouse,

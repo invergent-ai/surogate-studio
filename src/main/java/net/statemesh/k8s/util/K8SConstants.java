@@ -184,12 +184,9 @@ public class K8SConstants {
     public static final String AIM_DIR = "/opt/aim";
     public static final String RAY_VERSION = "2.50.1";
 
-    public static final String DENSEMAX_IMAGE = "registry.densemax.local/statemesh/densemax:1.0.0";
-
-    public static final String SUROGATE_IMAGE = "statemesh/densemax:1.0.0";
-
-    public static final String SUROGATE_TRAIN_AXOLOTL_IMAGE = "statemesh/train-axolotl:latest";
-    public static final String SUROGATE_TRAIN_SUROGATE_IMAGE = "statemesh/train-surogate:latest";
+    public static final String DENSEMAX_IMAGE = "ghcr.io/invergent-ai/densemax:1.0.0";
+    public static final String SUROGATE_TRAIN_AXOLOTL_IMAGE = "ghcr.io/invergent-ai/train-axolotl:latest";
+    public static final String SUROGATE_TRAIN_SUROGATE_IMAGE = "ghcr.io/invergent-ai/train-surogate:latest";
 
     public static final String TEKTON_JOB_NAME = "run-job";
 

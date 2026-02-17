@@ -132,7 +132,7 @@ To ensure everything worked, run:
 
 For the first time login to dockerhub with your credentials:
 
-    docker login registry.densemax.local
+    docker login
 
 then
 

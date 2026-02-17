@@ -59,7 +59,7 @@ export class Selectors {
     // Remove leading slash from api if present
     const cleanApi = api.replace(/^\//, '');
     return createSelector([AppState], (state: AppStateModel) => {
-      return state?.endpointPrefix ? `${state.endpointPrefix}/${cleanApi}` : null;
+      return state?.endpointPrefix ? `${state.endpointPrefix}/${cleanApi}` : `/${cleanApi}`;
     });
   }
 
