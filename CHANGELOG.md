@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/invergent-ai/surogate-studio/compare/v1.0.1...v1.0.2) (2026-02-16)
+
+
+### Bug Fixes
+
+* publish on release (please) ([d1d0c72](https://github.com/invergent-ai/surogate-studio/commit/d1d0c720926580d2c8f307f76c9d92a49c4185bd))
+
 ## [1.0.1](https://github.com/invergent-ai/surogate-studio/compare/v1.0.0...v1.0.1) (2026-02-16)
 
 
