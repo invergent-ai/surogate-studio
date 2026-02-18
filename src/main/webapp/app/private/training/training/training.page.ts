@@ -666,6 +666,14 @@ export class TrainingPage implements OnInit {
     return Promise.reject();
   }
 
+  loraChanged(event: CheckboxChangeEvent) {
+    this.jobForm.patchValue({
+      qloraFp8: false,
+      qloraFp4: event.checked,
+      qloraBnb: event.checked
+    });
+  }
+
   qloraFp8Changed(event: CheckboxChangeEvent) {
     this.jobForm.patchValue({
       qloraFp4: !event.checked,

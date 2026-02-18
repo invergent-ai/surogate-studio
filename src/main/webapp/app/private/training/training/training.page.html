@@ -86,7 +86,8 @@
               <div class="flex gap-2">
                 <p-tag severity="secondary" rounded>
                   <div class="p-fluid p-1 font-normal text-sm">
-                    <p-checkbox [binary]="true" id="lora" formControlName="lora" label="Enable"></p-checkbox>
+                    <p-checkbox [binary]="true" id="lora" formControlName="lora" label="Enable"
+                                (onChange)="loraChanged($event)"></p-checkbox>
                   </div>
                 </p-tag>
               </div>
