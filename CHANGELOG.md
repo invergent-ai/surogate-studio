@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.3](https://github.com/invergent-ai/surogate-studio/compare/v1.0.2...v1.0.3) (2026-02-18)
+
+
+### Bug Fixes
+
+* Disable QLoRA when LoRA is disabled ([2818242](https://github.com/invergent-ai/surogate-studio/commit/28182425e21b2a793d139a8f99ab47f9682e281c))
+* Increased mem. request for SkyPilot step pod ([4b2eb9c](https://github.com/invergent-ai/surogate-studio/commit/4b2eb9c6c2730d2d430f081951f1236c132e546b))
+
 ## [1.0.2](https://github.com/invergent-ai/surogate-studio/compare/v1.0.1...v1.0.2) (2026-02-16)
 
 
