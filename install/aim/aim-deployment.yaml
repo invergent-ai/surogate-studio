@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: default
+  name: aim
+  labels:
+    app: aim
+spec:
+  selector:
+    matchLabels:
+      app: aim
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: aim
+    spec:
+      containers:
+        - name: aim
+          image: statemesh/aim:1.0.0
+          ports:
+            - containerPort: 43800
+              protocol: TCP
+          resources:
+            limits:
+              cpu: "1"
+              memory: 2Gi
+            requests:
+              cpu: 100m
+              memory: 1Gi
+          volumeMounts:
+            - mountPath: /aim
+              name: aim-runs
+      volumes:
+        - name: aim-runs
+          persistentVolumeClaim:
+            claimName: aim-pvc

@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: lakefs-s3
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: http
+  selector:
+    app: lakefs
+    app.kubernetes.io/instance: lakefs
+    app.kubernetes.io/name: lakefs

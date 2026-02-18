@@ -1,0 +1,46 @@
+image:
+  repository: statemesh/lakefs
+  tag: 1.50.8
+  pullPolicy: Always
+
+extraVolumes:
+  - name: shared
+    persistentVolumeClaim:
+      claimName: lakefs-shared-pvc
+
+extraVolumeMounts:
+  - name: shared
+    mountPath: /shared
+
+lakefsConfig: |
+  auth:
+    ui_config:
+      rbac: internal
+    cache:
+      ttl: 1s
+  database:
+    type: postgres
+  blockstore:
+    type: local
+    signing:
+      secret_key: ipsKBPkU3D1pdrWXvDQHowVdX7m9bK0s
+    local:
+      path: /shared/data
+      import_enabled: true
+      allowed_external_prefixes:
+        - /shared/import
+  committed:
+    local_cache:
+      dir: /shared/cache
+  gateways:
+    s3:
+      domain_name:
+        - lakefs-s3.densemax.local
+        - lakefs-s3.statemesh.svc
+  cors:
+    allowed_origins:
+      - 'https://*.densemax.local'
+      - 'https://*.densemax.local:4200'
+      - 'https://localhost:4200'
+      - 'https://localhost:3000'
+
