@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.4](https://github.com/invergent-ai/surogate-studio/compare/v1.0.3...v1.0.4) (2026-02-18)
+
+
+### Bug Fixes
+
+* Use only specialized training images in the sky ([7248ea4](https://github.com/invergent-ai/surogate-studio/commit/7248ea421f5349fc85f7822b52e5df54c2dc875a))
+
 ## [1.0.3](https://github.com/invergent-ai/surogate-studio/compare/v1.0.2...v1.0.3) (2026-02-18)
 
 
