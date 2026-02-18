@@ -39,7 +39,7 @@ public class SkyTaskRunSpec extends V1TaskRunSpec implements TaskRunSpec {
                 .requests(
                     Map.of(
                         "cpu", "2",
-                        "memory", "4Gi",
+                        "memory", "8Gi",
                         GPU_RESOURCE_NAME, taskRun.getRayClusterShape().getHeadGpus().toString(),
                         SRIOV_RESOURCE_NAME, "1"
                     )
