@@ -86,6 +86,31 @@ Explore:
 
 ---
 
+## Quickstart
+
+**Run using Docker:**
+
+    docker run -e SPRING_PROFILES_ACTIVE=appliance-prod -e APP_CLIENT_URL=http://localhost:8080 -p 8080:8080 ghcr.io/invergent-ai/studio:latest
+
+**Connect the studio to your Kubernetes cluster:**
+
+1. Navigate to Admin section > Clusters and edit default cluster.
+2. Add the KubeConfig of your k8s cluster.
+
+**Deploy the studio on your Kubernetes cluster (Optional):**
+
+    export KUBECONFIG=<kube config path>
+    cd <PROJECT_ROOT>/src/main/helm
+
+    kubectl create namespace surogate
+    helm install --namespace surogate surogate surogate
+
+**Install dependencies:**
+
+    <PROJECT_ROOT>/install/install-deps.sh
+
+---
+
 ## Development
 
 Before you can build this project, you must install and configure the following dependencies on your machine:
@@ -133,15 +158,6 @@ For the first time login to dockerhub with your credentials:
 then
 
     npm run docker:push
-
-If not already, install the application on a k8s cluster:
-
-    export KUBECONFIG=<kube config path>
-    cd <PROJECT_ROOT>/src/main/helm
-
-    kubectl create namespace surogate
-    helm install --namespace surogate surogate surogate
-
 
 ---
 
