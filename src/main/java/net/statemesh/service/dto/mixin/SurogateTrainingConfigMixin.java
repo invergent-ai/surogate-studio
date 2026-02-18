@@ -87,7 +87,7 @@ public abstract class SurogateTrainingConfigMixin {
     @JsonProperty("final_lr_fraction")
     private Double finalLrFraction;
 
-    @JsonProperty("recompute_block")
+    @JsonProperty("recompute")
     private Boolean gradientCheckpointing;
 
     @JsonProperty("recompute_lora")
