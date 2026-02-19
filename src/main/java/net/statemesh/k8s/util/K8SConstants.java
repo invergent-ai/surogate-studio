@@ -225,6 +225,7 @@ public class K8SConstants {
 
     public static final String NFS_SERVER = "192.168.1.156";
     public static final String NFS_AIM_PATH = "/data/aim";
+    public static final String NFS_AIM_PATH_TMP = "/data/aim-tmp";
 
     public static final String SKY_TASK_TIMEOUT = "720h";
     public static final String SKY_MANAGED_SERVICE_LABEL = "skypilot-cluster";

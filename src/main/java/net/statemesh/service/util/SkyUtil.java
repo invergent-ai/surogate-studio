@@ -127,6 +127,12 @@ public class SkyUtil {
                 .value(Optional.ofNullable(rayJob.getUseAxolotl()).orElse(Boolean.FALSE).toString())
                 .build()
         );
+        jobParams.add(
+            TaskRunParamDTO.builder()
+                .key(RAY_JOB_ENV_AXOLOTL_CONFIG)
+                .value(rayJob.getTrainingConfig())
+                .build()
+        );
         // Test vLLM TP
         if (rayJob.getRayClusterShapePojo() != null) {
             jobParams.add(
@@ -225,6 +231,21 @@ public class SkyUtil {
                                     "limits", Map.of(
                                         SRIOV_RESOURCE_NAME, "1"
                                     )
+                                ),
+                                "volumeMounts", List.of(
+                                        Map.of(
+                                            "name", "aim",
+                                            "mountPath", AIM_DIR
+                                        )
+                                )
+                            )
+                        ),
+                        "volumes", List.of(
+                            Map.of(
+                                "name", "aim",
+                                "nfs", Map.of(
+                                    "server", NFS_SERVER,
+                                    "path", NFS_AIM_PATH_TMP
                                 )
                             )
                         )
