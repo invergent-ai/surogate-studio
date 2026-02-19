@@ -467,9 +467,6 @@ export const QLORA_FP4 = `
 export const QLORA_BNB = `
 <p>Enable BitsAndBytes NF4 QLoRA mode (base weights quantized to NF4 with per-block absmax). Works on any CUDA GPU.</p>`;
 
-export const RECOMPUTE_LORA = `
-<p>Recompute ln1/ln2 activations during LoRA backward pass instead of storing per-layer.</p>`;
-
 export const MERGE_LORA = `
 <p>This permanently bakes your trained customizations (the adapter) into the original base model.</p>`;
 
