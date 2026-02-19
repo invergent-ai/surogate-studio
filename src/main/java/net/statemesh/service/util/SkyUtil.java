@@ -26,7 +26,7 @@ public class SkyUtil {
                 Boolean.TRUE.equals(rayJob.getUseAxolotl()) ? "Axolotl" : "Surogate"
             ))
             .withRun(String.format("""
-                cd /opt/densemax/%s
+                cd %s
                 source .venv/bin/activate
                 ~/sky_templates/ray/start_cluster
 
@@ -34,7 +34,7 @@ public class SkyUtil {
                     job-entry-sky %s %s
                 fi
                 """,
-                Boolean.TRUE.equals(rayJob.getUseAxolotl()) ? "train-axolotl" : "train",
+                Boolean.TRUE.equals(rayJob.getUseAxolotl()) ? "/opt/densemax/train-axolotl" : "/home/surogate",
                 Boolean.TRUE.equals(rayJob.getUseAxolotl()) ? "train-axolotl" : "train",
                 Boolean.TRUE.equals(rayJob.getUseAxolotl()) ? "train-sky-axolotl" : "train-sky"
             ))
