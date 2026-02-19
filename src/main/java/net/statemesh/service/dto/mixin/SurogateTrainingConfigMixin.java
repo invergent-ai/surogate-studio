@@ -90,9 +90,6 @@ public abstract class SurogateTrainingConfigMixin {
     @JsonProperty("recompute")
     private Boolean gradientCheckpointing;
 
-    @JsonProperty("recompute_lora")
-    private Boolean recomputeLora;
-
     @JsonProperty("skip_quant_first_layers")
     private Integer skipQuantFirstLayers;
 

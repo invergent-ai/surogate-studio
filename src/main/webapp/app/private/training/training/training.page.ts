@@ -164,7 +164,6 @@ export class TrainingPage implements OnInit {
       qloraFp8: new FormControl<boolean>(false),
       qloraFp4: new FormControl<boolean>(true),
       qloraBnb: new FormControl<boolean>(true),
-      recomputeLora: new FormControl<boolean>(true),
       mergeLora: new FormControl<boolean>(false),
       mergeIteratively: new FormControl<boolean>(false),
       loraR: new FormControl<number>(32, [Validators.required]),
@@ -381,7 +380,6 @@ export class TrainingPage implements OnInit {
       qloraFp8: trainingConfig.qloraFp8,
       qloraFp4: trainingConfig.qloraFp4,
       qloraBnb: trainingConfig.qloraBnb,
-      recomputeLora: trainingConfig.recomputeLora,
       trainingForm: {
         numEpochs: trainingConfig.numEpochs,
         microBatchSize: trainingConfig.microBatchSize,
@@ -497,7 +495,7 @@ export class TrainingPage implements OnInit {
   formToTrainingConfig(formValues: any): ITrainingConfig {
     const {lora, loraR, loraAlpha, loraDropout,
       qProj, kProj, vProj, oProj, upProj, downProj, gateProj,
-      qloraFp8, qloraFp4, qloraBnb, recomputeLora, mergeLora,
+      qloraFp8, qloraFp4, qloraBnb, mergeLora,
       datasets, testDatasets, trainingForm,
     } = formValues;
     const loraTargetModules: string[] = [];
@@ -555,7 +553,6 @@ export class TrainingPage implements OnInit {
       qloraFp8,
       qloraFp4,
       qloraBnb,
-      recomputeLora,
       mergeLora,
       datasets: dsets,
       testDatasets: tdsets.length ? tdsets : null,

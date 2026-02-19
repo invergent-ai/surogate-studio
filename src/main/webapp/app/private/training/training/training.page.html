@@ -175,13 +175,6 @@
                             (onChange)="qloraBnbChanged($event)" [class.ng-dirty]="jobForm.dirty">
                 </p-checkbox>
               </div>
-              <!--        Recompute LoRA-->
-              <div class="field col-12 md:col-2 flex align-items-center gap-2">
-                <sm-label-tooltip [tooltip]="RECOMPUTE_LORA">Recompute LoRA</sm-label-tooltip>
-                <p-checkbox [binary]="true" id="recomputeLora" formControlName="recomputeLora" [readonly]="true"
-                            [class.ng-dirty]="jobForm.dirty">
-                </p-checkbox>
-              </div>
               <!--        Merge Adapter-->
               <div class="field col-12 md:col-2 flex align-items-center gap-2">
                 <sm-label-tooltip [tooltip]="MERGE_LORA">Merge Adapter</sm-label-tooltip>

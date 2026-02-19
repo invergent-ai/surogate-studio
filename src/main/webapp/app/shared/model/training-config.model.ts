@@ -36,7 +36,6 @@ export interface ITrainingConfig {
   recipe?: TrainingPrecisionType;
   zeroLevel?: number;
   lora?: boolean;
-  recomputeLora?: boolean;
   qloraFp8?: boolean;
   qloraFp4?: boolean;
   qloraBnb?: boolean;

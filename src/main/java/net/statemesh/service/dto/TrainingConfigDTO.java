@@ -63,7 +63,6 @@ public class TrainingConfigDTO {
     private Boolean qloraFp8;
     private Boolean qloraFp4;
     private Boolean qloraBnb;
-    private Boolean recomputeLora;
     private Boolean mergeLora;
     private Boolean mergeIteratively;
     private Aim aim; // In Axolotl
