@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.0.4](https://github.com/invergent-ai/surogate-studio/compare/v1.0.3...v1.0.4) (2026-02-19)
+
+
+### Bug Fixes
+
+* Disallow fp4 lora when merging adapter (only for axolotl) ([a782976](https://github.com/invergent-ai/surogate-studio/commit/a7829766c4a17f029d730b602cc1125ae4cead97))
+* Gradient checkpointing config for Surogate lib ([68dccf7](https://github.com/invergent-ai/surogate-studio/commit/68dccf7e3a0a25668e398b8bb55759be6e1d665c))
+* Metrics & LoRA merge on multi-node in the sky ([431e875](https://github.com/invergent-ai/surogate-studio/commit/431e875f8c1053e4e7031bcf990228760a12b140))
+* Removed deprecated recompute_lora attribute ([f737423](https://github.com/invergent-ai/surogate-studio/commit/f73742328ceba4d69624ac2c68369ee849691c3a))
+* Use only specialized training images in the sky ([7248ea4](https://github.com/invergent-ai/surogate-studio/commit/7248ea421f5349fc85f7822b52e5df54c2dc875a))
+* Use Surogate as default training lib ([748f9d9](https://github.com/invergent-ai/surogate-studio/commit/748f9d9c835d5b85b15db4095414f005b0cfa3fa))
+
 ## [1.0.3](https://github.com/invergent-ai/surogate-studio/compare/v1.0.2...v1.0.3) (2026-02-18)
 
 
