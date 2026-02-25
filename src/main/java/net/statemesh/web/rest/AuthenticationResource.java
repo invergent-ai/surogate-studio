@@ -1,6 +1,9 @@
 package net.statemesh.web.rest;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -26,12 +29,10 @@ import java.util.Base64;
 
 import static net.statemesh.config.Constants.CLI_SESSION_PASSWORD;
 
-/**
- * Controller to authenticate users.
- */
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
+@Tag(name = "Authentication", description = "User authentication and JWT token management")
 public class AuthenticationResource {
     private final Logger log = LoggerFactory.getLogger(AuthenticationResource.class);
 
@@ -39,6 +40,9 @@ public class AuthenticationResource {
     private final UserService userService;
     private final JwtService jwtService;
 
+    @Operation(summary = "Authenticate user", description = "Authenticate with username/password and receive a JWT token")
+    @ApiResponse(responseCode = "200", description = "Authentication successful")
+    @ApiResponse(responseCode = "401", description = "Invalid credentials")
     @PostMapping("/authenticate")
     public ResponseEntity<JWTToken> authorize(@Valid @RequestBody LoginVM loginVM) {
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
@@ -59,28 +63,20 @@ public class AuthenticationResource {
             if (!loginVM.getCliHostname().equals(Base64.getEncoder().encodeToString(secret.getBytes()))) {
                 throw new RuntimeException("Bad CLI session");
             }
-
             userService.setCliSession(loginVM.getUsername(), loginVM.getCliSession(), jwt);
         }
 
         return new ResponseEntity<>(new JWTToken(jwt), httpHeaders, HttpStatus.OK);
     }
 
-    /**
-     * {@code GET /authenticate} : check if the user is authenticated, and return its login.
-     *
-     * @param request the HTTP request.
-     * @return the login if the user is authenticated.
-     */
+    @Operation(summary = "Check authentication", description = "Check if the current user is authenticated")
+    @ApiResponse(responseCode = "200", description = "Returns the login of the authenticated user")
     @GetMapping("/authenticate")
     public String isAuthenticated(HttpServletRequest request) {
         log.debug("REST request to check if the current user is authenticated");
         return request.getRemoteUser();
     }
 
-    /**
-     * Object to return as body in JWT Authentication.
-     */
     @Setter
     @AllArgsConstructor
     public static class JWTToken {

@@ -1,5 +1,8 @@
 package net.statemesh.web.rest;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.statemesh.service.RayJobService;
@@ -28,6 +31,7 @@ import java.util.Optional;
 @RequestMapping("/api/jobs")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Ray Job", description = "Ray job management and deployment")
 public class RayJobResource {
     private static final String ENTITY_NAME = "rayJob";
 
@@ -37,7 +41,8 @@ public class RayJobResource {
     private final RayJobService rayJobService;
     private final RayJobQueryService rayJobQueryService;
 
-
+    @Operation(summary = "Save a Ray job")
+    @ApiResponse(responseCode = "200", description = "Ray job saved")
     @PostMapping("")
     public ResponseEntity<RayJobDTO> saveRayJob(@RequestBody RayJobDTO rayJobDTO,
                                                 Principal principal) throws URISyntaxException {
@@ -52,6 +57,8 @@ public class RayJobResource {
             .body(result);
     }
 
+    @Operation(summary = "Deploy a Ray job")
+    @ApiResponse(responseCode = "200", description = "Ray job deployment initiated")
     @PostMapping("/deploy")
     public ResponseEntity<RayJobDTO> deployRayJob(@RequestBody RayJobDTO rayJobDTO,
                                                   Principal principal) throws URISyntaxException {
@@ -64,6 +71,8 @@ public class RayJobResource {
             .body(result);
     }
 
+    @Operation(summary = "Redeploy a Ray job")
+    @ApiResponse(responseCode = "200", description = "Ray job redeployment initiated")
     @PostMapping("/redeploy")
     public ResponseEntity<RayJobDTO> redeployRayJob(@RequestBody RayJobDTO rayJobDTO,
                                                     Principal principal) throws URISyntaxException {
@@ -76,6 +85,8 @@ public class RayJobResource {
             .body(result);
     }
 
+    @Operation(summary = "Cancel a Ray job")
+    @ApiResponse(responseCode = "204", description = "Ray job cancelled")
     @DeleteMapping("/cancel/{id}")
     public ResponseEntity<Void> cancelRayJob(@PathVariable(name = "id") String id,
                                              Principal principal) {
@@ -87,6 +98,8 @@ public class RayJobResource {
             .build();
     }
 
+    @Operation(summary = "Delete a Ray job")
+    @ApiResponse(responseCode = "204", description = "Ray job deleted")
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<Void> deleteRayJob(@PathVariable(name = "id") String id,
                                              Principal principal) {
@@ -98,6 +111,9 @@ public class RayJobResource {
             .build();
     }
 
+    @Operation(summary = "Get a Ray job by ID")
+    @ApiResponse(responseCode = "200", description = "Ray job returned")
+    @ApiResponse(responseCode = "404", description = "Ray job not found")
     @GetMapping("/{id}")
     public ResponseEntity<RayJobDTO> getRayJob(@PathVariable(name = "id") String id) {
         log.debug("REST request to get RayJob : {}", id);
@@ -106,6 +122,8 @@ public class RayJobResource {
         return ResponseUtil.wrapOrNotFound(rayJobDTO);
     }
 
+    @Operation(summary = "Query Ray jobs by criteria")
+    @ApiResponse(responseCode = "200", description = "List of Ray jobs returned")
     @GetMapping("")
     public ResponseEntity<List<RayJobDTO>> queryRayJobs(
         RayJobCriteria criteria,

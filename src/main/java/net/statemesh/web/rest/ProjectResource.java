@@ -1,5 +1,9 @@
 package net.statemesh.web.rest;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -37,13 +41,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * REST controller for managing {@link net.statemesh.domain.Project}.
- */
 @RestController
 @RequestMapping("/api/projects")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Projects", description = "Project management and lifecycle")
 public class ProjectResource {
     private static final String ENTITY_NAME = "project";
 
@@ -57,13 +59,9 @@ public class ProjectResource {
     private final SimpMessagingTemplate messagingTemplate;
     private final ApplicationProperties applicationProperties;
 
-    /**
-     * {@code POST  /projects} : Create a new project.
-     *
-     * @param projectDTO the projectDTO to create.
-     * @return the {@link ResponseEntity} with status {@code 201 (Created)} and with body the new projectDTO, or with status {@code 400 (Bad Request)} if the project has already an ID.
-     * @throws URISyntaxException if the Location URI syntax is incorrect.
-     */
+    @Operation(summary = "Create a new project")
+    @ApiResponse(responseCode = "201", description = "Project created")
+    @ApiResponse(responseCode = "400", description = "Project already has an ID")
     @PostMapping("")
     public ResponseEntity<ProjectDTO> createProject(@Valid @RequestBody ProjectDTO projectDTO,
                                                     Principal principal) throws URISyntaxException {
@@ -74,50 +72,37 @@ public class ProjectResource {
 
         projectDTO
             .datacenterName(
-                // We could implement a datacenter selection strategy
                 applicationProperties.getProfile().getDatacenters().parallelStream().findAny().orElse(null)
             )
             .rayCluster(
-                // We could implement a ray cluster selection strategy
                 applicationProperties.getProfile().getRayClusters().parallelStream()
                     .map(ApplicationProperties.RayCluster::getName)
                     .findAny()
                     .orElse(null)
             )
-            .setUser(
-                userService.findOne(principal.getName()).orElse(null)
-            );
+            .setUser(userService.findOne(principal.getName()).orElse(null));
 
         ProjectDTO result = projectService.save(projectDTO, principal.getName());
-
         return ResponseEntity
             .created(new URI("/api/projects/" + result.getId()))
             .headers(HeaderUtil.createEntityCreationAlert(applicationName, true, ENTITY_NAME, result.getId()))
             .body(result);
     }
 
-    /**
-     * {@code PUT  /projects/:id} : Updates an existing project.
-     *
-     * @param id the id of the projectDTO to save.
-     * @param projectDTO the projectDTO to update.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated projectDTO,
-     * or with status {@code 400 (Bad Request)} if the projectDTO is not valid,
-     * or with status {@code 500 (Internal Server Error)} if the projectDTO couldn't be updated.
-     */
+    @Operation(summary = "Update an existing project")
+    @ApiResponse(responseCode = "200", description = "Project updated")
+    @ApiResponse(responseCode = "400", description = "Invalid ID")
     @PutMapping("/{id}")
     public ResponseEntity<ProjectDTO> updateProject(
-        @PathVariable(value = "id", required = false) final String id,
+        @Parameter(description = "Project ID") @PathVariable(value = "id", required = false) final String id,
         @Valid @RequestBody ProjectDTO projectDTO) {
         log.debug("REST request to update Project : {}, {}", id, projectDTO);
         if (!Objects.equals(id, projectDTO.getId())) {
             throw new BadRequestAlertException("Invalid ID", ENTITY_NAME, "idinvalid");
         }
-
         if (!projectRepository.existsById(id)) {
             throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
         }
-
         ProjectDTO result = projectService.update(projectDTO);
         return ResponseEntity
             .ok()
@@ -125,53 +110,44 @@ public class ProjectResource {
             .body(result);
     }
 
-    /**
-     * {@code PATCH  /projects/:id} : Partial updates given fields of an existing project, field will ignore if it is null
-     *
-     * @param id the id of the projectDTO to save.
-     * @param projectDTO the projectDTO to update.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated projectDTO,
-     * or with status {@code 400 (Bad Request)} if the projectDTO is not valid,
-     * or with status {@code 404 (Not Found)} if the projectDTO is not found,
-     * or with status {@code 500 (Internal Server Error)} if the projectDTO couldn't be updated.
-     */
+    @Operation(summary = "Partially update a project")
+    @ApiResponse(responseCode = "200", description = "Project partially updated")
+    @ApiResponse(responseCode = "404", description = "Not found")
     @PatchMapping(value = "/{id}", consumes = { "application/json", "application/merge-patch+json" })
     public ResponseEntity<ProjectDTO> partialUpdateProject(
-        @PathVariable(value = "id", required = false) final String id,
+        @Parameter(description = "Project ID") @PathVariable(value = "id", required = false) final String id,
         @NotNull @RequestBody ProjectDTO projectDTO) {
         log.debug("REST request to partial update Project partially : {}, {}", id, projectDTO);
         if (!Objects.equals(id, projectDTO.getId())) {
             throw new BadRequestAlertException("Invalid ID", ENTITY_NAME, "idinvalid");
         }
-
         if (!projectRepository.existsById(id)) {
             throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
         }
-
         Optional<ProjectDTO> result = projectService.partialUpdate(projectDTO);
-
         return ResponseUtil.wrapOrNotFound(
             result,
             HeaderUtil.createEntityUpdateAlert(applicationName, true, ENTITY_NAME, projectDTO.getId())
         );
     }
 
+    @Operation(summary = "Search projects by name")
+    @ApiResponse(responseCode = "200", description = "Projects returned")
     @GetMapping("/search")
-    public ResponseEntity<List<ProjectDTO>> searchByName(@RequestParam("query") String query) {
+    public ResponseEntity<List<ProjectDTO>> searchByName(
+        @Parameter(description = "Search query") @RequestParam("query") String query) {
         return ResponseEntity.ok(projectService.searchByName(query));
     }
 
+    @Operation(summary = "Get all projects basic info")
+    @ApiResponse(responseCode = "200", description = "Basic info returned")
     @GetMapping("/basic")
     public ResponseEntity<List<ProjectDTO>> getBasicInfo() {
         return ResponseEntity.ok(projectService.findAllBasicInfo());
     }
 
-    /**
-     * {@code GET  /projects} : get all the projects.
-     *
-     * @param pageable the pagination information.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of projects in body.
-     */
+    @Operation(summary = "Query projects with criteria (paginated)")
+    @ApiResponse(responseCode = "200", description = "Paginated projects returned")
     @GetMapping("")
     public ResponseEntity<List<ProjectDTO>> getAllProjects(
         ProjectCriteria criteria,
@@ -184,33 +160,31 @@ public class ProjectResource {
         return ResponseEntity.ok().headers(headers).body(page.getContent());
     }
 
-    /**
-     * {@code GET  /projects/:id} : get the "id" project.
-     *
-     * @param id the id of the projectDTO to retrieve.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the projectDTO, or with status {@code 404 (Not Found)}.
-     */
+    @Operation(summary = "Get a project by ID")
+    @ApiResponse(responseCode = "200", description = "Project found")
+    @ApiResponse(responseCode = "404", description = "Not found")
     @GetMapping("/{id}")
-    public ResponseEntity<ProjectDTO> getProject(@PathVariable String id) {
+    public ResponseEntity<ProjectDTO> getProject(
+        @Parameter(description = "Project ID") @PathVariable String id) {
         log.debug("REST request to get Project : {}", id);
         Optional<ProjectDTO> projectDTO = projectService.findOne(id);
         return ResponseUtil.wrapOrNotFound(projectDTO);
     }
 
-
+    @Operation(summary = "Get project resources")
+    @ApiResponse(responseCode = "200", description = "Project resources returned")
     @GetMapping("/{id}/resources")
-    public ResponseEntity<List<ProjectResourceDTO>> resources(@PathVariable(name = "id") String id) {
+    public ResponseEntity<List<ProjectResourceDTO>> resources(
+        @Parameter(description = "Project ID") @PathVariable(name = "id") String id) {
         return ResponseEntity.ok(projectService.getResources(id));
     }
 
-    /**
-     * {@code DELETE  /projects/:id} : delete the "id" project.
-     *
-     * @param id the id of the projectDTO to delete.
-     * @return the {@link ResponseEntity} with status {@code 204 (NO_CONTENT)}.
-     */
+    @Operation(summary = "Delete a project")
+    @ApiResponse(responseCode = "204", description = "Project deleted")
+    @ApiResponse(responseCode = "409", description = "Project has applications")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteProject(@PathVariable(name = "id") String id, Principal principal) {
+    public ResponseEntity<Void> deleteProject(
+        @Parameter(description = "Project ID") @PathVariable(name = "id") String id, Principal principal) {
         log.debug("REST request to delete Project : {}", id);
         try {
             projectService.findOne(id).ifPresent(projectDTO -> {
@@ -222,7 +196,7 @@ public class ProjectResource {
                         .build()
                 );
             });
-        } catch(DataIntegrityViolationException e) {
+        } catch (DataIntegrityViolationException e) {
             throw new ProjectHasApplicationsException();
         }
         return ResponseEntity
@@ -231,16 +205,17 @@ public class ProjectResource {
             .build();
     }
 
+    @Operation(summary = "Delete multiple projects")
+    @ApiResponse(responseCode = "204", description = "Projects deleted")
+    @ApiResponse(responseCode = "409", description = "One or more projects have applications")
     @PostMapping("/del")
     public ResponseEntity<Void> deleteProjects(@RequestBody IdCollection idCollection) {
         log.debug("REST request to delete Projects : {}", idCollection.getIds());
         try {
             projectService.deleteAll(idCollection.getIds());
-        } catch(DataIntegrityViolationException e) {
+        } catch (DataIntegrityViolationException e) {
             throw new ProjectHasApplicationsException();
         }
-        return ResponseEntity
-            .noContent()
-            .build();
+        return ResponseEntity.noContent().build();
     }
 }

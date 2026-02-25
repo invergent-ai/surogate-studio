@@ -1,5 +1,9 @@
 package net.statemesh.web.rest.k8s;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import net.statemesh.service.k8s.FileService;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -29,6 +33,7 @@ import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 @Controller
 @RequestMapping("/api/files")
+@Tag(name = "Files", description = "File upload and download for application containers")
 public class FileResource {
     private final Logger log = LoggerFactory.getLogger(FileResource.class);
     private final FileService fileService;
@@ -37,22 +42,22 @@ public class FileResource {
         this.fileService = fileService;
     }
 
+    @Operation(summary = "Upload file to container", description = "Upload a file to a specific path in an application container")
+    @ApiResponse(responseCode = "200", description = "File uploaded successfully")
     @RequestMapping(method = POST, value = "/upload", produces = "application/json")
     public ResponseEntity<Void> uploadFile(
-        @RequestParam("applicationId") final String applicationId,
-        @RequestParam("podName") final String podName,
-        @RequestParam(value = "containerId", required = false) final String containerId,
-        @RequestParam("path") final String path,
-        @RequestParam(value = "file", required = false) MultipartFile file) {
+        @Parameter(description = "Application ID") @RequestParam("applicationId") final String applicationId,
+        @Parameter(description = "Pod name") @RequestParam("podName") final String podName,
+        @Parameter(description = "Container ID") @RequestParam(value = "containerId", required = false) final String containerId,
+        @Parameter(description = "Destination path in container") @RequestParam("path") final String path,
+        @Parameter(description = "File to upload") @RequestParam(value = "file", required = false) MultipartFile file) {
         log.debug("REST request to upload a file for application {} in container {}", applicationId, containerId);
         if (file == null || StringUtils.isEmpty(file.getOriginalFilename())) {
             throw new RuntimeException("File was not present");
         }
 
         Path destinationFile = Paths.get(TEMP_UPLOAD_PATH)
-            .resolve(
-                Paths.get(file.getOriginalFilename())
-            )
+            .resolve(Paths.get(file.getOriginalFilename()))
             .normalize()
             .toAbsolutePath();
         try (InputStream inputStream = file.getInputStream()) {
@@ -74,11 +79,14 @@ public class FileResource {
         return ResponseEntity.ok(null);
     }
 
+    @Operation(summary = "Download file from container", description = "Download a file from a specific path in an application container")
+    @ApiResponse(responseCode = "200", description = "File downloaded successfully")
     @RequestMapping(method = GET, value = "/download")
-    public ResponseEntity<Resource> downloadFile(@RequestParam("applicationId") final String applicationId,
-                                                 @RequestParam("podName") final String podName,
-                                                 @RequestParam(value = "containerId", required = false) final String containerId,
-                                                 @RequestParam("path") final String path) {
+    public ResponseEntity<Resource> downloadFile(
+        @Parameter(description = "Application ID") @RequestParam("applicationId") final String applicationId,
+        @Parameter(description = "Pod name") @RequestParam("podName") final String podName,
+        @Parameter(description = "Container ID") @RequestParam(value = "containerId", required = false) final String containerId,
+        @Parameter(description = "File path in container") @RequestParam("path") final String path) {
         InputStream stream = this.fileService.downloadFile(applicationId, podName, containerId, path);
         final String fileName = path.split("/")[path.split("/").length - 1];
         return ResponseEntity

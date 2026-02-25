@@ -1,5 +1,8 @@
 package net.statemesh.web.rest;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import net.statemesh.service.UserService;
 import net.statemesh.service.dto.UserDTO;
 import org.slf4j.Logger;
@@ -20,6 +23,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api")
+@Tag(name = "Public User", description = "Public user information")
 public class PublicUserResource {
     private final Logger log = LoggerFactory.getLogger(PublicUserResource.class);
 
@@ -32,12 +36,9 @@ public class PublicUserResource {
         this.userService = userService;
     }
 
-    /**
-     * {@code GET /users} : get all users with only public information - calling this method is allowed for anyone.
-     *
-     * @param pageable the pagination information.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body all users.
-     */
+    @Operation(summary = "Get all public users")
+    @ApiResponse(responseCode = "200", description = "List of public users returned")
+    @ApiResponse(responseCode = "400", description = "Invalid sort property")
     @GetMapping("/users")
     public ResponseEntity<List<UserDTO>> getAllPublicUsers(@org.springdoc.core.annotations.ParameterObject Pageable pageable) {
         log.debug("REST request to get all public User names");
@@ -54,10 +55,8 @@ public class PublicUserResource {
         return pageable.getSort().stream().map(Sort.Order::getProperty).allMatch(ALLOWED_ORDERED_PROPERTIES::contains);
     }
 
-    /**
-     * Gets a list of all roles.
-     * @return a string list of all roles.
-     */
+    @Operation(summary = "Get all authorities")
+    @ApiResponse(responseCode = "200", description = "List of authorities returned")
     @GetMapping("/authorities")
     public List<String> getAuthorities() {
         return userService.getAuthorities();

@@ -1,5 +1,8 @@
 package net.statemesh.web.rest;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
@@ -19,11 +22,9 @@ import org.springframework.web.bind.annotation.*;
 import tech.jhipster.web.util.HeaderUtil;
 import tech.jhipster.web.util.ResponseUtil;
 
-/**
- * REST controller for managing {@link net.statemesh.domain.UserXOrganization}.
- */
 @RestController
 @RequestMapping("/api/user-x-organizations")
+@Tag(name = "User Organization", description = "User-organization association management")
 public class UserXOrganizationResource {
     private final Logger log = LoggerFactory.getLogger(UserXOrganizationResource.class);
 
@@ -33,7 +34,6 @@ public class UserXOrganizationResource {
     private String applicationName;
 
     private final UserXOrganizationService userXOrganizationService;
-
     private final UserXOrganizationRepository userXOrganizationRepository;
 
     public UserXOrganizationResource(
@@ -44,13 +44,9 @@ public class UserXOrganizationResource {
         this.userXOrganizationRepository = userXOrganizationRepository;
     }
 
-    /**
-     * {@code POST  /user-x-organizations} : Create a new userXOrganization.
-     *
-     * @param userXOrganizationDTO the userXOrganizationDTO to create.
-     * @return the {@link ResponseEntity} with status {@code 201 (Created)} and with body the new userXOrganizationDTO, or with status {@code 400 (Bad Request)} if the userXOrganization has already an ID.
-     * @throws URISyntaxException if the Location URI syntax is incorrect.
-     */
+    @Operation(summary = "Create a new user-organization association")
+    @ApiResponse(responseCode = "201", description = "Association created")
+    @ApiResponse(responseCode = "400", description = "Invalid input or ID already exists")
     @PostMapping("")
     public ResponseEntity<UserXOrganizationDTO> createUserXOrganization(@Valid @RequestBody UserXOrganizationDTO userXOrganizationDTO)
         throws URISyntaxException {
@@ -65,15 +61,9 @@ public class UserXOrganizationResource {
             .body(result);
     }
 
-    /**
-     * {@code PUT  /user-x-organizations/:id} : Updates an existing userXOrganization.
-     *
-     * @param id the id of the userXOrganizationDTO to save.
-     * @param userXOrganizationDTO the userXOrganizationDTO to update.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated userXOrganizationDTO,
-     * or with status {@code 400 (Bad Request)} if the userXOrganizationDTO is not valid,
-     * or with status {@code 500 (Internal Server Error)} if the userXOrganizationDTO couldn't be updated.
-     */
+    @Operation(summary = "Update an existing user-organization association")
+    @ApiResponse(responseCode = "200", description = "Association updated")
+    @ApiResponse(responseCode = "400", description = "Invalid ID or input")
     @PutMapping("/{id}")
     public ResponseEntity<UserXOrganizationDTO> updateUserXOrganization(
         @PathVariable(value = "id", required = false) final String id,
@@ -94,16 +84,10 @@ public class UserXOrganizationResource {
             .body(result);
     }
 
-    /**
-     * {@code PATCH  /user-x-organizations/:id} : Partial updates given fields of an existing userXOrganization, field will ignore if it is null
-     *
-     * @param id the id of the userXOrganizationDTO to save.
-     * @param userXOrganizationDTO the userXOrganizationDTO to update.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated userXOrganizationDTO,
-     * or with status {@code 400 (Bad Request)} if the userXOrganizationDTO is not valid,
-     * or with status {@code 404 (Not Found)} if the userXOrganizationDTO is not found,
-     * or with status {@code 500 (Internal Server Error)} if the userXOrganizationDTO couldn't be updated.
-     */
+    @Operation(summary = "Partially update a user-organization association")
+    @ApiResponse(responseCode = "200", description = "Association partially updated")
+    @ApiResponse(responseCode = "400", description = "Invalid ID or input")
+    @ApiResponse(responseCode = "404", description = "Association not found")
     @PatchMapping(value = "/{id}", consumes = { "application/json", "application/merge-patch+json" })
     public ResponseEntity<UserXOrganizationDTO> partialUpdateUserXOrganization(
         @PathVariable(value = "id", required = false) final String id,
@@ -125,23 +109,17 @@ public class UserXOrganizationResource {
         );
     }
 
-    /**
-     * {@code GET  /user-x-organizations} : get all the userXOrganizations.
-     *
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of userXOrganizations in body.
-     */
+    @Operation(summary = "Get all user-organization associations")
+    @ApiResponse(responseCode = "200", description = "List of associations returned")
     @GetMapping("")
     public List<UserXOrganizationDTO> getAllUserXOrganizations() {
         log.debug("REST request to get all UserXOrganizations");
         return userXOrganizationService.findAll();
     }
 
-    /**
-     * {@code GET  /user-x-organizations/:id} : get the "id" userXOrganization.
-     *
-     * @param id the id of the userXOrganizationDTO to retrieve.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the userXOrganizationDTO, or with status {@code 404 (Not Found)}.
-     */
+    @Operation(summary = "Get a user-organization association by ID")
+    @ApiResponse(responseCode = "200", description = "Association returned")
+    @ApiResponse(responseCode = "404", description = "Association not found")
     @GetMapping("/{id}")
     public ResponseEntity<UserXOrganizationDTO> getUserXOrganization(@PathVariable String id) {
         log.debug("REST request to get UserXOrganization : {}", id);
@@ -149,12 +127,8 @@ public class UserXOrganizationResource {
         return ResponseUtil.wrapOrNotFound(userXOrganizationDTO);
     }
 
-    /**
-     * {@code DELETE  /user-x-organizations/:id} : delete the "id" userXOrganization.
-     *
-     * @param id the id of the userXOrganizationDTO to delete.
-     * @return the {@link ResponseEntity} with status {@code 204 (NO_CONTENT)}.
-     */
+    @Operation(summary = "Delete a user-organization association")
+    @ApiResponse(responseCode = "204", description = "Association deleted")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUserXOrganization(@PathVariable String id) {
         log.debug("REST request to delete UserXOrganization : {}", id);

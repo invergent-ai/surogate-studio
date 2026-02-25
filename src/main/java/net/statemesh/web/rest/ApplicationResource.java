@@ -1,5 +1,9 @@
 package net.statemesh.web.rest;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,13 +29,11 @@ import java.security.Principal;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * REST controller for managing {@link net.statemesh.domain.Application}.
- */
 @RestController
 @RequestMapping("/api/applications")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Applications", description = "Application deployment and lifecycle management")
 public class ApplicationResource {
     private static final String ENTITY_NAME = "application";
 
@@ -41,13 +43,8 @@ public class ApplicationResource {
     private final ApplicationService applicationService;
     private final ApplicationQueryService applicationQueryService;
 
-    /**
-     * {@code POST  /applications} : Create a new application.
-     *
-     * @param applicationDTO the applicationDTO to create or update.
-     * @return the {@link ResponseEntity} with status {@code 201 (Created)} and with body the new applicationDTO, or with status {@code 400 (Bad Request)} if the application has already an ID.
-     * @throws URISyntaxException if the Location URI syntax is incorrect.
-     */
+    @Operation(summary = "Save an application")
+    @ApiResponse(responseCode = "201", description = "Application saved")
     @PostMapping("")
     public ResponseEntity<ApplicationDTO> saveApplication(@RequestBody ApplicationDTO applicationDTO,
                                                           Principal principal) throws URISyntaxException {
@@ -59,6 +56,8 @@ public class ApplicationResource {
             .body(result);
     }
 
+    @Operation(summary = "Deploy an application")
+    @ApiResponse(responseCode = "201", description = "Application deployed")
     @PostMapping("/deploy")
     public ResponseEntity<ApplicationDTO> deployApplication(@RequestBody ApplicationDTO applicationDTO,
                                                             Principal principal) throws URISyntaxException {
@@ -70,6 +69,8 @@ public class ApplicationResource {
             .body(result);
     }
 
+    @Operation(summary = "Redeploy an application")
+    @ApiResponse(responseCode = "201", description = "Application redeployed")
     @PostMapping("/redeploy")
     public ResponseEntity<ApplicationDTO> redeployApplication(@RequestBody ApplicationDTO applicationDTO,
                                                               Principal principal) throws URISyntaxException {
@@ -81,15 +82,12 @@ public class ApplicationResource {
             .body(result);
     }
 
-    /**
-     * {@code DELETE  /applications/:id} : delete the "id" application.
-     *
-     * @param id the id of the applicationDTO to delete.
-     * @return the {@link ResponseEntity} with status {@code 204 (NO_CONTENT)}.
-     */
+    @Operation(summary = "Delete an application")
+    @ApiResponse(responseCode = "204", description = "Application deleted")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteApplication(@PathVariable(name = "id") String id,
-                                                  Principal principal) {
+    public ResponseEntity<Void> deleteApplication(
+        @Parameter(description = "Application ID") @PathVariable(name = "id") String id,
+        Principal principal) {
         log.debug("REST request to delete Application : {}", id);
         applicationService.delete(id, principal.getName(), Boolean.FALSE);
         return ResponseEntity
@@ -98,9 +96,12 @@ public class ApplicationResource {
             .build();
     }
 
+    @Operation(summary = "Delete an application keeping data")
+    @ApiResponse(responseCode = "204", description = "Application deleted, data retained")
     @DeleteMapping("/keep/{id}")
-    public ResponseEntity<Void> deleteApplicationKeep(@PathVariable(name = "id") String id,
-                                                      Principal principal) {
+    public ResponseEntity<Void> deleteApplicationKeep(
+        @Parameter(description = "Application ID") @PathVariable(name = "id") String id,
+        Principal principal) {
         log.debug("REST request to delete Application and keep data : {}", id);
         applicationService.delete(id, principal.getName(), Boolean.TRUE);
         return ResponseEntity
@@ -109,29 +110,35 @@ public class ApplicationResource {
             .build();
     }
 
+    @Operation(summary = "Search applications by name")
+    @ApiResponse(responseCode = "200", description = "Applications returned")
     @GetMapping("/search")
-    public ResponseEntity<List<ApplicationDTO>> searchApplications(@RequestParam("query") String query) {
+    public ResponseEntity<List<ApplicationDTO>> searchApplications(
+        @Parameter(description = "Search query") @RequestParam("query") String query) {
         return ResponseEntity.ok(applicationService.searchByName(query));
     }
 
+    @Operation(summary = "Get all applications basic info")
+    @ApiResponse(responseCode = "200", description = "Basic info returned")
     @GetMapping("/basic")
     public ResponseEntity<List<ApplicationDTO>> getBasicInfo() {
         return ResponseEntity.ok(applicationService.findAllBasicInfo());
     }
 
-    /**
-     * {@code GET  /applications/:id} : get the "id" application.
-     *
-     * @param id the id of the applicationDTO to retrieve.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the applicationDTO, or with status {@code 404 (Not Found)}.
-     */
+    @Operation(summary = "Get an application by ID")
+    @ApiResponse(responseCode = "200", description = "Application found")
+    @ApiResponse(responseCode = "404", description = "Application not found")
     @GetMapping("/{id}")
-    public ResponseEntity<ApplicationDTO> getApplication(@PathVariable(name = "id") String id) {
+    public ResponseEntity<ApplicationDTO> getApplication(
+        @Parameter(description = "Application ID") @PathVariable(name = "id") String id) {
         log.debug("REST request to get Application : {}", id);
         Optional<ApplicationDTO> applicationDTO = applicationService.findOne(id);
         return ResponseUtil.wrapOrNotFound(applicationDTO);
     }
 
+    @Operation(summary = "Create application (admin)")
+    @ApiResponse(responseCode = "201", description = "Application created")
+    @ApiResponse(responseCode = "400", description = "Application already has an ID")
     @PostMapping("/admin")
     public ResponseEntity<ApplicationDTO> createApplicationAdmin(@Valid @RequestBody ApplicationDTO applicationDTO) throws URISyntaxException {
         log.debug("REST request to save Application for admin: {}", applicationDTO);
@@ -145,6 +152,8 @@ public class ApplicationResource {
             .body(result);
     }
 
+    @Operation(summary = "Query applications with criteria")
+    @ApiResponse(responseCode = "200", description = "Paginated applications returned")
     @GetMapping("")
     public ResponseEntity<List<ApplicationDTO>> queryApplications(
         ApplicationCriteria criteria,

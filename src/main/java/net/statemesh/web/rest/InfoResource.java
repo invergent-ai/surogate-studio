@@ -1,5 +1,8 @@
 package net.statemesh.web.rest;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import net.statemesh.config.ApplicationProperties;
 import net.statemesh.service.dto.StringWrapper;
@@ -14,9 +17,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/info")
 @RequiredArgsConstructor
+@Tag(name = "Info", description = "Application info and configuration")
 public class InfoResource {
     private final ApplicationProperties applicationProperties;
 
+    @Operation(summary = "Get client URL")
+    @ApiResponse(responseCode = "200", description = "Client URL returned")
     @GetMapping("/url")
     @Cacheable("url")
     @Transactional(readOnly = true)
@@ -24,12 +30,8 @@ public class InfoResource {
         return StringWrapper.of(applicationProperties.getClientUrl());
     }
 
-    /**
-     * Cache eviction scheduled task that invalidates the nodeStats cache every hour
-     */
-    @Scheduled(fixedRate = 3600000) // 1 hour in milliseconds
+    @Scheduled(fixedRate = 3600000)
     @CacheEvict(value = { "url" }, allEntries = true)
     public void evictCaches() {
-        // This method will clear the cache every hour
     }
 }

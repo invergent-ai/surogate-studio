@@ -1,5 +1,9 @@
 package net.statemesh.web.rest;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import net.logstash.logback.util.StringUtils;
 import net.statemesh.service.NodeReservationService;
 import net.statemesh.service.dto.NodeReservationDTO;
@@ -18,11 +22,9 @@ import java.util.List;
 
 import static net.statemesh.config.Constants.SM_ID_HEADER;
 
-/**
- * REST controller for managing {@link net.statemesh.domain.NodeReservation}.
- */
 @RestController
 @RequestMapping("/api/node-reservation")
+@Tag(name = "Node Reservations", description = "Node reservation management")
 public class NodeReservationResource {
     private final Logger log = LoggerFactory.getLogger(NodeReservationResource.class);
     private static final String ENTITY_NAME = "nodeReservation";
@@ -36,6 +38,8 @@ public class NodeReservationResource {
         this.nodeReservationService = nodeReservationService;
     }
 
+    @Operation(summary = "Get or create a node reservation")
+    @ApiResponse(responseCode = "201", description = "Reservation returned or created")
     @GetMapping("")
     public ResponseEntity<NodeReservationDTO> getOrCreateNodeReservation(Principal principal)
         throws URISyntaxException {
@@ -47,15 +51,20 @@ public class NodeReservationResource {
             .body(result);
     }
 
+    @Operation(summary = "List user's node reservations")
+    @ApiResponse(responseCode = "200", description = "Reservations returned")
     @GetMapping("/query")
     public ResponseEntity<List<NodeReservationDTO>> queryNodeReservations(Principal principal) {
         log.debug("REST request to list NodeReservation : {}", principal.getName());
         return ResponseEntity.ok(nodeReservationService.findReservationsforUser(principal.getName()));
     }
 
+    @Operation(summary = "Add error to a node reservation")
+    @ApiResponse(responseCode = "200", description = "Error added")
+    @ApiResponse(responseCode = "400", description = "Missing or invalid SM ID header")
     @PutMapping(value = "/error", consumes = "text/plain")
     public ResponseEntity<Void> addNodeReservationError(
-        @RequestHeader(SM_ID_HEADER) String shortSmId,
+        @Parameter(description = "Short SM ID header") @RequestHeader(SM_ID_HEADER) String shortSmId,
         @RequestBody String error
     ) {
         if (StringUtils.isEmpty(shortSmId)) {
@@ -63,7 +72,6 @@ public class NodeReservationResource {
         }
         var reservationDTO = nodeReservationService.getForShortSmId(shortSmId)
             .orElseThrow(() -> new BadRequestAlertException(SM_ID_HEADER + " is invalid", SM_ID_HEADER, "invalid"));
-
         nodeReservationService.addError(reservationDTO.getId(), error);
         return ResponseEntity.ok().build();
     }

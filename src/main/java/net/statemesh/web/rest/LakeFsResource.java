@@ -1,6 +1,10 @@
 package net.statemesh.web.rest;
 
 import io.lakefs.clients.sdk.model.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.statemesh.service.dto.*;
@@ -18,14 +22,20 @@ import java.util.List;
 @Controller
 @RequestMapping("/api/lakefs")
 @RequiredArgsConstructor
+@Tag(name = "LakeFS", description = "LakeFS data versioning and repository management")
 public class LakeFsResource {
     private final LakeFsService lakeFsService;
 
+    @Operation(summary = "Get direct service params")
+    @ApiResponse(responseCode = "200", description = "Service params returned")
     @GetMapping("/config")
     public ResponseEntity<DirectLakeFsServiceParamsDTO> getDirectServiceParams() {
         return ResponseEntity.ok(this.lakeFsService.getDirectServiceParams());
     }
 
+    @Operation(summary = "List repositories")
+    @ApiResponse(responseCode = "200", description = "Repositories returned")
+    @ApiResponse(responseCode = "400", description = "Error listing repositories")
     @GetMapping("/repos")
     public ResponseEntity<List<Repository>> listRepositories() {
         try {
@@ -36,8 +46,11 @@ public class LakeFsResource {
         return ResponseEntity.badRequest().build();
     }
 
+    @Operation(summary = "List branches for a repository")
+    @ApiResponse(responseCode = "200", description = "Branches returned")
     @GetMapping("/branches/{repoId}")
-    public ResponseEntity<List<RefDTO>> listBranches(@PathVariable("repoId") String repoId) {
+    public ResponseEntity<List<RefDTO>> listBranches(
+        @Parameter(description = "Repository ID") @PathVariable("repoId") String repoId) {
         try {
             return ResponseEntity.ok(lakeFsService.getBranches(repoId));
         } catch (LakeFsException ex) {
@@ -46,8 +59,12 @@ public class LakeFsResource {
         return ResponseEntity.badRequest().build();
     }
 
+    @Operation(summary = "Create a branch")
+    @ApiResponse(responseCode = "200", description = "Branch created")
     @PostMapping("/branches/{repoId}")
-    public ResponseEntity<Void> createBranch(@PathVariable("repoId") String repoId, @RequestBody BranchCreation branch) {
+    public ResponseEntity<Void> createBranch(
+        @Parameter(description = "Repository ID") @PathVariable("repoId") String repoId,
+        @RequestBody BranchCreation branch) {
         try {
             lakeFsService.createBranch(repoId, branch);
             return ResponseEntity.ok().build();
@@ -57,8 +74,12 @@ public class LakeFsResource {
         return ResponseEntity.badRequest().build();
     }
 
+    @Operation(summary = "Delete a branch")
+    @ApiResponse(responseCode = "200", description = "Branch deleted")
     @DeleteMapping("/branches/{repoId}/{ref}")
-    public ResponseEntity<Void> deleteBranch(@PathVariable("repoId") String repoId, @PathVariable("ref") String ref) {
+    public ResponseEntity<Void> deleteBranch(
+        @Parameter(description = "Repository ID") @PathVariable("repoId") String repoId,
+        @Parameter(description = "Branch ref") @PathVariable("ref") String ref) {
         try {
             lakeFsService.deleteBranch(repoId, ref);
             return ResponseEntity.ok().build();
@@ -68,8 +89,11 @@ public class LakeFsResource {
         return ResponseEntity.badRequest().build();
     }
 
+    @Operation(summary = "List tags for a repository")
+    @ApiResponse(responseCode = "200", description = "Tags returned")
     @GetMapping("/tags/{repoId}")
-    public ResponseEntity<List<Ref>> listTags(@PathVariable("repoId") String repoId) {
+    public ResponseEntity<List<Ref>> listTags(
+        @Parameter(description = "Repository ID") @PathVariable("repoId") String repoId) {
         try {
             return ResponseEntity.ok(lakeFsService.getTags(repoId));
         } catch (LakeFsException ex) {
@@ -78,8 +102,12 @@ public class LakeFsResource {
         return ResponseEntity.badRequest().build();
     }
 
+    @Operation(summary = "Create a tag")
+    @ApiResponse(responseCode = "200", description = "Tag created")
     @PostMapping("/tags/{repoId}")
-    public ResponseEntity<Void> createTag(@PathVariable("repoId") String repoId, @RequestBody TagCreation tag) {
+    public ResponseEntity<Void> createTag(
+        @Parameter(description = "Repository ID") @PathVariable("repoId") String repoId,
+        @RequestBody TagCreation tag) {
         try {
             lakeFsService.createTag(repoId, tag);
             return ResponseEntity.ok().build();
@@ -89,8 +117,12 @@ public class LakeFsResource {
         return ResponseEntity.badRequest().build();
     }
 
+    @Operation(summary = "Delete a tag")
+    @ApiResponse(responseCode = "200", description = "Tag deleted")
     @DeleteMapping("/tags/{repoId}/{ref}")
-    public ResponseEntity<Void> deleteTag(@PathVariable("repoId") String repoId, @PathVariable("ref") String ref) {
+    public ResponseEntity<Void> deleteTag(
+        @Parameter(description = "Repository ID") @PathVariable("repoId") String repoId,
+        @Parameter(description = "Tag ref") @PathVariable("ref") String ref) {
         try {
             lakeFsService.deleteTag(repoId, ref);
             return ResponseEntity.ok().build();
@@ -100,8 +132,12 @@ public class LakeFsResource {
         return ResponseEntity.badRequest().build();
     }
 
+    @Operation(summary = "List objects in a ref")
+    @ApiResponse(responseCode = "200", description = "Objects returned")
     @GetMapping("/objects/{repoId}/{ref}")
-    public ResponseEntity<List<ObjectStats>> listObjects(@PathVariable("repoId") String repoId, @PathVariable("ref") String ref) {
+    public ResponseEntity<List<ObjectStats>> listObjects(
+        @Parameter(description = "Repository ID") @PathVariable("repoId") String repoId,
+        @Parameter(description = "Branch or tag ref") @PathVariable("ref") String ref) {
         try {
             return ResponseEntity.ok(lakeFsService.getObjects(repoId, ref));
         } catch (LakeFsException ex) {
@@ -110,10 +146,13 @@ public class LakeFsResource {
         return ResponseEntity.badRequest().build();
     }
 
+    @Operation(summary = "Delete an object")
+    @ApiResponse(responseCode = "200", description = "Object deleted")
     @DeleteMapping("/objects/{repoId}/{branch}")
-    public ResponseEntity<Void> deleteObject(@PathVariable("repoId") String repoId,
-                                             @PathVariable("branch") String branch,
-                                             @RequestParam("path") String path) {
+    public ResponseEntity<Void> deleteObject(
+        @Parameter(description = "Repository ID") @PathVariable("repoId") String repoId,
+        @Parameter(description = "Branch name") @PathVariable("branch") String branch,
+        @Parameter(description = "Object path") @RequestParam("path") String path) {
         try {
             lakeFsService.deleteObject(repoId, branch, path);
             return ResponseEntity.ok().build();
@@ -123,6 +162,8 @@ public class LakeFsResource {
         return ResponseEntity.badRequest().build();
     }
 
+    @Operation(summary = "Create a repository")
+    @ApiResponse(responseCode = "200", description = "Repository created")
     @PostMapping("/repos")
     public ResponseEntity<Repository> createRepository(@RequestBody CreateLakeFsRepository body) {
         try {
@@ -133,9 +174,11 @@ public class LakeFsResource {
         return ResponseEntity.badRequest().build();
     }
 
+    @Operation(summary = "Add user to repository group")
+    @ApiResponse(responseCode = "200", description = "User added")
     @PostMapping("/repos/{repoId}/users")
     public ResponseEntity<Void> addUserToRepoGroup(
-        @PathVariable("repoId") String repoId,
+        @Parameter(description = "Repository ID") @PathVariable("repoId") String repoId,
         @RequestBody UserRepoAccessDTO body) {
         try {
             lakeFsService.addUserToRepoGroup(repoId, body.getUsername());
@@ -149,8 +192,11 @@ public class LakeFsResource {
         }
     }
 
+    @Operation(summary = "Delete a repository")
+    @ApiResponse(responseCode = "200", description = "Repository deleted")
     @DeleteMapping("/repos/{id}")
-    public ResponseEntity<Void> deleteRepository(@PathVariable("id") String repoId) {
+    public ResponseEntity<Void> deleteRepository(
+        @Parameter(description = "Repository ID") @PathVariable("id") String repoId) {
         try {
             lakeFsService.deleteRepository(repoId);
             return ResponseEntity.ok().build();
@@ -160,13 +206,20 @@ public class LakeFsResource {
         return ResponseEntity.badRequest().build();
     }
 
+    @Operation(summary = "Import data (placeholder)")
+    @ApiResponse(responseCode = "200", description = "Import acknowledged")
     @PostMapping("/import")
     public ResponseEntity<Void> importData(@RequestBody ImportLakeFsJob body) {
         return ResponseEntity.ok().build();
     }
 
+    @Operation(summary = "Commit changes to a branch")
+    @ApiResponse(responseCode = "200", description = "Changes committed")
     @PostMapping("/commit/{repoId}/{branchId}")
-    public ResponseEntity<Void> commit(@PathVariable("repoId") String repoId, @PathVariable("branchId") String branchId, @RequestBody CommitCreation body) {
+    public ResponseEntity<Void> commit(
+        @Parameter(description = "Repository ID") @PathVariable("repoId") String repoId,
+        @Parameter(description = "Branch ID") @PathVariable("branchId") String branchId,
+        @RequestBody CommitCreation body) {
         try {
             lakeFsService.commit(repoId, branchId, body);
             return ResponseEntity.ok().build();
@@ -179,8 +232,12 @@ public class LakeFsResource {
         }
     }
 
+    @Operation(summary = "Get a commit by ID")
+    @ApiResponse(responseCode = "200", description = "Commit returned")
     @GetMapping("/commit/{repoId}/{commitId}")
-    public ResponseEntity<Commit> getCommit(@PathVariable("repoId") String repoId, @PathVariable("commitId") String commitId) {
+    public ResponseEntity<Commit> getCommit(
+        @Parameter(description = "Repository ID") @PathVariable("repoId") String repoId,
+        @Parameter(description = "Commit ID") @PathVariable("commitId") String commitId) {
         try {
             return ResponseEntity.ok(lakeFsService.getCommit(repoId, commitId));
         } catch (LakeFsException ex) {
@@ -189,11 +246,13 @@ public class LakeFsResource {
         return ResponseEntity.badRequest().build();
     }
 
+    @Operation(summary = "Get object stats")
+    @ApiResponse(responseCode = "200", description = "Stats returned")
     @GetMapping("/stat/{repoId}/{refId}")
     public ResponseEntity<ObjectStats> getStat(
-        @PathVariable("repoId") String repoId,
-        @PathVariable("refId") String refId,
-        @RequestParam("path") String path) {
+        @Parameter(description = "Repository ID") @PathVariable("repoId") String repoId,
+        @Parameter(description = "Ref ID") @PathVariable("refId") String refId,
+        @Parameter(description = "Object path") @RequestParam("path") String path) {
         try {
             return ResponseEntity.ok(lakeFsService.getStat(repoId, refId, path));
         } catch (LakeFsException ex) {
@@ -202,8 +261,13 @@ public class LakeFsResource {
         return ResponseEntity.badRequest().build();
     }
 
+    @Operation(summary = "Get diff between two refs")
+    @ApiResponse(responseCode = "200", description = "Diff returned")
     @GetMapping("/diff/{repoId}/{leftRef}/{rightRef}")
-    public ResponseEntity<List<Diff>> getDiff(@PathVariable("repoId") String repoId, @PathVariable("leftRef") String leftRef, @PathVariable("rightRef") String rightRef) {
+    public ResponseEntity<List<Diff>> getDiff(
+        @Parameter(description = "Repository ID") @PathVariable("repoId") String repoId,
+        @Parameter(description = "Left ref") @PathVariable("leftRef") String leftRef,
+        @Parameter(description = "Right ref") @PathVariable("rightRef") String rightRef) {
         try {
             return ResponseEntity.ok(lakeFsService.getDiff(repoId, leftRef, rightRef));
         } catch (LakeFsException ex) {
@@ -212,8 +276,12 @@ public class LakeFsResource {
         return ResponseEntity.badRequest().build();
     }
 
+    @Operation(summary = "Get commits for a ref")
+    @ApiResponse(responseCode = "200", description = "Commits returned")
     @GetMapping("/commits/{repoId}/{refId}")
-    public ResponseEntity<List<Commit>> getCommits(@PathVariable("repoId") String repoId, @PathVariable("refId") String refId) {
+    public ResponseEntity<List<Commit>> getCommits(
+        @Parameter(description = "Repository ID") @PathVariable("repoId") String repoId,
+        @Parameter(description = "Ref ID") @PathVariable("refId") String refId) {
         try {
             return ResponseEntity.ok(lakeFsService.getCommits(repoId, refId));
         } catch (LakeFsException ex) {
@@ -222,8 +290,11 @@ public class LakeFsResource {
         return ResponseEntity.badRequest().build();
     }
 
+    @Operation(summary = "List group members")
+    @ApiResponse(responseCode = "200", description = "Members returned")
     @GetMapping("/group/{groupId}/members")
-    public ResponseEntity<List<User>> listGroupMembers(@PathVariable("groupId") String groupId) {
+    public ResponseEntity<List<User>> listGroupMembers(
+        @Parameter(description = "Group ID") @PathVariable("groupId") String groupId) {
         try {
             return ResponseEntity.ok(lakeFsService.listGroupMembers(groupId));
         } catch (LakeFsException ex) {
@@ -232,8 +303,12 @@ public class LakeFsResource {
         return ResponseEntity.badRequest().build();
     }
 
+    @Operation(summary = "Remove a member from a group")
+    @ApiResponse(responseCode = "200", description = "Member removed")
     @DeleteMapping("/group/{groupId}/members/{username}")
-    public ResponseEntity<Void> deleteGroupMembers(@PathVariable("groupId") String groupId, @PathVariable("username") String username) {
+    public ResponseEntity<Void> deleteGroupMembers(
+        @Parameter(description = "Group ID") @PathVariable("groupId") String groupId,
+        @Parameter(description = "Username") @PathVariable("username") String username) {
         try {
             lakeFsService.deleteGroupMember(groupId, username);
             return ResponseEntity.ok().build();
@@ -243,10 +318,12 @@ public class LakeFsResource {
         return ResponseEntity.badRequest().build();
     }
 
+    @Operation(summary = "List evaluation result files")
+    @ApiResponse(responseCode = "200", description = "Eval result files returned")
     @GetMapping("/eval-results/{repo}/{branch}")
     public ResponseEntity<List<String>> listEvalResults(
-        @PathVariable("repo") String repo,
-        @PathVariable("branch") String branch) {
+        @Parameter(description = "Repository name") @PathVariable("repo") String repo,
+        @Parameter(description = "Branch name") @PathVariable("branch") String branch) {
         try {
             List<ObjectStats> objects = lakeFsService.getObjects(repo, branch);
             List<String> evalFiles = objects.stream()
@@ -261,11 +338,14 @@ public class LakeFsResource {
         }
     }
 
+    @Operation(summary = "Get evaluation result content")
+    @ApiResponse(responseCode = "200", description = "Eval result content returned")
+    @ApiResponse(responseCode = "404", description = "File not found")
     @GetMapping("/eval-results/{repo}/{branch}/{filename}")
     public ResponseEntity<byte[]> getEvalResult(
-        @PathVariable("repo") String repo,
-        @PathVariable("branch") String branch,
-        @PathVariable("filename") String filename) {
+        @Parameter(description = "Repository name") @PathVariable("repo") String repo,
+        @Parameter(description = "Branch name") @PathVariable("branch") String branch,
+        @Parameter(description = "File name") @PathVariable("filename") String filename) {
         try {
             byte[] content = lakeFsService.getObjectContent(repo, branch, "eval_results/" + filename);
             return ResponseEntity.ok(content);
@@ -275,11 +355,13 @@ public class LakeFsResource {
         }
     }
 
+    @Operation(summary = "Get object content")
+    @ApiResponse(responseCode = "200", description = "Object content returned")
     @GetMapping("/objects/{repoId}/{ref}/content")
     public ResponseEntity<byte[]> getObjectContent(
-        @PathVariable("repoId") String repoId,
-        @PathVariable("ref") String ref,
-        @RequestParam("path") String path) {
+        @Parameter(description = "Repository ID") @PathVariable("repoId") String repoId,
+        @Parameter(description = "Ref") @PathVariable("ref") String ref,
+        @Parameter(description = "Object path") @RequestParam("path") String path) {
         try {
             byte[] content = lakeFsService.getObjectContent(repoId, ref, path);
             return ResponseEntity.ok()
@@ -291,11 +373,13 @@ public class LakeFsResource {
         }
     }
 
+    @Operation(summary = "Download an object")
+    @ApiResponse(responseCode = "200", description = "Object downloaded")
     @GetMapping("/objects/{repoId}/{ref}/download")
     public ResponseEntity<byte[]> downloadObject(
-        @PathVariable("repoId") String repoId,
-        @PathVariable("ref") String ref,
-        @RequestParam("path") String path) {
+        @Parameter(description = "Repository ID") @PathVariable("repoId") String repoId,
+        @Parameter(description = "Ref") @PathVariable("ref") String ref,
+        @Parameter(description = "Object path") @RequestParam("path") String path) {
         try {
             byte[] content = lakeFsService.getObjectContent(repoId, ref, path);
             String filename = path.contains("/") ? path.substring(path.lastIndexOf('/') + 1) : path;
@@ -309,12 +393,14 @@ public class LakeFsResource {
         }
     }
 
+    @Operation(summary = "Upload an object")
+    @ApiResponse(responseCode = "200", description = "Object uploaded")
     @PostMapping("/objects/{repoId}/{branch}/upload")
     public ResponseEntity<Void> uploadObject(
-        @PathVariable("repoId") String repoId,
-        @PathVariable("branch") String branch,
-        @RequestParam("path") String path,
-        @RequestParam("content") MultipartFile file) {
+        @Parameter(description = "Repository ID") @PathVariable("repoId") String repoId,
+        @Parameter(description = "Branch name") @PathVariable("branch") String branch,
+        @Parameter(description = "Object path") @RequestParam("path") String path,
+        @Parameter(description = "File to upload") @RequestParam("content") MultipartFile file) {
         try {
             lakeFsService.uploadObject(repoId, branch, path, file.getBytes());
             return ResponseEntity.ok().build();

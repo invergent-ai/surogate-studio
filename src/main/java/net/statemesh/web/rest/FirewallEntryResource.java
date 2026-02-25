@@ -1,5 +1,9 @@
 package net.statemesh.web.rest;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -21,15 +25,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * REST controller for managing {@link net.statemesh.domain.FirewallEntry}.
- */
 @RestController
 @RequestMapping("/api/firewall-entries")
 @RequiredArgsConstructor
+@Tag(name = "Firewall Entries", description = "Firewall rule management")
 public class FirewallEntryResource {
     private final Logger log = LoggerFactory.getLogger(FirewallEntryResource.class);
-
     private static final String ENTITY_NAME = "firewallEntry";
 
     @Value("${jhipster.clientApp.name}")
@@ -38,13 +39,9 @@ public class FirewallEntryResource {
     private final FirewallEntryService firewallEntryService;
     private final FirewallEntryRepository firewallEntryRepository;
 
-    /**
-     * {@code POST  /firewall-entries} : Create a new firewallEntry.
-     *
-     * @param firewallEntryDTO the firewallEntryDTO to create.
-     * @return the {@link ResponseEntity} with status {@code 201 (Created)} and with body the new firewallEntryDTO, or with status {@code 400 (Bad Request)} if the firewallEntry has already an ID.
-     * @throws URISyntaxException if the Location URI syntax is incorrect.
-     */
+    @Operation(summary = "Create a firewall entry")
+    @ApiResponse(responseCode = "201", description = "Firewall entry created")
+    @ApiResponse(responseCode = "400", description = "Already has an ID")
     @PostMapping("")
     public ResponseEntity<FirewallEntryDTO> createFirewallEntry(
         @Valid @RequestBody FirewallEntryDTO firewallEntryDTO
@@ -60,28 +57,20 @@ public class FirewallEntryResource {
             .body(result);
     }
 
-    /**
-     * {@code PUT  /firewall-entries/:id} : Updates an existing firewallEntry.
-     *
-     * @param id the id of the firewallEntryDTO to save.
-     * @param firewallEntryDTO the firewallEntryDTO to update.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated firewallEntryDTO,
-     * or with status {@code 400 (Bad Request)} if the firewallEntryDTO is not valid,
-     * or with status {@code 500 (Internal Server Error)} if the firewallEntryDTO couldn't be updated.
-     */
+    @Operation(summary = "Update a firewall entry")
+    @ApiResponse(responseCode = "200", description = "Firewall entry updated")
+    @ApiResponse(responseCode = "400", description = "Invalid ID")
     @PutMapping("/{id}")
     public ResponseEntity<FirewallEntryDTO> updateFirewallEntry(
-        @PathVariable(value = "id", required = false) final String id,
+        @Parameter(description = "Firewall entry ID") @PathVariable(value = "id", required = false) final String id,
         @Valid @RequestBody FirewallEntryDTO firewallEntryDTO) {
         log.debug("REST request to update FirewallEntry : {}, {}", id, firewallEntryDTO);
         if (!Objects.equals(id, firewallEntryDTO.getId())) {
             throw new BadRequestAlertException("Invalid ID", ENTITY_NAME, "idinvalid");
         }
-
         if (!firewallEntryRepository.existsById(id)) {
             throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
         }
-
         FirewallEntryDTO result = firewallEntryService.update(firewallEntryDTO);
         return ResponseEntity
             .ok()
@@ -89,69 +78,51 @@ public class FirewallEntryResource {
             .body(result);
     }
 
-    /**
-     * {@code PATCH  /firewall-entries/:id} : Partial updates given fields of an existing firewallEntry, field will ignore if it is null
-     *
-     * @param id the id of the firewallEntryDTO to save.
-     * @param firewallEntryDTO the firewallEntryDTO to update.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated firewallEntryDTO,
-     * or with status {@code 400 (Bad Request)} if the firewallEntryDTO is not valid,
-     * or with status {@code 404 (Not Found)} if the firewallEntryDTO is not found,
-     * or with status {@code 500 (Internal Server Error)} if the firewallEntryDTO couldn't be updated.
-     */
+    @Operation(summary = "Partially update a firewall entry")
+    @ApiResponse(responseCode = "200", description = "Firewall entry partially updated")
+    @ApiResponse(responseCode = "404", description = "Not found")
     @PatchMapping(value = "/{id}", consumes = { "application/json", "application/merge-patch+json" })
     public ResponseEntity<FirewallEntryDTO> partialUpdateFirewallEntry(
-        @PathVariable(value = "id", required = false) final String id,
+        @Parameter(description = "Firewall entry ID") @PathVariable(value = "id", required = false) final String id,
         @NotNull @RequestBody FirewallEntryDTO firewallEntryDTO) {
         log.debug("REST request to partial update FirewallEntry partially : {}, {}", id, firewallEntryDTO);
         if (!Objects.equals(id, firewallEntryDTO.getId())) {
             throw new BadRequestAlertException("Invalid ID", ENTITY_NAME, "idinvalid");
         }
-
         if (!firewallEntryRepository.existsById(id)) {
             throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
         }
-
         Optional<FirewallEntryDTO> result = firewallEntryService.partialUpdate(firewallEntryDTO);
-
         return ResponseUtil.wrapOrNotFound(
             result,
             HeaderUtil.createEntityUpdateAlert(applicationName, true, ENTITY_NAME, firewallEntryDTO.getId())
         );
     }
 
-    /**
-     * {@code GET  /firewall-entries} : get all the firewallEntries.
-     *
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of firewallEntries in body.
-     */
+    @Operation(summary = "Get all firewall entries")
+    @ApiResponse(responseCode = "200", description = "List of firewall entries")
     @GetMapping("")
     public List<FirewallEntryDTO> getAllFirewallEntries() {
         log.debug("REST request to get all FirewallEntries");
         return firewallEntryService.findAll();
     }
 
-    /**
-     * {@code GET  /firewall-entries/:id} : get the "id" firewallEntry.
-     *
-     * @param id the id of the firewallEntryDTO to retrieve.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the firewallEntryDTO, or with status {@code 404 (Not Found)}.
-     */
+    @Operation(summary = "Get a firewall entry by ID")
+    @ApiResponse(responseCode = "200", description = "Firewall entry found")
+    @ApiResponse(responseCode = "404", description = "Not found")
     @GetMapping("/{id}")
-    public ResponseEntity<FirewallEntryDTO> getFirewallEntry(@PathVariable String id) {
+    public ResponseEntity<FirewallEntryDTO> getFirewallEntry(
+        @Parameter(description = "Firewall entry ID") @PathVariable String id) {
         log.debug("REST request to get FirewallEntry : {}", id);
         Optional<FirewallEntryDTO> firewallEntryDTO = firewallEntryService.findOne(id);
         return ResponseUtil.wrapOrNotFound(firewallEntryDTO);
     }
 
-    /**
-     * {@code DELETE  /firewall-entries/:id} : delete the "id" firewallEntry.
-     *
-     * @param id the id of the firewallEntryDTO to delete.
-     * @return the {@link ResponseEntity} with status {@code 204 (NO_CONTENT)}.
-     */
+    @Operation(summary = "Delete a firewall entry")
+    @ApiResponse(responseCode = "204", description = "Firewall entry deleted")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteFirewallEntry(@PathVariable String id) {
+    public ResponseEntity<Void> deleteFirewallEntry(
+        @Parameter(description = "Firewall entry ID") @PathVariable String id) {
         log.debug("REST request to delete FirewallEntry : {}", id);
         firewallEntryService.delete(id);
         return ResponseEntity

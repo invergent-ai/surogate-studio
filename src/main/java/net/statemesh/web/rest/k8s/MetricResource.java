@@ -1,5 +1,9 @@
 package net.statemesh.web.rest.k8s;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.statemesh.config.ApplicationProperties;
@@ -12,6 +16,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @RequestMapping("/api/metrics")
 @Slf4j
 @RequiredArgsConstructor
+@Tag(name = "Metrics", description = "Application, GPU, and model metrics streaming")
 public class MetricResource {
     private final ApplicationProperties applicationProperties;
     private final MetricService metricService;
@@ -20,11 +25,13 @@ public class MetricResource {
     private final ModelWorkerMetricService modelWorkerMetricService;
     private final RayJobMetricService rayJobMetricService;
 
+    @Operation(summary = "Start application metrics stream", description = "Start SSE stream for application container metrics")
+    @ApiResponse(responseCode = "200", description = "Metrics stream started")
     @GetMapping(value = "/metrics/{applicationId}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter startMetrics(
-        @PathVariable(name = "applicationId") String applicationId,
-        @RequestParam(name = "podName") String podName,
-        @RequestParam(required = false, name = "containerId") String containerId) {
+        @Parameter(description = "Application ID") @PathVariable(name = "applicationId") String applicationId,
+        @Parameter(description = "Pod name") @RequestParam(name = "podName") String podName,
+        @Parameter(description = "Container ID") @RequestParam(required = false, name = "containerId") String containerId) {
         log.debug("REST request to start metrics for application {} and container {}", applicationId, containerId);
         metricService.start(applicationProperties.getMetrics().getMetricsPollInterval(),
             applicationProperties.getMetrics().getMetricsWaitTimeout(),
@@ -32,15 +39,22 @@ public class MetricResource {
         return metricService.registerStatusEmitter(applicationId, podName, containerId);
     }
 
+    @Operation(summary = "Stop application metrics stream")
+    @ApiResponse(responseCode = "200", description = "Metrics stream stopped")
     @DeleteMapping("/metrics/{applicationId}")
-    public void stopMetrics(@PathVariable(name = "applicationId") String applicationId,
-                            @RequestParam(name = "podName") String podName,
-                            @RequestParam(required = false, name = "containerId") String containerId) {
+    public void stopMetrics(
+        @Parameter(description = "Application ID") @PathVariable(name = "applicationId") String applicationId,
+        @Parameter(description = "Pod name") @RequestParam(name = "podName") String podName,
+        @Parameter(description = "Container ID") @RequestParam(required = false, name = "containerId") String containerId) {
         metricService.stop(applicationId, podName, containerId);
     }
 
+    @Operation(summary = "Start GPU metrics stream", description = "Start SSE stream for GPU metrics on a specific node")
+    @ApiResponse(responseCode = "200", description = "GPU metrics stream started")
     @GetMapping(value = "/gpu-metrics/{nodeId}/{gpuId}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter startGpuMetrics(@PathVariable(name = "nodeId") String nodeId, @PathVariable(name = "gpuId") String gpuId) {
+    public SseEmitter startGpuMetrics(
+        @Parameter(description = "Node ID") @PathVariable(name = "nodeId") String nodeId,
+        @Parameter(description = "GPU ID") @PathVariable(name = "gpuId") String gpuId) {
         log.debug("REST request to start GPU metrics for node {} and gpu {}", nodeId, gpuId);
         gpuMetricService.start(applicationProperties.getMetrics().getMetricsPollInterval(),
             applicationProperties.getMetrics().getMetricsWaitTimeout(),
@@ -48,16 +62,22 @@ public class MetricResource {
         return gpuMetricService.registerStatusEmitter(nodeId, gpuId);
     }
 
+    @Operation(summary = "Stop GPU metrics stream")
+    @ApiResponse(responseCode = "200", description = "GPU metrics stream stopped")
     @DeleteMapping("/gpu-metrics/{nodeId}/{gpuId}")
-    public void stopGpuMetrics(@PathVariable(name = "nodeId") String nodeId, @PathVariable(name = "gpuId") String gpuId) {
+    public void stopGpuMetrics(
+        @Parameter(description = "Node ID") @PathVariable(name = "nodeId") String nodeId,
+        @Parameter(description = "GPU ID") @PathVariable(name = "gpuId") String gpuId) {
         gpuMetricService.stop(nodeId, gpuId);
     }
 
+    @Operation(summary = "Start model router metrics stream")
+    @ApiResponse(responseCode = "200", description = "Model router metrics stream started")
     @GetMapping(value = "/model-router-metrics/{applicationId}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter startModelRouterMetrics(
-        @PathVariable(name = "applicationId") String applicationId,
-        @RequestParam(name = "podName") String podName,
-        @RequestParam(name = "containerName") String containerName) {
+        @Parameter(description = "Application ID") @PathVariable(name = "applicationId") String applicationId,
+        @Parameter(description = "Pod name") @RequestParam(name = "podName") String podName,
+        @Parameter(description = "Container name") @RequestParam(name = "containerName") String containerName) {
         log.debug("applicationId: {}, podName: {}, containerName: {}", applicationId, podName, containerName);
         modelRouterMetricService.start(applicationProperties.getMetrics().getMetricsPollInterval(),
             applicationProperties.getMetrics().getMetricsWaitTimeout(),
@@ -65,37 +85,46 @@ public class MetricResource {
         return modelRouterMetricService.registerStatusEmitter(applicationId, podName, containerName);
     }
 
+    @Operation(summary = "Stop model router metrics stream")
+    @ApiResponse(responseCode = "200", description = "Model router metrics stream stopped")
     @DeleteMapping("/model-router-metrics/{applicationId}")
     public void stopModelRouterMetrics(
-        @PathVariable(name = "applicationId") String applicationId,
-        @RequestParam(name = "podName") String podName,
-        @RequestParam(name = "containerName") String containerName) {
+        @Parameter(description = "Application ID") @PathVariable(name = "applicationId") String applicationId,
+        @Parameter(description = "Pod name") @RequestParam(name = "podName") String podName,
+        @Parameter(description = "Container name") @RequestParam(name = "containerName") String containerName) {
         log.debug("REST request to stop model router metrics for application {} and container {}", applicationId, containerName);
         modelRouterMetricService.stop(applicationId, podName, containerName);
     }
 
+    @Operation(summary = "Start model worker metrics stream")
+    @ApiResponse(responseCode = "200", description = "Model worker metrics stream started")
     @GetMapping(value = "/model-worker-metrics/{applicationId}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter startModelWorkerMetrics(
-        @PathVariable(name = "applicationId") String applicationId,
-        @RequestParam(name = "podName") String podName,
-        @RequestParam(name = "containerName") String containerName) {
+        @Parameter(description = "Application ID") @PathVariable(name = "applicationId") String applicationId,
+        @Parameter(description = "Pod name") @RequestParam(name = "podName") String podName,
+        @Parameter(description = "Container name") @RequestParam(name = "containerName") String containerName) {
         log.debug("REST request to start model worker metrics for application {} and container {}", applicationId, containerName);
         modelWorkerMetricService.start(applicationProperties.getMetrics().getMetricsPollInterval(),
             applicationProperties.getMetrics().getMetricsWaitTimeout(), applicationId, podName, containerName);
         return modelWorkerMetricService.registerStatusEmitter(applicationId, podName, containerName);
     }
 
+    @Operation(summary = "Stop model worker metrics stream")
+    @ApiResponse(responseCode = "200", description = "Model worker metrics stream stopped")
     @DeleteMapping("/model-worker-metrics/{applicationId}")
     public void stopModelWorkerMetrics(
-        @PathVariable(name = "applicationId") String applicationId,
-        @RequestParam(name = "podName") String podName,
-        @RequestParam(name = "containerName") String containerName) {
+        @Parameter(description = "Application ID") @PathVariable(name = "applicationId") String applicationId,
+        @Parameter(description = "Pod name") @RequestParam(name = "podName") String podName,
+        @Parameter(description = "Container name") @RequestParam(name = "containerName") String containerName) {
         log.debug("REST request to stop model worker metrics for application {} and container {}", applicationId, containerName);
         modelWorkerMetricService.stop(applicationId, podName, containerName);
     }
 
+    @Operation(summary = "Start Ray job metrics stream")
+    @ApiResponse(responseCode = "200", description = "Ray job metrics stream started")
     @GetMapping(value = "/ray-job-metrics", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter startRayJobMetrics(@RequestParam("ids") String ids) {
+    public SseEmitter startRayJobMetrics(
+        @Parameter(description = "Comma-separated job IDs") @RequestParam("ids") String ids) {
         log.trace("REST request to start metrics for ray jobs {}", ids);
         var jobIds = ids.split(",");
         rayJobMetricService.start(applicationProperties.getMetrics().getMetricsPollInterval(),
@@ -103,11 +132,12 @@ public class MetricResource {
         return rayJobMetricService.registerStatusEmitter(jobIds);
     }
 
+    @Operation(summary = "Stop Ray job metrics stream")
+    @ApiResponse(responseCode = "200", description = "Ray job metrics stream stopped")
     @DeleteMapping("/ray-job-metrics")
     public void stopRayJobMetrics(
-        @RequestParam("ids") String ids) {
+        @Parameter(description = "Comma-separated job IDs") @RequestParam("ids") String ids) {
         var jobIds = ids.split(",");
         rayJobMetricService.stop(jobIds);
     }
 }
-

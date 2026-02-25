@@ -1,5 +1,9 @@
 package net.statemesh.web.rest;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import net.statemesh.repository.NotificationRepository;
 import net.statemesh.security.SecurityUtils;
@@ -25,22 +29,18 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * REST controller for managing {@link net.statemesh.domain.Notification}.
- */
 @RestController
 @RequestMapping("/api/notifications")
+@Tag(name = "Notifications", description = "User notification management")
 public class NotificationResource {
 
     private final Logger log = LoggerFactory.getLogger(NotificationResource.class);
-
     private static final String ENTITY_NAME = "notification";
 
     @Value("${jhipster.clientApp.name}")
     private String applicationName;
 
     private final NotificationService notificationService;
-
     private final NotificationRepository notificationRepository;
 
     public NotificationResource(NotificationService notificationService, NotificationRepository notificationRepository) {
@@ -48,13 +48,9 @@ public class NotificationResource {
         this.notificationRepository = notificationRepository;
     }
 
-    /**
-     * {@code POST  /notifications} : Create a new notification.
-     *
-     * @param notificationDTO the notificationDTO to create.
-     * @return the {@link ResponseEntity} with status {@code 201 (Created)} and with body the new notificationDTO, or with status {@code 400 (Bad Request)} if the notification has already an ID.
-     * @throws URISyntaxException if the Location URI syntax is incorrect.
-     */
+    @Operation(summary = "Create a notification")
+    @ApiResponse(responseCode = "201", description = "Notification created")
+    @ApiResponse(responseCode = "400", description = "Already has an ID")
     @PostMapping("")
     public ResponseEntity<NotificationDTO> createNotification(@Valid @RequestBody NotificationDTO notificationDTO)
         throws URISyntaxException {
@@ -69,28 +65,20 @@ public class NotificationResource {
             .body(result);
     }
 
-    /**
-     * {@code PUT  /notifications/:id} : Updates an existing notification.
-     *
-     * @param id the id of the notificationDTO to save.
-     * @param notificationDTO the notificationDTO to update.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated notificationDTO,
-     * or with status {@code 400 (Bad Request)} if the notificationDTO is not valid,
-     * or with status {@code 500 (Internal Server Error)} if the notificationDTO couldn't be updated.
-     */
+    @Operation(summary = "Update a notification")
+    @ApiResponse(responseCode = "200", description = "Notification updated")
+    @ApiResponse(responseCode = "400", description = "Invalid ID")
     @PutMapping("/{id}")
     public ResponseEntity<NotificationDTO> updateNotification(
-        @PathVariable(value = "id", required = false) final String id,
+        @Parameter(description = "Notification ID") @PathVariable(value = "id", required = false) final String id,
         @Valid @RequestBody NotificationDTO notificationDTO) {
         log.debug("REST request to update Notification : {}, {}", id, notificationDTO);
         if (!Objects.equals(id, notificationDTO.getId())) {
             throw new BadRequestAlertException("Invalid ID", ENTITY_NAME, "idinvalid");
         }
-
         if (!notificationRepository.existsById(id)) {
             throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
         }
-
         NotificationDTO result = notificationService.update(notificationDTO);
         return ResponseEntity
             .ok()
@@ -98,12 +86,8 @@ public class NotificationResource {
             .body(result);
     }
 
-    /**
-     * {@code GET  /notifications} : get all the notifications.
-     *
-     * @param pageable the pagination information.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of notifications in body.
-     */
+    @Operation(summary = "Get all notifications (paginated)")
+    @ApiResponse(responseCode = "200", description = "Paginated notifications returned")
     @GetMapping("")
     public ResponseEntity<List<NotificationDTO>> getAllNotifications(
         @org.springdoc.core.annotations.ParameterObject Pageable pageable) {
@@ -113,6 +97,8 @@ public class NotificationResource {
         return ResponseEntity.ok().headers(headers).body(page.getContent());
     }
 
+    @Operation(summary = "Get current user's notifications")
+    @ApiResponse(responseCode = "200", description = "User notifications returned")
     @GetMapping("/user")
     public ResponseEntity<List<NotificationDTO>> getUserNotifications(
         @org.springdoc.core.annotations.ParameterObject Pageable pageable) {
@@ -123,40 +109,39 @@ public class NotificationResource {
         return ResponseEntity.ok().headers(headers).body(page.getContent());
     }
 
+    @Operation(summary = "Mark all notifications as read")
+    @ApiResponse(responseCode = "200", description = "All notifications marked as read")
     @PutMapping("/mark-all-read")
     public ResponseEntity<Void> markAllAsRead() {
         notificationService.markAllAsRead(SecurityUtils.getCurrentUserLogin().orElseThrow());
         return ResponseEntity.ok().build();
     }
 
+    @Operation(summary = "Mark a notification as read")
+    @ApiResponse(responseCode = "200", description = "Notification marked as read")
     @PutMapping("/{id}/mark-read")
-    public ResponseEntity<Void> markAsRead(@PathVariable("id") String id) {
+    public ResponseEntity<Void> markAsRead(
+        @Parameter(description = "Notification ID") @PathVariable("id") String id) {
         notificationService.markAsRead(id);
         return ResponseEntity.ok().build();
     }
 
-
-    /**
-     * {@code GET  /notifications/:id} : get the "id" notification.
-     *
-     * @param id the id of the notificationDTO to retrieve.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the notificationDTO, or with status {@code 404 (Not Found)}.
-     */
+    @Operation(summary = "Get a notification by ID")
+    @ApiResponse(responseCode = "200", description = "Notification found")
+    @ApiResponse(responseCode = "404", description = "Not found")
     @GetMapping("/{id}")
-    public ResponseEntity<NotificationDTO> getNotification(@PathVariable String id) {
+    public ResponseEntity<NotificationDTO> getNotification(
+        @Parameter(description = "Notification ID") @PathVariable String id) {
         log.debug("REST request to get Notification : {}", id);
         Optional<NotificationDTO> notificationDTO = notificationService.findOne(id);
         return ResponseUtil.wrapOrNotFound(notificationDTO);
     }
 
-    /**
-     * {@code DELETE  /notifications/:id} : delete the "id" notification.
-     *
-     * @param id the id of the notificationDTO to delete.
-     * @return the {@link ResponseEntity} with status {@code 204 (NO_CONTENT)}.
-     */
+    @Operation(summary = "Delete a notification")
+    @ApiResponse(responseCode = "204", description = "Notification deleted")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteNotification(@PathVariable String id) {
+    public ResponseEntity<Void> deleteNotification(
+        @Parameter(description = "Notification ID") @PathVariable String id) {
         log.debug("REST request to delete Notification : {}", id);
         notificationService.delete(id);
         return ResponseEntity

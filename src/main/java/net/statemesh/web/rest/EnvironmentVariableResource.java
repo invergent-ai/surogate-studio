@@ -1,5 +1,9 @@
 package net.statemesh.web.rest;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -21,15 +25,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * REST controller for managing {@link net.statemesh.domain.EnvironmentVariable}.
- */
 @RestController
 @RequestMapping("/api/environment-variables")
 @RequiredArgsConstructor
+@Tag(name = "Environment Variables", description = "Environment variable management")
 public class EnvironmentVariableResource {
     private final Logger log = LoggerFactory.getLogger(EnvironmentVariableResource.class);
-
     private static final String ENTITY_NAME = "environmentVariable";
 
     @Value("${jhipster.clientApp.name}")
@@ -38,13 +39,9 @@ public class EnvironmentVariableResource {
     private final EnvironmentVariableService environmentVariableService;
     private final EnvironmentVariableRepository environmentVariableRepository;
 
-    /**
-     * {@code POST  /environment-variables} : Create a new environmentVariable.
-     *
-     * @param environmentVariableDTO the environmentVariableDTO to create.
-     * @return the {@link ResponseEntity} with status {@code 201 (Created)} and with body the new environmentVariableDTO, or with status {@code 400 (Bad Request)} if the environmentVariable has already an ID.
-     * @throws URISyntaxException if the Location URI syntax is incorrect.
-     */
+    @Operation(summary = "Create an environment variable")
+    @ApiResponse(responseCode = "201", description = "Environment variable created")
+    @ApiResponse(responseCode = "400", description = "Already has an ID")
     @PostMapping("")
     public ResponseEntity<EnvironmentVariableDTO> createEnvironmentVariable(
         @Valid @RequestBody EnvironmentVariableDTO environmentVariableDTO
@@ -60,28 +57,20 @@ public class EnvironmentVariableResource {
             .body(result);
     }
 
-    /**
-     * {@code PUT  /environment-variables/:id} : Updates an existing environmentVariable.
-     *
-     * @param id the id of the environmentVariableDTO to save.
-     * @param environmentVariableDTO the environmentVariableDTO to update.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated environmentVariableDTO,
-     * or with status {@code 400 (Bad Request)} if the environmentVariableDTO is not valid,
-     * or with status {@code 500 (Internal Server Error)} if the environmentVariableDTO couldn't be updated.
-     */
+    @Operation(summary = "Update an environment variable")
+    @ApiResponse(responseCode = "200", description = "Environment variable updated")
+    @ApiResponse(responseCode = "400", description = "Invalid ID")
     @PutMapping("/{id}")
     public ResponseEntity<EnvironmentVariableDTO> updateEnvironmentVariable(
-        @PathVariable(value = "id", required = false) final String id,
+        @Parameter(description = "Environment variable ID") @PathVariable(value = "id", required = false) final String id,
         @Valid @RequestBody EnvironmentVariableDTO environmentVariableDTO) {
         log.debug("REST request to update EnvironmentVariable : {}, {}", id, environmentVariableDTO);
         if (!Objects.equals(id, environmentVariableDTO.getId())) {
             throw new BadRequestAlertException("Invalid ID", ENTITY_NAME, "idinvalid");
         }
-
         if (!environmentVariableRepository.existsById(id)) {
             throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
         }
-
         EnvironmentVariableDTO result = environmentVariableService.update(environmentVariableDTO);
         return ResponseEntity
             .ok()
@@ -89,69 +78,51 @@ public class EnvironmentVariableResource {
             .body(result);
     }
 
-    /**
-     * {@code PATCH  /environment-variables/:id} : Partial updates given fields of an existing environmentVariable, field will ignore if it is null
-     *
-     * @param id the id of the environmentVariableDTO to save.
-     * @param environmentVariableDTO the environmentVariableDTO to update.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated environmentVariableDTO,
-     * or with status {@code 400 (Bad Request)} if the environmentVariableDTO is not valid,
-     * or with status {@code 404 (Not Found)} if the environmentVariableDTO is not found,
-     * or with status {@code 500 (Internal Server Error)} if the environmentVariableDTO couldn't be updated.
-     */
+    @Operation(summary = "Partially update an environment variable")
+    @ApiResponse(responseCode = "200", description = "Environment variable partially updated")
+    @ApiResponse(responseCode = "404", description = "Not found")
     @PatchMapping(value = "/{id}", consumes = { "application/json", "application/merge-patch+json" })
     public ResponseEntity<EnvironmentVariableDTO> partialUpdateEnvironmentVariable(
-        @PathVariable(value = "id", required = false) final String id,
+        @Parameter(description = "Environment variable ID") @PathVariable(value = "id", required = false) final String id,
         @NotNull @RequestBody EnvironmentVariableDTO environmentVariableDTO) {
         log.debug("REST request to partial update EnvironmentVariable partially : {}, {}", id, environmentVariableDTO);
         if (!Objects.equals(id, environmentVariableDTO.getId())) {
             throw new BadRequestAlertException("Invalid ID", ENTITY_NAME, "idinvalid");
         }
-
         if (!environmentVariableRepository.existsById(id)) {
             throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
         }
-
         Optional<EnvironmentVariableDTO> result = environmentVariableService.partialUpdate(environmentVariableDTO);
-
         return ResponseUtil.wrapOrNotFound(
             result,
             HeaderUtil.createEntityUpdateAlert(applicationName, true, ENTITY_NAME, environmentVariableDTO.getId())
         );
     }
 
-    /**
-     * {@code GET  /environment-variables} : get all the environmentVariables.
-     *
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of environmentVariables in body.
-     */
+    @Operation(summary = "Get all environment variables")
+    @ApiResponse(responseCode = "200", description = "List of environment variables")
     @GetMapping("")
     public List<EnvironmentVariableDTO> getAllEnvironmentVariables() {
         log.debug("REST request to get all EnvironmentVariables");
         return environmentVariableService.findAll();
     }
 
-    /**
-     * {@code GET  /environment-variables/:id} : get the "id" environmentVariable.
-     *
-     * @param id the id of the environmentVariableDTO to retrieve.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the environmentVariableDTO, or with status {@code 404 (Not Found)}.
-     */
+    @Operation(summary = "Get an environment variable by ID")
+    @ApiResponse(responseCode = "200", description = "Environment variable found")
+    @ApiResponse(responseCode = "404", description = "Not found")
     @GetMapping("/{id}")
-    public ResponseEntity<EnvironmentVariableDTO> getEnvironmentVariable(@PathVariable String id) {
+    public ResponseEntity<EnvironmentVariableDTO> getEnvironmentVariable(
+        @Parameter(description = "Environment variable ID") @PathVariable String id) {
         log.debug("REST request to get EnvironmentVariable : {}", id);
         Optional<EnvironmentVariableDTO> environmentVariableDTO = environmentVariableService.findOne(id);
         return ResponseUtil.wrapOrNotFound(environmentVariableDTO);
     }
 
-    /**
-     * {@code DELETE  /environment-variables/:id} : delete the "id" environmentVariable.
-     *
-     * @param id the id of the environmentVariableDTO to delete.
-     * @return the {@link ResponseEntity} with status {@code 204 (NO_CONTENT)}.
-     */
+    @Operation(summary = "Delete an environment variable")
+    @ApiResponse(responseCode = "204", description = "Environment variable deleted")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteEnvironmentVariable(@PathVariable String id) {
+    public ResponseEntity<Void> deleteEnvironmentVariable(
+        @Parameter(description = "Environment variable ID") @PathVariable String id) {
         log.debug("REST request to delete EnvironmentVariable : {}", id);
         environmentVariableService.delete(id);
         return ResponseEntity

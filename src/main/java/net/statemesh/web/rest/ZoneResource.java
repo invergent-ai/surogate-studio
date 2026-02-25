@@ -1,5 +1,8 @@
 package net.statemesh.web.rest;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import net.statemesh.repository.ZoneRepository;
@@ -20,11 +23,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * REST controller for managing {@link net.statemesh.domain.Zone}.
- */
 @RestController
 @RequestMapping("/api/zones")
+@Tag(name = "Zone", description = "Zone management")
 public class ZoneResource {
     private final Logger log = LoggerFactory.getLogger(ZoneResource.class);
 
@@ -34,7 +35,6 @@ public class ZoneResource {
     private String applicationName;
 
     private final ZoneService zoneService;
-
     private final ZoneRepository zoneRepository;
 
     public ZoneResource(ZoneService zoneService, ZoneRepository zoneRepository) {
@@ -42,13 +42,9 @@ public class ZoneResource {
         this.zoneRepository = zoneRepository;
     }
 
-    /**
-     * {@code POST  /zones} : Create a new zone.
-     *
-     * @param zoneDTO the zoneDTO to create.
-     * @return the {@link ResponseEntity} with status {@code 201 (Created)} and with body the new zoneDTO, or with status {@code 400 (Bad Request)} if the zone has already an ID.
-     * @throws URISyntaxException if the Location URI syntax is incorrect.
-     */
+    @Operation(summary = "Create a new zone")
+    @ApiResponse(responseCode = "201", description = "Zone created")
+    @ApiResponse(responseCode = "400", description = "Invalid input or ID already exists")
     @PostMapping("")
     public ResponseEntity<ZoneDTO> createZone(@Valid @RequestBody ZoneDTO zoneDTO) throws URISyntaxException {
         log.debug("REST request to save Zone : {}", zoneDTO);
@@ -62,15 +58,9 @@ public class ZoneResource {
             .body(result);
     }
 
-    /**
-     * {@code PUT  /zones/:id} : Updates an existing zone.
-     *
-     * @param id the id of the zoneDTO to save.
-     * @param zoneDTO the zoneDTO to update.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated zoneDTO,
-     * or with status {@code 400 (Bad Request)} if the zoneDTO is not valid,
-     * or with status {@code 500 (Internal Server Error)} if the zoneDTO couldn't be updated.
-     */
+    @Operation(summary = "Update an existing zone")
+    @ApiResponse(responseCode = "200", description = "Zone updated")
+    @ApiResponse(responseCode = "400", description = "Invalid ID or input")
     @PutMapping("/{id}")
     public ResponseEntity<ZoneDTO> updateZone(
         @PathVariable(value = "id", required = false) final String id,
@@ -91,16 +81,10 @@ public class ZoneResource {
             .body(result);
     }
 
-    /**
-     * {@code PATCH  /zones/:id} : Partial updates given fields of an existing zone, field will ignore if it is null
-     *
-     * @param id the id of the zoneDTO to save.
-     * @param zoneDTO the zoneDTO to update.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated zoneDTO,
-     * or with status {@code 400 (Bad Request)} if the zoneDTO is not valid,
-     * or with status {@code 404 (Not Found)} if the zoneDTO is not found,
-     * or with status {@code 500 (Internal Server Error)} if the zoneDTO couldn't be updated.
-     */
+    @Operation(summary = "Partially update a zone")
+    @ApiResponse(responseCode = "200", description = "Zone partially updated")
+    @ApiResponse(responseCode = "400", description = "Invalid ID or input")
+    @ApiResponse(responseCode = "404", description = "Zone not found")
     @PatchMapping(value = "/{id}", consumes = { "application/json", "application/merge-patch+json" })
     public ResponseEntity<ZoneDTO> partialUpdateZone(
         @PathVariable(value = "id", required = false) final String id,
@@ -122,23 +106,17 @@ public class ZoneResource {
         );
     }
 
-    /**
-     * {@code GET  /zones} : get all the zones.
-     *
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of zones in body.
-     */
+    @Operation(summary = "Get all zones")
+    @ApiResponse(responseCode = "200", description = "List of zones returned")
     @GetMapping("")
     public List<ZoneDTO> getAllZones() {
         log.trace("REST request to get all Zones");
         return zoneService.findAll();
     }
 
-    /**
-     * {@code GET  /zones/:id} : get the "id" zone.
-     *
-     * @param id the id of the zoneDTO to retrieve.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the zoneDTO, or with status {@code 404 (Not Found)}.
-     */
+    @Operation(summary = "Get a zone by ID")
+    @ApiResponse(responseCode = "200", description = "Zone returned")
+    @ApiResponse(responseCode = "404", description = "Zone not found")
     @GetMapping("/{id}")
     public ResponseEntity<ZoneDTO> getZone(@PathVariable String id) {
         log.debug("REST request to get Zone : {}", id);
@@ -146,12 +124,8 @@ public class ZoneResource {
         return ResponseUtil.wrapOrNotFound(zoneDTO);
     }
 
-    /**
-     * {@code DELETE  /zones/:id} : delete the "id" zone.
-     *
-     * @param id the id of the zoneDTO to delete.
-     * @return the {@link ResponseEntity} with status {@code 204 (NO_CONTENT)}.
-     */
+    @Operation(summary = "Delete a zone")
+    @ApiResponse(responseCode = "204", description = "Zone deleted")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteZone(@PathVariable String id) {
         log.debug("REST request to delete Zone : {}", id);

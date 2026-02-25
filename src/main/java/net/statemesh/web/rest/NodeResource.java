@@ -1,6 +1,10 @@
 package net.statemesh.web.rest;
 
 import io.kubernetes.client.openapi.ApiException;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -33,13 +37,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * REST controller for managing {@link net.statemesh.domain.Node}.
- */
 @RestController
 @RequestMapping("/api/nodes")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Nodes", description = "Kubernetes node management")
 public class NodeResource {
     private static final String ENTITY_NAME = "node";
 
@@ -53,13 +55,9 @@ public class NodeResource {
     private final NodeRepository nodeRepository;
     private final KubernetesController kubernetesController;
 
-    /**
-     * {@code POST  /nodes} : Create a new node.
-     *
-     * @param nodeDTO the nodeDTO to create.
-     * @return the {@link ResponseEntity} with status {@code 201 (Created)} and with body the new nodeDTO, or with status {@code 400 (Bad Request)} if the node has already an ID.
-     * @throws URISyntaxException if the Location URI syntax is incorrect.
-     */
+    @Operation(summary = "Create a new node")
+    @ApiResponse(responseCode = "201", description = "Node created")
+    @ApiResponse(responseCode = "400", description = "Node already has an ID")
     @PostMapping("")
     public ResponseEntity<NodeDTO> createNode(@Valid @RequestBody NodeDTO nodeDTO,
                                               Principal principal) throws URISyntaxException {
@@ -67,10 +65,7 @@ public class NodeResource {
         if (nodeDTO.getId() != null) {
             throw new BadRequestAlertException("A new node cannot already have an ID", ENTITY_NAME, "idexists");
         }
-
-        nodeDTO.setUser(
-            userService.findOne(principal.getName()).orElse(null)
-        );
+        nodeDTO.setUser(userService.findOne(principal.getName()).orElse(null));
         NodeDTO result = nodeService.save(nodeDTO);
         return ResponseEntity
             .created(new URI("/api/nodes/" + result.getId()))
@@ -78,18 +73,12 @@ public class NodeResource {
             .body(result);
     }
 
-    /**
-     * {@code PUT  /nodes/:id} : Updates an existing node.
-     *
-     * @param id the id of the nodeDTO to save.
-     * @param nodeDTO the nodeDTO to update.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated nodeDTO,
-     * or with status {@code 400 (Bad Request)} if the nodeDTO is not valid,
-     * or with status {@code 500 (Internal Server Error)} if the nodeDTO couldn't be updated.
-     */
+    @Operation(summary = "Update an existing node")
+    @ApiResponse(responseCode = "200", description = "Node updated")
+    @ApiResponse(responseCode = "400", description = "Invalid ID")
     @PutMapping("/{id}")
     public ResponseEntity<NodeDTO> updateNode(
-        @PathVariable(value = "id", required = false) final String id,
+        @Parameter(description = "Node ID") @PathVariable(value = "id", required = false) final String id,
         @Valid @RequestBody NodeDTO nodeDTO) {
         log.debug("REST request to update Node : {}, {}", id, nodeDTO);
         if (nodeDTO.getId() == null) {
@@ -98,11 +87,9 @@ public class NodeResource {
         if (!Objects.equals(id, nodeDTO.getId())) {
             throw new BadRequestAlertException("Invalid ID", ENTITY_NAME, "idinvalid");
         }
-
         if (!nodeRepository.existsById(id)) {
             throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
         }
-
         NodeDTO result = nodeService.update(nodeDTO);
         return ResponseEntity
             .ok()
@@ -110,43 +97,29 @@ public class NodeResource {
             .body(result);
     }
 
-    /**
-     * {@code PATCH  /nodes/:id} : Partial updates given fields of an existing node, field will ignore if it is null
-     *
-     * @param id the id of the nodeDTO to save.
-     * @param nodeDTO the nodeDTO to update.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated nodeDTO,
-     * or with status {@code 400 (Bad Request)} if the nodeDTO is not valid,
-     * or with status {@code 404 (Not Found)} if the nodeDTO is not found,
-     * or with status {@code 500 (Internal Server Error)} if the nodeDTO couldn't be updated.
-     */
+    @Operation(summary = "Partially update a node")
+    @ApiResponse(responseCode = "200", description = "Node partially updated")
+    @ApiResponse(responseCode = "404", description = "Node not found")
     @PatchMapping(value = "/{id}", consumes = { "application/json", "application/merge-patch+json" })
     public ResponseEntity<NodeDTO> partialUpdateNode(
-        @PathVariable(value = "id", required = false) final String id,
+        @Parameter(description = "Node ID") @PathVariable(value = "id", required = false) final String id,
         @NotNull @RequestBody NodeDTO nodeDTO) {
         log.debug("REST request to partial update Node partially : {}, {}", id, nodeDTO);
         if (!Objects.equals(id, nodeDTO.getId())) {
             throw new BadRequestAlertException("Invalid ID", ENTITY_NAME, "idinvalid");
         }
-
         if (!nodeRepository.existsById(id)) {
             throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
         }
-
         Optional<NodeDTO> result = nodeService.partialUpdate(nodeDTO);
-
         return ResponseUtil.wrapOrNotFound(
             result,
             HeaderUtil.createEntityUpdateAlert(applicationName, true, ENTITY_NAME, nodeDTO.getId())
         );
     }
 
-    /**
-     * {@code GET  /nodes} : get all the nodes.
-     *
-     * @param pageable the pagination information.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of nodes in body.
-     */
+    @Operation(summary = "Query nodes with criteria (paginated)")
+    @ApiResponse(responseCode = "200", description = "Paginated nodes returned")
     @GetMapping("")
     public ResponseEntity<List<NodeDTO>> getAllNodes(
         NodeCriteria criteria,
@@ -159,14 +132,12 @@ public class NodeResource {
         return ResponseEntity.ok().headers(headers).body(page.getContent());
     }
 
-    /**
-     * {@code GET  /nodes/:id} : get the "id" node.
-     *
-     * @param id the id of the nodeDTO to retrieve.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the nodeDTO, or with status {@code 404 (Not Found)}.
-     */
+    @Operation(summary = "Get a node by ID")
+    @ApiResponse(responseCode = "200", description = "Node found")
+    @ApiResponse(responseCode = "404", description = "Node not found")
     @GetMapping("/{id}")
-    public ResponseEntity<NodeDTO> getNode(@PathVariable String id) {
+    public ResponseEntity<NodeDTO> getNode(
+        @Parameter(description = "Node ID") @PathVariable String id) {
         log.debug("REST request to get Node : {}", id);
         Optional<NodeDTO> nodeDTO = nodeService.findOne(id);
         return ResponseUtil.wrapOrNotFound(
@@ -182,14 +153,11 @@ public class NodeResource {
         );
     }
 
-    /**
-     * {@code DELETE  /nodes/:id} : delete the "id" node.
-     *
-     * @param id the id of the nodeDTO to delete.
-     * @return the {@link ResponseEntity} with status {@code 204 (NO_CONTENT)}.
-     */
+    @Operation(summary = "Delete a node")
+    @ApiResponse(responseCode = "204", description = "Node deleted")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteNode(@PathVariable(value = "id") String id) {
+    public ResponseEntity<Void> deleteNode(
+        @Parameter(description = "Node ID") @PathVariable(value = "id") String id) {
         log.debug("REST request to delete Node : {}", id);
         nodeControlService.delete(id);
         return ResponseEntity
@@ -198,12 +166,12 @@ public class NodeResource {
             .build();
     }
 
+    @Operation(summary = "Delete multiple nodes")
+    @ApiResponse(responseCode = "204", description = "Nodes deleted")
     @PostMapping("/del")
     public ResponseEntity<Void> deleteNodes(@RequestBody IdCollection idCollection) {
         log.debug("REST request to delete Nodes : {}", idCollection.getIds());
         nodeService.deleteAll(idCollection.getIds());
-        return ResponseEntity
-            .noContent()
-            .build();
+        return ResponseEntity.noContent().build();
     }
 }

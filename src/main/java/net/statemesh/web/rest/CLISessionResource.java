@@ -1,5 +1,9 @@
 package net.statemesh.web.rest;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.statemesh.domain.User;
@@ -24,18 +28,18 @@ import java.util.Optional;
 import static net.statemesh.config.Constants.CLI_SESSION_PASSWORD;
 import static net.statemesh.security.SecurityUtils.*;
 
-/**
- * REST controller for managing {@link net.statemesh.domain.Application}.
- */
 @RestController
 @RequestMapping("/api/cli")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "CLI Session", description = "CLI authentication session management")
 public class CLISessionResource {
     private final JwtEncoder jwtEncoder;
     private final JwtDecoder jwtDecoder;
     private final UserService userService;
 
+    @Operation(summary = "Initiate CLI session", description = "Generate a browser URL and temporary token for CLI login")
+    @ApiResponse(responseCode = "201", description = "CLI session initiated")
     @PostMapping("/pre")
     public ResponseEntity<PreCLIResponseDTO> precli(@RequestBody PreCLIDTO preCLIDTO) throws URISyntaxException {
         log.debug("REST request to initiate CLI session for hostname : {}", preCLIDTO.getHostname());
@@ -54,15 +58,16 @@ public class CLISessionResource {
                         StringUtils.join("?sess=", secret, "&sessId=",
                             Base64.getEncoder().encodeToString(preCLIDTO.getHostname().getBytes()))
                     )
-                    .token(
-                        createToken(secret)
-                    )
+                    .token(createToken(secret))
                     .build()
             );
     }
 
+    @Operation(summary = "Finalize CLI session", description = "Exchange temporary token for an access token after browser login")
+    @ApiResponse(responseCode = "201", description = "CLI session finalized")
     @GetMapping("/post")
-    public ResponseEntity<PostCLIResponseDTO> postcli(@RequestHeader("Authorization") String token) throws URISyntaxException {
+    public ResponseEntity<PostCLIResponseDTO> postcli(
+        @Parameter(description = "Bearer token from pre-CLI step") @RequestHeader("Authorization") String token) throws URISyntaxException {
         log.debug("REST request to finalize CLI session");
         if (StringUtils.isEmpty(token)) {
             throw new RuntimeException("Authorization cannot be empty");
@@ -79,11 +84,7 @@ public class CLISessionResource {
 
         return ResponseEntity
             .created(new URI("/api/postcli/"))
-            .body(
-                PostCLIResponseDTO.builder()
-                    .accessToken(accessToken)
-                    .build()
-            );
+            .body(PostCLIResponseDTO.builder().accessToken(accessToken).build());
     }
 
     private String createToken(String secret) {
@@ -93,9 +94,7 @@ public class CLISessionResource {
                     JwsHeader.with(JWT_ALGORITHM).build(),
                     JwtClaimsSet.builder()
                         .issuedAt(Instant.now())
-                        .expiresAt(
-                            Instant.now().plus(10, ChronoUnit.MINUTES)
-                        )
+                        .expiresAt(Instant.now().plus(10, ChronoUnit.MINUTES))
                         .subject(secret)
                         .claim(AUTHORITIES_KEY, Strings.EMPTY)
                         .claim(USER_KEY, secret)

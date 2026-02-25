@@ -1,5 +1,8 @@
 package net.statemesh.web.rest;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import net.statemesh.repository.SystemConfigurationRepository;
 import net.statemesh.service.SystemConfigurationService;
 import net.statemesh.service.dto.SystemConfigurationDTO;
@@ -18,11 +21,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * REST controller for managing {@link net.statemesh.domain.SystemConfiguration}.
- */
 @RestController
 @RequestMapping("/api/system-configurations")
+@Tag(name = "System Configuration", description = "System configuration management")
 public class SystemConfigurationResource {
     private final Logger log = LoggerFactory.getLogger(SystemConfigurationResource.class);
 
@@ -43,13 +44,9 @@ public class SystemConfigurationResource {
         this.systemConfigurationRepository = systemConfigurationRepository;
     }
 
-    /**
-     * {@code POST  /system-configurations} : Create a new systemConfiguration.
-     *
-     * @param systemConfigurationDTO the systemConfigurationDTO to create.
-     * @return the {@link ResponseEntity} with status {@code 201 (Created)} and with body the new systemConfigurationDTO, or with status {@code 400 (Bad Request)} if the systemConfiguration has already an ID.
-     * @throws URISyntaxException if the Location URI syntax is incorrect.
-     */
+    @Operation(summary = "Create a new system configuration")
+    @ApiResponse(responseCode = "201", description = "System configuration created")
+    @ApiResponse(responseCode = "400", description = "Invalid input or ID already exists")
     @PostMapping("")
     public ResponseEntity<SystemConfigurationDTO> createSystemConfiguration(@RequestBody SystemConfigurationDTO systemConfigurationDTO)
         throws URISyntaxException {
@@ -64,15 +61,9 @@ public class SystemConfigurationResource {
             .body(result);
     }
 
-    /**
-     * {@code PUT  /system-configurations/:id} : Updates an existing systemConfiguration.
-     *
-     * @param id the id of the systemConfigurationDTO to save.
-     * @param systemConfigurationDTO the systemConfigurationDTO to update.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated systemConfigurationDTO,
-     * or with status {@code 400 (Bad Request)} if the systemConfigurationDTO is not valid,
-     * or with status {@code 500 (Internal Server Error)} if the systemConfigurationDTO couldn't be updated.
-     */
+    @Operation(summary = "Update an existing system configuration")
+    @ApiResponse(responseCode = "200", description = "System configuration updated")
+    @ApiResponse(responseCode = "400", description = "Invalid ID or input")
     @PutMapping("/{id}")
     public ResponseEntity<SystemConfigurationDTO> updateSystemConfiguration(
         @PathVariable(value = "id", required = false) final String id,
@@ -93,16 +84,10 @@ public class SystemConfigurationResource {
             .body(result);
     }
 
-    /**
-     * {@code PATCH  /system-configurations/:id} : Partial updates given fields of an existing systemConfiguration, field will ignore if it is null
-     *
-     * @param id the id of the systemConfigurationDTO to save.
-     * @param systemConfigurationDTO the systemConfigurationDTO to update.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated systemConfigurationDTO,
-     * or with status {@code 400 (Bad Request)} if the systemConfigurationDTO is not valid,
-     * or with status {@code 404 (Not Found)} if the systemConfigurationDTO is not found,
-     * or with status {@code 500 (Internal Server Error)} if the systemConfigurationDTO couldn't be updated.
-     */
+    @Operation(summary = "Partially update a system configuration")
+    @ApiResponse(responseCode = "200", description = "System configuration partially updated")
+    @ApiResponse(responseCode = "400", description = "Invalid ID or input")
+    @ApiResponse(responseCode = "404", description = "System configuration not found")
     @PatchMapping(value = "/{id}", consumes = { "application/json", "application/merge-patch+json" })
     public ResponseEntity<SystemConfigurationDTO> partialUpdateSystemConfiguration(
         @PathVariable(value = "id", required = false) final String id,
@@ -125,23 +110,17 @@ public class SystemConfigurationResource {
         );
     }
 
-    /**
-     * {@code GET  /system-configurations} : get all the systemConfigurations.
-     *
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of systemConfigurations in body.
-     */
+    @Operation(summary = "Get all system configurations")
+    @ApiResponse(responseCode = "200", description = "List of system configurations returned")
     @GetMapping("")
     public List<SystemConfigurationDTO> getAllSystemConfigurations() {
         log.debug("REST request to get all SystemConfigurations");
         return systemConfigurationService.findAll();
     }
 
-    /**
-     * {@code GET  /system-configurations/:id} : get the "id" systemConfiguration.
-     *
-     * @param id the id of the systemConfigurationDTO to retrieve.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the systemConfigurationDTO, or with status {@code 404 (Not Found)}.
-     */
+    @Operation(summary = "Get a system configuration by ID")
+    @ApiResponse(responseCode = "200", description = "System configuration returned")
+    @ApiResponse(responseCode = "404", description = "System configuration not found")
     @GetMapping("/{id}")
     public ResponseEntity<SystemConfigurationDTO> getSystemConfiguration(@PathVariable String id) {
         log.debug("REST request to get SystemConfiguration : {}", id);
@@ -149,12 +128,8 @@ public class SystemConfigurationResource {
         return ResponseUtil.wrapOrNotFound(systemConfigurationDTO);
     }
 
-    /**
-     * {@code DELETE  /system-configurations/:id} : delete the "id" systemConfiguration.
-     *
-     * @param id the id of the systemConfigurationDTO to delete.
-     * @return the {@link ResponseEntity} with status {@code 204 (NO_CONTENT)}.
-     */
+    @Operation(summary = "Delete a system configuration")
+    @ApiResponse(responseCode = "204", description = "System configuration deleted")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteSystemConfiguration(@PathVariable String id) {
         log.debug("REST request to delete SystemConfiguration : {}", id);

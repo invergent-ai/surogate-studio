@@ -1,5 +1,8 @@
 package net.statemesh.web.rest;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
@@ -24,11 +27,9 @@ import tech.jhipster.web.util.HeaderUtil;
 import tech.jhipster.web.util.PaginationUtil;
 import tech.jhipster.web.util.ResponseUtil;
 
-/**
- * REST controller for managing {@link net.statemesh.domain.Protocol}.
- */
 @RestController
 @RequestMapping("/api/protocols")
+@Tag(name = "Protocol", description = "Protocol management")
 public class ProtocolResource {
 
     private final Logger log = LoggerFactory.getLogger(ProtocolResource.class);
@@ -47,13 +48,9 @@ public class ProtocolResource {
         this.protocolRepository = protocolRepository;
     }
 
-    /**
-     * {@code POST  /protocols} : Create a new protocol.
-     *
-     * @param protocolDTO the protocolDTO to create.
-     * @return the {@link ResponseEntity} with status {@code 201 (Created)} and with body the new protocolDTO, or with status {@code 400 (Bad Request)} if the protocol has already an ID.
-     * @throws URISyntaxException if the Location URI syntax is incorrect.
-     */
+    @Operation(summary = "Create a new protocol")
+    @ApiResponse(responseCode = "201", description = "Protocol created")
+    @ApiResponse(responseCode = "400", description = "Invalid input or ID already exists")
     @PostMapping("")
     public ResponseEntity<ProtocolDTO> createProtocol(@Valid @RequestBody ProtocolDTO protocolDTO) throws URISyntaxException {
         log.debug("REST request to save Protocol : {}", protocolDTO);
@@ -67,15 +64,9 @@ public class ProtocolResource {
             .body(result);
     }
 
-    /**
-     * {@code PUT  /protocols/:id} : Updates an existing protocol.
-     *
-     * @param id the id of the protocolDTO to save.
-     * @param protocolDTO the protocolDTO to update.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated protocolDTO,
-     * or with status {@code 400 (Bad Request)} if the protocolDTO is not valid,
-     * or with status {@code 500 (Internal Server Error)} if the protocolDTO couldn't be updated.
-     */
+    @Operation(summary = "Update an existing protocol")
+    @ApiResponse(responseCode = "200", description = "Protocol updated")
+    @ApiResponse(responseCode = "400", description = "Invalid ID or input")
     @PutMapping("/{id}")
     public ResponseEntity<ProtocolDTO> updateProtocol(
         @PathVariable(value = "id", required = false) final String id,
@@ -96,16 +87,10 @@ public class ProtocolResource {
             .body(result);
     }
 
-    /**
-     * {@code PATCH  /protocols/:id} : Partial updates given fields of an existing protocol, field will ignore if it is null
-     *
-     * @param id the id of the protocolDTO to save.
-     * @param protocolDTO the protocolDTO to update.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated protocolDTO,
-     * or with status {@code 400 (Bad Request)} if the protocolDTO is not valid,
-     * or with status {@code 404 (Not Found)} if the protocolDTO is not found,
-     * or with status {@code 500 (Internal Server Error)} if the protocolDTO couldn't be updated.
-     */
+    @Operation(summary = "Partially update a protocol")
+    @ApiResponse(responseCode = "200", description = "Protocol partially updated")
+    @ApiResponse(responseCode = "400", description = "Invalid ID or input")
+    @ApiResponse(responseCode = "404", description = "Protocol not found")
     @PatchMapping(value = "/{id}", consumes = { "application/json", "application/merge-patch+json" })
     public ResponseEntity<ProtocolDTO> partialUpdateProtocol(
         @PathVariable(value = "id", required = false) final String id,
@@ -127,12 +112,8 @@ public class ProtocolResource {
         );
     }
 
-    /**
-     * {@code GET  /protocols} : get all the protocols.
-     *
-     * @param pageable the pagination information.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of protocols in body.
-     */
+    @Operation(summary = "Get all protocols")
+    @ApiResponse(responseCode = "200", description = "List of protocols returned")
     @GetMapping("")
     public ResponseEntity<List<ProtocolDTO>> getAllProtocols(@org.springdoc.core.annotations.ParameterObject Pageable pageable) {
         log.debug("REST request to get a page of Protocols");
@@ -141,12 +122,9 @@ public class ProtocolResource {
         return ResponseEntity.ok().headers(headers).body(page.getContent());
     }
 
-    /**
-     * {@code GET  /protocols/:id} : get the "id" protocol.
-     *
-     * @param id the id of the protocolDTO to retrieve.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the protocolDTO, or with status {@code 404 (Not Found)}.
-     */
+    @Operation(summary = "Get a protocol by ID")
+    @ApiResponse(responseCode = "200", description = "Protocol returned")
+    @ApiResponse(responseCode = "404", description = "Protocol not found")
     @GetMapping("/{id}")
     public ResponseEntity<ProtocolDTO> getProtocol(@PathVariable String id) {
         log.debug("REST request to get Protocol : {}", id);
@@ -154,12 +132,8 @@ public class ProtocolResource {
         return ResponseUtil.wrapOrNotFound(protocolDTO);
     }
 
-    /**
-     * {@code DELETE  /protocols/:id} : delete the "id" protocol.
-     *
-     * @param id the id of the protocolDTO to delete.
-     * @return the {@link ResponseEntity} with status {@code 204 (NO_CONTENT)}.
-     */
+    @Operation(summary = "Delete a protocol")
+    @ApiResponse(responseCode = "204", description = "Protocol deleted")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteProtocol(@PathVariable String id) {
         log.debug("REST request to delete Protocol : {}", id);

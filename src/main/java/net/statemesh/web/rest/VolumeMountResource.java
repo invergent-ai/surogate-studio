@@ -1,5 +1,8 @@
 package net.statemesh.web.rest;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import net.statemesh.repository.VolumeMountRepository;
@@ -28,11 +31,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * REST controller for managing {@link net.statemesh.domain.VolumeMount}.
- */
 @RestController
 @RequestMapping("/api/volume-mounts")
+@Tag(name = "Volume Mount", description = "Volume mount management")
 public class VolumeMountResource {
     private final Logger log = LoggerFactory.getLogger(VolumeMountResource.class);
 
@@ -55,13 +56,9 @@ public class VolumeMountResource {
         this.volumeMountQueryService = volumeMountQueryService;
     }
 
-    /**
-     * {@code POST  /volume-mounts} : Create a new volumeMount.
-     *
-     * @param volumeMountDTO the volumeMountDTO to create.
-     * @return the {@link ResponseEntity} with status {@code 201 (Created)} and with body the new volumeMountDTO, or with status {@code 400 (Bad Request)} if the volumeMount has already an ID.
-     * @throws URISyntaxException if the Location URI syntax is incorrect.
-     */
+    @Operation(summary = "Create a new volume mount")
+    @ApiResponse(responseCode = "201", description = "Volume mount created")
+    @ApiResponse(responseCode = "400", description = "Invalid input or ID already exists")
     @PostMapping("")
     public ResponseEntity<VolumeMountDTO> createVolumeMount(@Valid @RequestBody VolumeMountDTO volumeMountDTO, Principal principal) throws URISyntaxException {
         log.debug("REST request to save VolumeMount : {}", volumeMountDTO);
@@ -75,15 +72,9 @@ public class VolumeMountResource {
             .body(result);
     }
 
-    /**
-     * {@code PUT  /volume-mounts/:id} : Updates an existing volumeMount.
-     *
-     * @param id the id of the volumeMountDTO to save.
-     * @param volumeMountDTO the volumeMountDTO to update.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated volumeMountDTO,
-     * or with status {@code 400 (Bad Request)} if the volumeMountDTO is not valid,
-     * or with status {@code 500 (Internal Server Error)} if the volumeMountDTO couldn't be updated.
-     */
+    @Operation(summary = "Update an existing volume mount")
+    @ApiResponse(responseCode = "200", description = "Volume mount updated")
+    @ApiResponse(responseCode = "400", description = "Invalid ID or input")
     @PutMapping("/{id}")
     public ResponseEntity<VolumeMountDTO> updateVolumeMount(
         @PathVariable(value = "id", required = false) final String id,
@@ -104,16 +95,10 @@ public class VolumeMountResource {
             .body(result);
     }
 
-    /**
-     * {@code PATCH  /volume-mounts/:id} : Partial updates given fields of an existing volumeMount, field will ignore if it is null
-     *
-     * @param id the id of the volumeMountDTO to save.
-     * @param volumeMountDTO the volumeMountDTO to update.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated volumeMountDTO,
-     * or with status {@code 400 (Bad Request)} if the volumeMountDTO is not valid,
-     * or with status {@code 404 (Not Found)} if the volumeMountDTO is not found,
-     * or with status {@code 500 (Internal Server Error)} if the volumeMountDTO couldn't be updated.
-     */
+    @Operation(summary = "Partially update a volume mount")
+    @ApiResponse(responseCode = "200", description = "Volume mount partially updated")
+    @ApiResponse(responseCode = "400", description = "Invalid ID or input")
+    @ApiResponse(responseCode = "404", description = "Volume mount not found")
     @PatchMapping(value = "/{id}", consumes = { "application/json", "application/merge-patch+json" })
     public ResponseEntity<VolumeMountDTO> partialUpdateVolumeMount(
         @PathVariable(value = "id", required = false) final String id,
@@ -135,11 +120,8 @@ public class VolumeMountResource {
         );
     }
 
-    /**
-     * {@code GET  /volume-mounts} : get all the volumeMounts.
-     *
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of volumeMounts in body.
-     */
+    @Operation(summary = "Query volume mounts by criteria")
+    @ApiResponse(responseCode = "200", description = "List of volume mounts returned")
     @GetMapping("")
     public ResponseEntity<List<VolumeMountDTO>> query(
         VolumeMountCriteria criteria,
@@ -151,12 +133,9 @@ public class VolumeMountResource {
         return ResponseEntity.ok().headers(headers).body(resultPage.getContent());
     }
 
-    /**
-     * {@code GET  /volume-mounts/:id} : get the "id" volumeMount.
-     *
-     * @param id the id of the volumeMountDTO to retrieve.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the volumeMountDTO, or with status {@code 404 (Not Found)}.
-     */
+    @Operation(summary = "Get a volume mount by ID")
+    @ApiResponse(responseCode = "200", description = "Volume mount returned")
+    @ApiResponse(responseCode = "404", description = "Volume mount not found")
     @GetMapping("/{id}")
     public ResponseEntity<VolumeMountDTO> getVolumeMount(@PathVariable String id) {
         log.debug("REST request to get VolumeMount : {}", id);
@@ -164,12 +143,8 @@ public class VolumeMountResource {
         return ResponseUtil.wrapOrNotFound(volumeMountDTO);
     }
 
-    /**
-     * {@code DELETE  /volume-mounts/:id} : delete the "id" volumeMount.
-     *
-     * @param id the id of the volumeMountDTO to delete.
-     * @return the {@link ResponseEntity} with status {@code 204 (NO_CONTENT)}.
-     */
+    @Operation(summary = "Delete a volume mount")
+    @ApiResponse(responseCode = "204", description = "Volume mount deleted")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteVolumeMount(@PathVariable String id, Principal principal) {
         log.debug("REST request to delete VolumeMount : {}", id);

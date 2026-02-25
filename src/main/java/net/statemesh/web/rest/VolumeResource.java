@@ -1,5 +1,8 @@
 package net.statemesh.web.rest;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import net.statemesh.repository.VolumeRepository;
@@ -28,11 +31,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * REST controller for managing {@link net.statemesh.domain.Volume}.
- */
 @RestController
 @RequestMapping("/api/volumes")
+@Tag(name = "Volume", description = "Volume management")
 public class VolumeResource {
     private final Logger log = LoggerFactory.getLogger(VolumeResource.class);
 
@@ -55,13 +56,9 @@ public class VolumeResource {
         this.volumeQueryService = volumeQueryService;
     }
 
-    /**
-     * {@code POST  /volumes} : Create a new volume.
-     *
-     * @param volumeDTO the volumeDTO to create.
-     * @return the {@link ResponseEntity} with status {@code 201 (Created)} and with body the new volumeDTO, or with status {@code 400 (Bad Request)} if the volume has already an ID.
-     * @throws URISyntaxException if the Location URI syntax is incorrect.
-     */
+    @Operation(summary = "Create a new volume")
+    @ApiResponse(responseCode = "201", description = "Volume created")
+    @ApiResponse(responseCode = "400", description = "Invalid input or ID already exists")
     @PostMapping("")
     public ResponseEntity<VolumeDTO> createVolume(@Valid @RequestBody VolumeDTO volumeDTO, Principal principal) throws URISyntaxException {
         log.debug("REST request to save Volume : {}", volumeDTO);
@@ -76,15 +73,9 @@ public class VolumeResource {
             .body(result);
     }
 
-    /**
-     * {@code PUT  /volumes/:id} : Updates an existing volume.
-     *
-     * @param id the id of the volumeDTO to save.
-     * @param volumeDTO the volumeDTO to update.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated volumeDTO,
-     * or with status {@code 400 (Bad Request)} if the volumeDTO is not valid,
-     * or with status {@code 500 (Internal Server Error)} if the volumeDTO couldn't be updated.
-     */
+    @Operation(summary = "Update an existing volume")
+    @ApiResponse(responseCode = "200", description = "Volume updated")
+    @ApiResponse(responseCode = "400", description = "Invalid ID or input")
     @PutMapping("/{id}")
     public ResponseEntity<VolumeDTO> updateVolume(
         @PathVariable(value = "id", required = false) final String id,
@@ -105,16 +96,10 @@ public class VolumeResource {
             .body(result);
     }
 
-    /**
-     * {@code PATCH  /volumes/:id} : Partial updates given fields of an existing volume, field will ignore if it is null
-     *
-     * @param id the id of the volumeDTO to save.
-     * @param volumeDTO the volumeDTO to update.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated volumeDTO,
-     * or with status {@code 400 (Bad Request)} if the volumeDTO is not valid,
-     * or with status {@code 404 (Not Found)} if the volumeDTO is not found,
-     * or with status {@code 500 (Internal Server Error)} if the volumeDTO couldn't be updated.
-     */
+    @Operation(summary = "Partially update a volume")
+    @ApiResponse(responseCode = "200", description = "Volume partially updated")
+    @ApiResponse(responseCode = "400", description = "Invalid ID or input")
+    @ApiResponse(responseCode = "404", description = "Volume not found")
     @PatchMapping(value = "/{id}", consumes = { "application/json", "application/merge-patch+json" })
     public ResponseEntity<VolumeDTO> partialUpdateVolume(
         @PathVariable(value = "id", required = false) final String id,
@@ -136,6 +121,8 @@ public class VolumeResource {
         );
     }
 
+    @Operation(summary = "Query volumes by criteria")
+    @ApiResponse(responseCode = "200", description = "List of volumes returned")
     @GetMapping("")
     public ResponseEntity<List<VolumeDTO>> queryVolumes(
         VolumeCriteria criteria,
@@ -147,12 +134,9 @@ public class VolumeResource {
         return ResponseEntity.ok().headers(headers).body(resultPage.getContent());
     }
 
-    /**
-     * {@code GET  /volumes/:id} : get the "id" volume.
-     *
-     * @param id the id of the volumeDTO to retrieve.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the volumeDTO, or with status {@code 404 (Not Found)}.
-     */
+    @Operation(summary = "Get a volume by ID")
+    @ApiResponse(responseCode = "200", description = "Volume returned")
+    @ApiResponse(responseCode = "404", description = "Volume not found")
     @GetMapping("/{id}")
     public ResponseEntity<VolumeDTO> getVolume(@PathVariable String id) {
         log.debug("REST request to get Volume : {}", id);
@@ -160,12 +144,8 @@ public class VolumeResource {
         return ResponseUtil.wrapOrNotFound(volumeDTO);
     }
 
-    /**
-     * {@code DELETE  /volumes/:id} : delete the "id" volume.
-     *
-     * @param id the id of the volumeDTO to delete.
-     * @return the {@link ResponseEntity} with status {@code 204 (NO_CONTENT)}.
-     */
+    @Operation(summary = "Delete a volume")
+    @ApiResponse(responseCode = "204", description = "Volume deleted")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteVolume(@PathVariable(name = "id") String id, Principal principal) {
         log.debug("REST request to delete Volume : {}", id);

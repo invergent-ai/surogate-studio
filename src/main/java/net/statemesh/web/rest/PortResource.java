@@ -1,5 +1,9 @@
 package net.statemesh.web.rest;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
@@ -19,21 +23,17 @@ import org.springframework.web.bind.annotation.*;
 import tech.jhipster.web.util.HeaderUtil;
 import tech.jhipster.web.util.ResponseUtil;
 
-/**
- * REST controller for managing {@link net.statemesh.domain.Port}.
- */
 @RestController
 @RequestMapping("/api/ports")
+@Tag(name = "Ports", description = "Port configuration management")
 public class PortResource {
     private final Logger log = LoggerFactory.getLogger(PortResource.class);
-
     private static final String ENTITY_NAME = "port";
 
     @Value("${jhipster.clientApp.name}")
     private String applicationName;
 
     private final PortService portService;
-
     private final PortRepository portRepository;
 
     public PortResource(PortService portService, PortRepository portRepository) {
@@ -41,13 +41,9 @@ public class PortResource {
         this.portRepository = portRepository;
     }
 
-    /**
-     * {@code POST  /ports} : Create a new port.
-     *
-     * @param portDTO the portDTO to create.
-     * @return the {@link ResponseEntity} with status {@code 201 (Created)} and with body the new portDTO, or with status {@code 400 (Bad Request)} if the port has already an ID.
-     * @throws URISyntaxException if the Location URI syntax is incorrect.
-     */
+    @Operation(summary = "Create a port")
+    @ApiResponse(responseCode = "201", description = "Port created")
+    @ApiResponse(responseCode = "400", description = "Already has an ID")
     @PostMapping("")
     public ResponseEntity<PortDTO> createPort(@Valid @RequestBody PortDTO portDTO) throws URISyntaxException {
         log.debug("REST request to save Port : {}", portDTO);
@@ -61,28 +57,20 @@ public class PortResource {
             .body(result);
     }
 
-    /**
-     * {@code PUT  /ports/:id} : Updates an existing port.
-     *
-     * @param id the id of the portDTO to save.
-     * @param portDTO the portDTO to update.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated portDTO,
-     * or with status {@code 400 (Bad Request)} if the portDTO is not valid,
-     * or with status {@code 500 (Internal Server Error)} if the portDTO couldn't be updated.
-     */
+    @Operation(summary = "Update a port")
+    @ApiResponse(responseCode = "200", description = "Port updated")
+    @ApiResponse(responseCode = "400", description = "Invalid ID")
     @PutMapping("/{id}")
     public ResponseEntity<PortDTO> updatePort(
-        @PathVariable(value = "id", required = false) final String id,
+        @Parameter(description = "Port ID") @PathVariable(value = "id", required = false) final String id,
         @Valid @RequestBody PortDTO portDTO) {
         log.debug("REST request to update Port : {}, {}", id, portDTO);
         if (!Objects.equals(id, portDTO.getId())) {
             throw new BadRequestAlertException("Invalid ID", ENTITY_NAME, "idinvalid");
         }
-
         if (!portRepository.existsById(id)) {
             throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
         }
-
         PortDTO result = portService.update(portDTO);
         return ResponseEntity
             .ok()
@@ -90,69 +78,51 @@ public class PortResource {
             .body(result);
     }
 
-    /**
-     * {@code PATCH  /ports/:id} : Partial updates given fields of an existing port, field will ignore if it is null
-     *
-     * @param id the id of the portDTO to save.
-     * @param portDTO the portDTO to update.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated portDTO,
-     * or with status {@code 400 (Bad Request)} if the portDTO is not valid,
-     * or with status {@code 404 (Not Found)} if the portDTO is not found,
-     * or with status {@code 500 (Internal Server Error)} if the portDTO couldn't be updated.
-     */
+    @Operation(summary = "Partially update a port")
+    @ApiResponse(responseCode = "200", description = "Port partially updated")
+    @ApiResponse(responseCode = "404", description = "Not found")
     @PatchMapping(value = "/{id}", consumes = { "application/json", "application/merge-patch+json" })
     public ResponseEntity<PortDTO> partialUpdatePort(
-        @PathVariable(value = "id", required = false) final String id,
+        @Parameter(description = "Port ID") @PathVariable(value = "id", required = false) final String id,
         @NotNull @RequestBody PortDTO portDTO) {
         log.debug("REST request to partial update Port partially : {}, {}", id, portDTO);
         if (!Objects.equals(id, portDTO.getId())) {
             throw new BadRequestAlertException("Invalid ID", ENTITY_NAME, "idinvalid");
         }
-
         if (!portRepository.existsById(id)) {
             throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
         }
-
         Optional<PortDTO> result = portService.partialUpdate(portDTO);
-
         return ResponseUtil.wrapOrNotFound(
             result,
             HeaderUtil.createEntityUpdateAlert(applicationName, true, ENTITY_NAME, portDTO.getId())
         );
     }
 
-    /**
-     * {@code GET  /ports} : get all the ports.
-     *
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of ports in body.
-     */
+    @Operation(summary = "Get all ports")
+    @ApiResponse(responseCode = "200", description = "List of ports")
     @GetMapping("")
     public List<PortDTO> getAllPorts() {
         log.debug("REST request to get all Ports");
         return portService.findAll();
     }
 
-    /**
-     * {@code GET  /ports/:id} : get the "id" port.
-     *
-     * @param id the id of the portDTO to retrieve.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the portDTO, or with status {@code 404 (Not Found)}.
-     */
+    @Operation(summary = "Get a port by ID")
+    @ApiResponse(responseCode = "200", description = "Port found")
+    @ApiResponse(responseCode = "404", description = "Not found")
     @GetMapping("/{id}")
-    public ResponseEntity<PortDTO> getPort(@PathVariable String id) {
+    public ResponseEntity<PortDTO> getPort(
+        @Parameter(description = "Port ID") @PathVariable String id) {
         log.debug("REST request to get Port : {}", id);
         Optional<PortDTO> portDTO = portService.findOne(id);
         return ResponseUtil.wrapOrNotFound(portDTO);
     }
 
-    /**
-     * {@code DELETE  /ports/:id} : delete the "id" port.
-     *
-     * @param id the id of the portDTO to delete.
-     * @return the {@link ResponseEntity} with status {@code 204 (NO_CONTENT)}.
-     */
+    @Operation(summary = "Delete a port")
+    @ApiResponse(responseCode = "204", description = "Port deleted")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletePort(@PathVariable String id) {
+    public ResponseEntity<Void> deletePort(
+        @Parameter(description = "Port ID") @PathVariable String id) {
         log.debug("REST request to delete Port : {}", id);
         portService.delete(id);
         return ResponseEntity

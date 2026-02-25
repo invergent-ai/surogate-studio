@@ -1,5 +1,9 @@
 package net.statemesh.web.rest;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import net.statemesh.domain.User;
@@ -22,12 +26,10 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * REST controller for managing the current user's account.
- */
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
+@Tag(name = "Account", description = "User account management, registration, and authentication")
 public class AccountResource {
     private final Logger log = LoggerFactory.getLogger(AccountResource.class);
 
@@ -41,13 +43,9 @@ public class AccountResource {
     private final UserService userService;
     private final MailService mailService;
 
-    /**
-     * {@code POST  /register} : register the user.
-     *
-     * @param managedUserVM the managed user View Model.
-     * @throws InvalidPasswordException  {@code 400 (Bad Request)} if the password is incorrect.
-     * @throws LoginAlreadyUsedException {@code 400 (Bad Request)} if the login is already used.
-     */
+    @Operation(summary = "Register a new user")
+    @ApiResponse(responseCode = "201", description = "User registered successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid password or login already used")
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
     public void registerAccount(@Valid @RequestBody ManagedUserVM managedUserVM) {
@@ -58,21 +56,20 @@ public class AccountResource {
         mailService.sendActivationEmail(user);
     }
 
-    /**
-     * {@code GET  /activate} : activate the registered user.
-     *
-     * @param key the activation key.
-     * @throws RuntimeException {@code 500 (Internal Server Error)} if the user couldn't be activated.
-     */
+    @Operation(summary = "Activate a registered user")
+    @ApiResponse(responseCode = "200", description = "User activated successfully")
+    @ApiResponse(responseCode = "500", description = "No user found for activation key")
     @GetMapping("/activate")
-    public void activateAccount(@RequestParam(value = "key", name = "key") String key) {
+    public void activateAccount(
+        @Parameter(description = "Activation key") @RequestParam(value = "key", name = "key") String key) {
         Optional<User> user = userService.activateRegistration(key);
         if (user.isEmpty()) {
             throw new AccountResourceException("No user was found for this activation key");
         }
     }
 
-
+    @Operation(summary = "Delete current user account")
+    @ApiResponse(responseCode = "200", description = "Account deleted successfully")
     @DeleteMapping("/account")
     public ResponseEntity<Void> deleteAccount() {
         String userLogin = SecurityUtils
@@ -88,12 +85,8 @@ public class AccountResource {
         return ResponseEntity.ok().build();
     }
 
-    /**
-     * {@code GET  /account} : get the current user.
-     *
-     * @return the current user.
-     * @throws RuntimeException {@code 500 (Internal Server Error)} if the user couldn't be returned.
-     */
+    @Operation(summary = "Get current user account")
+    @ApiResponse(responseCode = "200", description = "Account returned successfully")
     @GetMapping("/account")
     public AdminUserDTO getAccount() {
         return userService
@@ -102,12 +95,8 @@ public class AccountResource {
             .orElseThrow(() -> new AccountResourceException("User could not be found"));
     }
 
-    /**
-     * {@code POST  /account} : update the current user information.
-     *
-     * @param userDTO the current user information.
-     * @throws RuntimeException {@code 500 (Internal Server Error)} if the user login wasn't found.
-     */
+    @Operation(summary = "Update current user account")
+    @ApiResponse(responseCode = "200", description = "Account updated successfully")
     @PostMapping("/account")
     public void saveAccount(@Valid @RequestBody AdminUserDTO userDTO) {
         String userLogin = SecurityUtils
@@ -134,31 +123,29 @@ public class AccountResource {
         );
     }
 
+    @Operation(summary = "Get notification settings")
+    @ApiResponse(responseCode = "200", description = "Notification settings returned")
     @GetMapping("/account/notification-settings")
     public ResponseEntity<NotificationSettingsDTO> getNotificationSettings() {
         String userLogin = SecurityUtils.getCurrentUserLogin()
             .orElseThrow(() -> new AccountResourceException("Current user login not found"));
-
         NotificationSettingsDTO settings = userService.getUserNotificationSettings(userLogin);
         return ResponseEntity.ok(settings);
     }
 
+    @Operation(summary = "Update notification settings")
+    @ApiResponse(responseCode = "200", description = "Notification settings updated")
     @PutMapping("/account/notification-settings")
     public ResponseEntity<Void> updateNotificationSettings(@Valid @RequestBody NotificationSettingsDTO settingsDTO) {
         String userLogin = SecurityUtils.getCurrentUserLogin()
             .orElseThrow(() -> new AccountResourceException("Current user login not found"));
-
         userService.updateUserNotificationSettings(userLogin, settingsDTO);
         return ResponseEntity.ok().build();
     }
 
-
-    /**
-     * {@code POST  /account/change-password} : changes the current user's password.
-     *
-     * @param passwordChangeDto current and new password.
-     * @throws InvalidPasswordException {@code 400 (Bad Request)} if the new password is incorrect.
-     */
+    @Operation(summary = "Change password")
+    @ApiResponse(responseCode = "200", description = "Password changed successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid password")
     @PostMapping(path = "/account/change-password")
     public void changePassword(@RequestBody PasswordChangeDTO passwordChangeDto) {
         if (isPasswordLengthInvalid(passwordChangeDto.getNewPassword())) {
@@ -167,69 +154,83 @@ public class AccountResource {
         userService.changePassword(passwordChangeDto.getCurrentPassword(), passwordChangeDto.getNewPassword());
     }
 
-    /**
-     * {@code POST   /account/reset-password/init} : Send email to reset the password of the user.
-     *
-     * @param mail the mail of the user.
-     */
+    @Operation(summary = "Request password reset", description = "Send email to reset password")
+    @ApiResponse(responseCode = "200", description = "Reset email sent if account exists")
     @PostMapping(path = "/account/reset-password/init")
     public void requestPasswordReset(@RequestBody String mail) {
         Optional<User> user = userService.requestPasswordReset(mail);
         if (user.isPresent()) {
             mailService.sendPasswordResetMail(user.orElseThrow());
         } else {
-            // Pretend the request has been successful to prevent checking which emails really exist
-            // but log that an invalid attempt has been made
             log.warn("Password reset requested for non existing mail");
         }
     }
 
-    /**
-     * {@code POST   /account/reset-password/finish} : Finish to reset the password of the user.
-     *
-     * @param keyAndPassword the generated key and the new password.
-     * @throws InvalidPasswordException {@code 400 (Bad Request)} if the password is incorrect.
-     * @throws RuntimeException         {@code 500 (Internal Server Error)} if the password could not be reset.
-     */
+    @Operation(summary = "Finish password reset", description = "Complete password reset with key and new password")
+    @ApiResponse(responseCode = "200", description = "Password reset successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid password")
     @PostMapping(path = "/account/reset-password/finish")
     public void finishPasswordReset(@RequestBody KeyAndPasswordVM keyAndPassword) {
         if (isPasswordLengthInvalid(keyAndPassword.getNewPassword())) {
             throw new InvalidPasswordException();
         }
         Optional<User> user = userService.completePasswordReset(keyAndPassword.getNewPassword(), keyAndPassword.getKey());
-
         if (user.isEmpty()) {
             throw new AccountResourceException("No user was found for this reset key");
         }
     }
 
+    @Operation(summary = "Search users by name")
+    @ApiResponse(responseCode = "200", description = "Users returned")
     @GetMapping("users/search")
-    public ResponseEntity<List<UserDTO>> searchUsers(@RequestParam("query") String query) {
+    public ResponseEntity<List<UserDTO>> searchUsers(
+        @Parameter(description = "Search query") @RequestParam("query") String query) {
         log.debug("REST request to search Users by name containing : {}", query);
         return ResponseEntity.ok(userService.searchByName(query));
     }
 
+    @Operation(summary = "Get all users basic info")
+    @ApiResponse(responseCode = "200", description = "Basic info returned")
     @GetMapping("users/basic")
     public ResponseEntity<List<UserDTO>> getBasicInfo() {
         log.debug("REST request to get all Users basic info");
         return ResponseEntity.ok(userService.findAllBasicInfo());
     }
 
+    @Operation(summary = "Get theme settings")
+    @ApiResponse(responseCode = "200", description = "Theme settings returned")
     @GetMapping("/account/theme-settings")
     public ResponseEntity<ThemeSettingsDTO> getThemeSettings() {
         String userLogin = SecurityUtils.getCurrentUserLogin()
             .orElseThrow(() -> new AccountResourceException("Current user login not found"));
-
         ThemeSettingsDTO settings = userService.getUserThemeSettings(userLogin);
         return ResponseEntity.ok(settings);
     }
 
+    @Operation(summary = "Update theme settings")
+    @ApiResponse(responseCode = "200", description = "Theme settings updated")
     @PutMapping("/account/theme-settings")
     public ResponseEntity<Void> updateThemeSettings(@Valid @RequestBody ThemeSettingsDTO settingsDTO) {
         String userLogin = SecurityUtils.getCurrentUserLogin()
             .orElseThrow(() -> new AccountResourceException("Current user login not found"));
-
         userService.updateUserThemeSettings(userLogin, settingsDTO);
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Update payment method")
+    @ApiResponse(responseCode = "200", description = "Payment method updated")
+    @PutMapping("/account/payment-method")
+    public ResponseEntity<Void> updatePaymentMethod(
+        @Parameter(description = "Payment method (card or crypto)") @RequestParam("method") String paymentMethod) {
+        String userLogin = SecurityUtils.getCurrentUserLogin()
+            .orElseThrow(() -> new AccountResourceException("Current user login not found"));
+        if (StringUtils.isEmpty(paymentMethod)) {
+            throw new AccountResourceException("Payment method cannot be empty");
+        }
+        if (!List.of("card", "crypto").contains(paymentMethod)) {
+            throw new AccountResourceException("Invalid payment method");
+        }
+        userService.updatePaymentMethod(userLogin, paymentMethod);
         return ResponseEntity.ok().build();
     }
 

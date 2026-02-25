@@ -1,5 +1,8 @@
 package net.statemesh.web.rest;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,10 +23,14 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/lakefs-s3")
 @RequiredArgsConstructor
+@Tag(name = "LakeFS S3 Proxy", description = "S3-compatible proxy for LakeFS object storage")
 public class LakeFsS3ProxyResource {
 
     private final ApplicationProperties properties;
 
+    @Operation(summary = "Proxy S3 requests to LakeFS", description = "Forwards all requests to the LakeFS S3 gateway")
+    @ApiResponse(responseCode = "200", description = "Proxied response returned")
+    @ApiResponse(responseCode = "502", description = "Bad gateway")
     @RequestMapping("/**")
     public ResponseEntity<byte[]> proxy(HttpServletRequest request) {
         try {
@@ -54,7 +61,6 @@ public class LakeFsS3ProxyResource {
                 }
             }
 
-            // Inject LakeFS S3 basic auth
             String auth = properties.getLakeFs().getKey() + ":" + properties.getLakeFs().getSecret();
             String encodedAuth = java.util.Base64.getEncoder().encodeToString(auth.getBytes());
             headers.set("Authorization", "Basic " + encodedAuth);
@@ -94,10 +100,8 @@ public class LakeFsS3ProxyResource {
             };
             SSLContext sslContext = SSLContext.getInstance("TLS");
             sslContext.init(null, trustAll, new java.security.SecureRandom());
-
             HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
             HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
-
             return new RestTemplate();
         } catch (Exception e) {
             throw new RuntimeException("Failed to create trust-all RestTemplate", e);
