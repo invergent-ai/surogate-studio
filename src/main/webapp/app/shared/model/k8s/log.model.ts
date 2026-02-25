@@ -17,6 +17,8 @@ export interface ILogCriteria {
   startDate?: Date;
   endDate?: Date;
   sinceSeconds?: number;
+  tailLines?: number;
+  before?: string;
 }
 
 export interface TimeRangeOption {

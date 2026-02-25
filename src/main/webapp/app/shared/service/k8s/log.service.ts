@@ -9,7 +9,7 @@ import { SseEvent } from '../../model/k8s/event.model';
 import { SseClient } from '../sse/sse-client.service';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class LogService {
   protected resourceUrl: string;
@@ -17,18 +17,19 @@ export class LogService {
   constructor(
     protected store: Store,
     private http: HttpClient,
-    private sseClient: SseClient
+    private sseClient: SseClient,
   ) {
-    store.select(Selectors.getEndpointFor('/api/logs')).subscribe((url) => {
+    store.select(Selectors.getEndpointFor('/api/logs')).subscribe(url => {
       this.resourceUrl = url;
     });
   }
 
-  connectToLogStream(resourceId: string, resourceType: 'application' | 'taskRun' | 'rayJob', criteria: ILogCriteria): Observable<SseEvent<ILog[]>> {
-    let params = new HttpParams()
-      .set('limit', criteria.limit.toString())
-      .set('podName', criteria.podName)
-      .set('resourceId', resourceId);
+  connectToLogStream(
+    resourceId: string,
+    resourceType: 'application' | 'taskRun' | 'rayJob',
+    criteria: ILogCriteria,
+  ): Observable<SseEvent<ILog[]>> {
+    let params = new HttpParams().set('limit', criteria.limit.toString()).set('podName', criteria.podName).set('resourceId', resourceId);
 
     if (criteria.containerId) {
       params = params.set('containerId', criteria.containerId.toString());
@@ -47,30 +48,46 @@ export class LogService {
     }
 
     return this.sseClient
-      .stream(`${this.resourceUrl}/logs/${resourceType}/${resourceId}`,
-        { keepAlive: false, reconnectionDelay: 1000, responseType: 'event' }, {params}, 'GET')
-      .pipe(
-        map((event: Event) => this.handleSseEvent<ILog[]>('logs', event)),
-      );
+      .stream(
+        `${this.resourceUrl}/logs/${resourceType}/${resourceId}`,
+        { keepAlive: false, reconnectionDelay: 1000, responseType: 'event' },
+        { params },
+        'GET',
+      )
+      .pipe(map((event: Event) => this.handleSseEvent<ILog[]>('logs', event)));
+  }
+
+  fetchLogHistory(resourceId: string, resourceType: 'application' | 'taskRun' | 'rayJob', criteria: ILogCriteria): Observable<ILog[]> {
+    let params = new HttpParams().set('limit', criteria.limit.toString()).set('podName', criteria.podName);
+
+    if (criteria.containerId) {
+      params = params.set('containerId', criteria.containerId.toString());
+    }
+    if (criteria.sinceSeconds) {
+      params = params.set('sinceSeconds', criteria.sinceSeconds.toString());
+    }
+    if (criteria.tailLines) {
+      params = params.set('tailLines', criteria.tailLines.toString());
+    }
+
+    return this.http.get<ILog[]>(`${this.resourceUrl}/logs/${resourceType}/${resourceId}/history`, { params });
   }
 
   stopLogs(resourceId: string, resourceType: 'application' | 'taskRun' | 'rayJob', podName: string, containerId: string): Observable<any> {
-    let params = new HttpParams()
-      .set('podName', podName)
-      .set('containerId', containerId);
-    return this.http.delete<any>(`${this.resourceUrl}/logs/${resourceType}/${resourceId}`, {params});
+    let params = new HttpParams().set('podName', podName).set('containerId', containerId);
+    return this.http.delete<any>(`${this.resourceUrl}/logs/${resourceType}/${resourceId}`, { params });
   }
 
   private handleSseEvent<T>(type: string, event: Event): SseEvent<T> {
     if (event instanceof MessageEvent) {
       if (event.type === type) {
         try {
-          return {type: event.type, data: JSON.parse(event.data) as T} as SseEvent<T>;
+          return { type: event.type, data: JSON.parse(event.data) as T } as SseEvent<T>;
         } catch {
           throw new Error('Failed to parse log message');
         }
       }
-      return {type: event.type} as SseEvent<T>;
+      return { type: event.type } as SseEvent<T>;
     }
     if (event instanceof ErrorEvent) {
       throw event.error || new Error(event.message || 'SSE ErrorEvent');

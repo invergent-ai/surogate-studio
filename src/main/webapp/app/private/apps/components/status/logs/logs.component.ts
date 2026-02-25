@@ -1,5 +1,7 @@
 import {
   AfterViewInit,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
   Component,
   EventEmitter,
   Input,
@@ -8,24 +10,24 @@ import {
   OnInit,
   Output,
   SimpleChanges,
-  ViewChild
+  ViewChild,
 } from '@angular/core';
-import {BehaviorSubject, debounceTime, distinctUntilChanged, lastValueFrom, Subject, Subscription} from 'rxjs';
-import {takeUntil} from 'rxjs/operators';
-import {CommonModule, DatePipe} from '@angular/common';
-import {FormsModule} from '@angular/forms';
-import {ButtonModule} from 'primeng/button';
-import {InputSwitchModule} from 'primeng/inputswitch';
-import {InputTextModule} from 'primeng/inputtext';
-import {Table, TableModule} from 'primeng/table';
-import {TooltipModule} from 'primeng/tooltip';
-import {MessageService, SharedModule} from 'primeng/api';
-import {PaginatorModule} from 'primeng/paginator';
-import {CalendarModule} from 'primeng/calendar';
-import {ILog, ILogCriteria, TimeRange, TimeRangeOption} from '../../../../../shared/model/k8s/log.model';
-import {LogService} from '../../../../../shared/service/k8s/log.service';
-import {SseEvent, SseEventTypeTimeout} from '../../../../../shared/model/k8s/event.model';
-import {HighlightModule} from "ngx-highlightjs";
+import { BehaviorSubject, debounceTime, distinctUntilChanged, lastValueFrom, Subject, Subscription } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+import { CommonModule, DatePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { ButtonModule } from 'primeng/button';
+import { InputSwitchModule } from 'primeng/inputswitch';
+import { InputTextModule } from 'primeng/inputtext';
+import { Table, TableModule } from 'primeng/table';
+import { TooltipModule } from 'primeng/tooltip';
+import { MessageService, SharedModule } from 'primeng/api';
+import { PaginatorModule } from 'primeng/paginator';
+import { CalendarModule } from 'primeng/calendar';
+import { ILog, ILogCriteria, TimeRange, TimeRangeOption } from '../../../../../shared/model/k8s/log.model';
+import { LogService } from '../../../../../shared/service/k8s/log.service';
+import { SseEvent, SseEventTypeTimeout } from '../../../../../shared/model/k8s/event.model';
+import { HighlightModule } from 'ngx-highlightjs';
 import StripAnsiPipe from '../../../../../shared/pipe/strip-ansi.pipe';
 
 @Component({
@@ -48,6 +50,7 @@ import StripAnsiPipe from '../../../../../shared/pipe/strip-ansi.pipe';
   ],
   templateUrl: './logs.component.html',
   styleUrls: ['./logs.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewInit {
   @Input() resourceId!: string;
@@ -67,19 +70,20 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
   paused = false;
   private bufferedLogs: ILog[] = [];
   private originalLogs: ILog[] = [];
-
   private originalBufferedLogs: ILog[] = [];
+  private historyTailLines = 0;
+  private lastHistoryBatchHash = 0;
 
   // Auto-scroll control
   autoScroll = true;
   timestampColumn: boolean;
-  private scrollTimeout?: any;
 
   // Log limits
   maxLogEntriesInput: string = '100';
   maxLogEntries = 100;
   minLogEntries = 10;
   maxAllowedLogs = 10000;
+  private readonly HISTORY_PAGE_SIZE = 20;
 
   // Search
   private searchSubject = new BehaviorSubject<string>('');
@@ -102,6 +106,14 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
     limit: 100,
   };
 
+  // History fetch (infinite scroll up)
+  private fetchingOlderLogs = false;
+  private allOlderLogsLoaded = false;
+  private scrollListenerAttached = false;
+  browsingHistory = false;
+  newLogsWhileBrowsing = 0;
+  private consecutiveEmptyFetches = 0;
+
   private logSubscription?: Subscription;
   private destroy$ = new Subject<void>();
   private initialScrollDone = false;
@@ -109,6 +121,7 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
   constructor(
     private logService: LogService,
     private messageService: MessageService,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   async ngOnInit() {
@@ -129,33 +142,89 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
     }
   }
 
-  private setupScrollListener(): void {
-    if (this.logTable) {
-      const viewport = this.logTable.el.nativeElement.querySelector('.p-datatable-wrapper');
-      if (viewport) {
-        viewport.addEventListener('scroll', () => {
-          if (this.paused) {
-            if (this.scrollTimeout) {
-              clearTimeout(this.scrollTimeout);
-            }
-
-            // Only disable auto-scroll temporarily while paused
-            this.autoScroll = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < 50;
-
-            this.scrollTimeout = setTimeout(() => {
-              // Re-enable auto-scroll if not paused
-              if (!this.paused) {
-                this.autoScroll = true;
-              }
-            }, 150);
-          }
-        });
-      }
+  private hashString(str: string): number {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = (hash << 5) - hash + char;
+      hash |= 0;
     }
+    return hash;
+  }
+
+  private setupScrollListener(): void {
+    const trySetup = () => {
+      if (this.scrollListenerAttached) return;
+      if (!this.logTable) {
+        setTimeout(trySetup, 200);
+        return;
+      }
+      const viewport = this.logTable.el.nativeElement.querySelector('.p-datatable-wrapper');
+      if (!viewport) {
+        setTimeout(trySetup, 200);
+        return;
+      }
+
+      this.scrollListenerAttached = true;
+
+      viewport.addEventListener('scroll', () => {
+        const distanceFromBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
+        const wasAutoScroll = this.autoScroll;
+        this.autoScroll = distanceFromBottom < 50;
+
+        if (!this.autoScroll && wasAutoScroll && !this.browsingHistory) {
+          this.browsingHistory = true;
+          this.newLogsWhileBrowsing = 0;
+          this.cdr.markForCheck();
+        }
+
+        if (this.autoScroll && this.browsingHistory) {
+          this.browsingHistory = false;
+          this.newLogsWhileBrowsing = 0;
+          this.cdr.markForCheck();
+        }
+
+        if (
+          viewport.scrollTop < 50 &&
+          !this.fetchingOlderLogs &&
+          !this.allOlderLogsLoaded &&
+          !this.loading &&
+          this.originalLogs.length > 0
+        ) {
+          this.fetchOlderLogs(viewport);
+        }
+      });
+
+      const unstickInterval = setInterval(() => {
+        if (!this.scrollListenerAttached) {
+          clearInterval(unstickInterval);
+          return;
+        }
+        if (
+          viewport.scrollTop < 5 &&
+          !this.fetchingOlderLogs &&
+          !this.allOlderLogsLoaded &&
+          !this.loading &&
+          this.originalLogs.length > 0
+        ) {
+          this.fetchOlderLogs(viewport);
+        }
+      }, 500);
+
+      this.destroy$.subscribe(() => clearInterval(unstickInterval));
+    };
+    trySetup();
   }
 
   private async initializeComponent() {
     this.autoScroll = !this.paused;
+    this.allOlderLogsLoaded = false;
+    this.fetchingOlderLogs = false;
+    this.browsingHistory = false;
+    this.historyTailLines = 0;
+    this.consecutiveEmptyFetches = 0;
+    this.newLogsWhileBrowsing = 0;
+    this.lastHistoryBatchHash = 0;
     this.maxLogEntries = parseInt(this.maxLogEntriesInput, 10);
     const criteria: ILogCriteria = {
       applicationId: this.resourceId,
@@ -168,6 +237,7 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
     };
 
     this.loading = true;
+    this.cdr.markForCheck();
     this.fetchLogs(criteria);
   }
 
@@ -178,6 +248,9 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
   private sortAndFilterLogs(logs: ILog[]): ILog[] {
     const sortedLogs = this.sortLogs(logs);
     const filteredLogs = this.filterLogs(sortedLogs);
+    if (this.browsingHistory) {
+      return filteredLogs;
+    }
     return filteredLogs.slice(-this.maxLogEntries);
   }
 
@@ -192,6 +265,10 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
   fetchLogsFromTimeAgo(range: TimeRange): void {
     this.sinceSeconds = undefined;
     this.selectedTimeRange = 'none';
+    this.allOlderLogsLoaded = false;
+    this.fetchingOlderLogs = false;
+    this.browsingHistory = false;
+    this.newLogsWhileBrowsing = 0;
 
     if (range !== 'none') {
       const option = this.timeRangeOptions.find(opt => opt.value === range);
@@ -201,15 +278,14 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
       }
     }
 
-    // Server-side query with time range
     const criteria: ILogCriteria = {
       applicationId: this.resourceId,
       podName: this.podName,
       containerId: this.containerId,
       limit: this.maxLogEntries,
       sinceSeconds: this.sinceSeconds,
-      startDate: undefined, // Don't include client-side filters in server query
-      endDate: undefined, // Don't include client-side filters in server query
+      startDate: undefined,
+      endDate: undefined,
       searchTerm: this.criteria.searchTerm,
     };
 
@@ -218,6 +294,7 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
 
   private fetchLogs(criteria: ILogCriteria): void {
     this.loading = true;
+    this.cdr.markForCheck();
 
     if (this.logSubscription) {
       this.logSubscription.unsubscribe();
@@ -234,11 +311,11 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
             return;
           } else if (event.type === 'complete') {
             this.loading = false;
+            this.cdr.markForCheck();
           } else if (event.type === 'logs') {
             this.loading = false;
 
             const logsArray = Array.isArray(event.data) ? event.data : [event.data];
-            this.logs = this.sortAndFilterLogs(logsArray);
 
             if (logsArray.length === 1 && logsArray[0]?.type) {
               if (logsArray[0].type === 'timeout') {
@@ -246,11 +323,11 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
               } else if (logsArray[0].type === 'disconnect') {
                 this.logsDisconnect.emit(logsArray[0].error);
               }
+              this.cdr.markForCheck();
               return;
             }
 
             if (this.paused) {
-              // If paused, accumulate unique logs in buffer
               const uniqueNewLogs = this.filterDuplicateLogs(logsArray, this.bufferedLogs);
               if (uniqueNewLogs.length > 0) {
                 this.bufferedLogs = [...this.bufferedLogs, ...uniqueNewLogs];
@@ -258,20 +335,100 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
             } else {
               this.processNewLogs(logsArray);
             }
+            this.cdr.markForCheck();
           }
         },
         error: error => this.handleError(error),
       });
   }
 
+  private fetchOlderLogs(viewport: HTMLElement): void {
+    if (this.fetchingOlderLogs || this.allOlderLogsLoaded || this.originalLogs.length === 0) {
+      return;
+    }
+
+    this.fetchingOlderLogs = true;
+
+    if (this.historyTailLines === 0) {
+      this.historyTailLines = this.originalLogs.length;
+    }
+    this.historyTailLines += this.HISTORY_PAGE_SIZE * 2;
+
+    const criteria: ILogCriteria = {
+      applicationId: this.resourceId,
+      podName: this.podName,
+      containerId: this.containerId,
+      limit: this.HISTORY_PAGE_SIZE,
+      tailLines: this.historyTailLines,
+    };
+
+    this.logService
+      .fetchLogHistory(this.resourceId, this.resourceType, criteria)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (logs: ILog[]) => {
+          if (!logs || logs.length === 0) {
+            this.allOlderLogsLoaded = true;
+            this.fetchingOlderLogs = false;
+            this.cdr.markForCheck();
+            return;
+          }
+
+          const batchHash = this.hashString(logs.map(l => l.message).join('\n'));
+          if (batchHash === this.lastHistoryBatchHash) {
+            this.consecutiveEmptyFetches++;
+            if (this.consecutiveEmptyFetches >= 2) {
+              this.allOlderLogsLoaded = true;
+              this.fetchingOlderLogs = false;
+              this.cdr.markForCheck();
+              return;
+            }
+          } else {
+            this.consecutiveEmptyFetches = 0;
+          }
+          this.lastHistoryBatchHash = batchHash;
+
+          if (logs.length < this.HISTORY_PAGE_SIZE) {
+            this.allOlderLogsLoaded = true;
+          }
+
+          this.browsingHistory = true;
+          this.originalLogs = [...logs, ...this.originalLogs];
+
+          const prevScrollHeight = viewport.scrollHeight;
+          const prevScrollTop = viewport.scrollTop;
+
+          this.logs = this.sortLogs(this.filterLogs(this.originalLogs));
+          this.cdr.detectChanges();
+
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              const newScrollHeight = viewport.scrollHeight;
+              const heightAdded = newScrollHeight - prevScrollHeight;
+              const offset = this.allOlderLogsLoaded ? 0 : 200;
+              viewport.scrollTop = prevScrollTop + heightAdded + offset;
+
+              setTimeout(() => {
+                this.fetchingOlderLogs = false;
+                if (viewport.scrollTop < 50 && !this.allOlderLogsLoaded && !this.loading) {
+                  this.fetchOlderLogs(viewport);
+                }
+              }, 300);
+            });
+          });
+        },
+        error: () => {
+          this.fetchingOlderLogs = false;
+        },
+      });
+  }
+
   private attemptInitialScroll(): void {
     if (!this.initialScrollDone && this.logTable?.el?.nativeElement) {
-      // Using a larger timeout for initial scroll to ensure table is fully rendered
       setTimeout(() => {
         const viewport = this.logTable?.el.nativeElement.querySelector('.p-datatable-wrapper');
         if (viewport) {
           viewport.scrollTop = viewport.scrollHeight;
-          // Try one more time after a longer delay
           setTimeout(() => {
             viewport.scrollTop = viewport.scrollHeight;
             this.initialScrollDone = true;
@@ -282,6 +439,9 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
   }
 
   validateLogLimit(): void {
+    this.allOlderLogsLoaded = false;
+    this.fetchingOlderLogs = false;
+
     const value = parseInt(this.maxLogEntriesInput, 10);
 
     if (isNaN(value)) {
@@ -314,6 +474,7 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
     } else {
       this.logs = this.sortAndFilterLogs(this.originalLogs);
       this.bufferedLogs = this.sortAndFilterLogs(this.originalBufferedLogs);
+      this.cdr.markForCheck();
     }
   }
 
@@ -322,28 +483,33 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
       this.logs = this.sortAndFilterLogs(this.originalLogs);
     }
 
-    // Force scroll to bottom after filtering
-    if (this.autoScroll) {
+    if (this.autoScroll && !this.fetchingOlderLogs && !this.browsingHistory) {
       this.scrollToBottom();
     }
+    this.cdr.markForCheck();
   }
 
   private filterDuplicateLogs(newLogs: ILog[], existingLogs: ILog[]): ILog[] {
-    const existingKeys = new Set(existingLogs.map(log => `${log.timestamp}-${log.message}`));
+    const existingKeys = new Set(existingLogs.map(log => `${log.timestamp}-${this.stripAnsi(log.message)}`));
     return newLogs.filter(log => {
-      const key = `${log.timestamp}-${log.message}`;
+      const key = `${log.timestamp}-${this.stripAnsi(log.message)}`;
       return !existingKeys.has(key);
     });
   }
 
   private processNewLogs(logs: ILog[]): void {
-    // Merge new logs with existing logs
+    const prevCount = this.originalLogs.length;
     this.originalLogs = this.mergeLogsUnique([...this.originalLogs, ...logs]);
-    // Update displayed logs
     this.logs = this.sortAndFilterLogs(this.originalLogs);
-    // Always scroll to bottom when not paused
-    if (!this.paused) {
+
+    if (this.autoScroll && !this.paused && !this.browsingHistory) {
       this.scrollToBottom();
+    } else if (this.browsingHistory) {
+      const newCount = this.originalLogs.length - prevCount;
+      if (newCount > 0) {
+        this.newLogsWhileBrowsing += newCount;
+        this.cdr.detectChanges();
+      }
     }
   }
 
@@ -355,30 +521,31 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
     requestAnimationFrame(() => {
       const viewport = this.logTable?.el.nativeElement.querySelector('.p-datatable-wrapper');
       if (viewport) {
-        const scrollToBottom = () => {
+        viewport.scrollTop = viewport.scrollHeight;
+        setTimeout(() => {
           viewport.scrollTop = viewport.scrollHeight;
-        };
-
-        // Immediate scroll attempt
-        scrollToBottom();
-        // Second attempt after a short delay
-        setTimeout(scrollToBottom, 50);
-        // Final attempt after a longer delay
-        setTimeout(scrollToBottom, 150);
+        }, 100);
       }
     });
+  }
+
+  jumpToBottom(): void {
+    this.browsingHistory = false;
+    this.newLogsWhileBrowsing = 0;
+    this.autoScroll = true;
+    this.logs = this.sortAndFilterLogs(this.originalLogs);
+    this.cdr.markForCheck();
+    this.scrollToBottom();
   }
 
   private filterLogs(logs: ILog[]): ILog[] {
     return logs.filter(log => {
       let matches = true;
 
-      // Client-side search filter
       if (this.criteria.searchTerm?.trim()) {
         matches = matches && log.message.toLowerCase().includes(this.criteria.searchTerm.toLowerCase().trim());
       }
 
-      // Client-side date filter
       if (matches && (this.startDate || this.endDate)) {
         const logDate = new Date(log.timestamp);
         if (this.startDate) {
@@ -398,7 +565,8 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
     const seen = new Set<string>();
 
     for (const log of logs) {
-      const key = `${log.timestamp}-${log.message}`;
+      const stripped = this.stripAnsi(log.message);
+      const key = `${log.timestamp}-${stripped}`;
       if (!seen.has(key)) {
         seen.add(key);
         uniqueLogs.push(log);
@@ -408,8 +576,11 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
     return uniqueLogs;
   }
 
+  private stripAnsi(str: string): string {
+    return str.replace(/\x1B\[[0-9;]*[a-zA-Z]|\x1B\].*?\x07|\r/g, '');
+  }
+
   onCalendarModelChange(type: 'start' | 'end'): void {
-    // If the model becomes null, it means the calendar was cleared
     if (type === 'start' && this.startDate === null) {
       this.startDate = undefined;
       this.endDate = undefined;
@@ -421,28 +592,26 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
   }
 
   onDateFilterChange(): void {
-    this.filterClientLogs(); // Only filter existing logs
+    this.filterClientLogs();
   }
 
   public refreshConnection(): void {
     this.autoScroll = true;
+    this.browsingHistory = false;
+    this.newLogsWhileBrowsing = 0;
 
-    // Clear existing subscription
     if (this.logSubscription) {
       this.logSubscription.unsubscribe();
       this.logSubscription = null;
     }
 
-    // Reset state
     this.loading = true;
     this.paused = false;
     this.bufferedLogs = [];
     this.originalBufferedLogs = [];
 
-    // Reinitialize the component
     this.initializeComponent();
 
-    // Show success message
     this.messageService.add({
       severity: 'success',
       summary: 'Connection Restored',
@@ -454,15 +623,11 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
   onDateFilterClear(type: 'start' | 'end'): void {
     if (type === 'start') {
       this.startDate = undefined;
-      // If we clear start date, also clear end date as it depends on start
       this.endDate = undefined;
     } else {
       this.endDate = undefined;
     }
-    // Force re-filtering of existing logs
     this.filterClientLogs();
-
-    // Force change detection
     this.logs = [...this.logs];
   }
 
@@ -478,28 +643,26 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
       detail: error.message || 'An error occurred',
     });
     this.loading = false;
+    this.cdr.markForCheck();
   }
 
   togglePause(): void {
     this.paused = !this.paused;
-    // When unpausing, enable auto-scroll and scroll to bottom
     if (!this.paused) {
       this.autoScroll = true;
-      this.scrollToBottom();
-    }
-    if (!this.paused) {
+      this.browsingHistory = false;
+      this.newLogsWhileBrowsing = 0;
       if (this.bufferedLogs.length > 0) {
-        // Filter out any duplicates before merging
         const uniqueBufferedLogs = this.filterDuplicateLogs(this.bufferedLogs, this.originalLogs);
         if (uniqueBufferedLogs.length > 0) {
           this.originalLogs = this.mergeLogsUnique([...this.originalLogs, ...uniqueBufferedLogs]);
           this.logs = this.sortAndFilterLogs(this.originalLogs);
         }
-
-        // Clear buffer
         this.bufferedLogs = [];
       }
+      this.scrollToBottom();
     }
+    this.cdr.markForCheck();
   }
 
   onSearchChange(searchTerm: string): void {
@@ -531,6 +694,11 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
     this.originalLogs = [];
     this.bufferedLogs = [];
     this.logs = [];
+    this.allOlderLogsLoaded = false;
+    this.fetchingOlderLogs = false;
+    this.browsingHistory = false;
+    this.newLogsWhileBrowsing = 0;
+    this.cdr.markForCheck();
   }
 
   async ngOnChanges(changes: SimpleChanges) {
@@ -550,9 +718,6 @@ export class LogsComponent implements OnInit, OnDestroy, OnChanges, AfterViewIni
   async ngOnDestroy() {
     if (this.logSubscription) {
       this.logSubscription.unsubscribe();
-    }
-    if (this.scrollTimeout) {
-      clearTimeout(this.scrollTimeout);
     }
     this.destroy$.next();
     this.destroy$.complete();

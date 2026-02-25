@@ -425,6 +425,20 @@ public class KubernetesController {
                                                                Integer sinceSeconds,
                                                                String specificPodName,
                                                                String specificContainerName) {
+        return readLogs(namespace, cluster, outputStream, tailLines, sinceSeconds,
+            specificPodName, specificContainerName, true);
+    }
+
+    // New overload with follow param
+    @Async
+    public CompletableFuture<TaskResult<InputStream>> readLogs(String namespace,
+                                                               ClusterDTO cluster,
+                                                               OutputStream outputStream,
+                                                               Integer tailLines,
+                                                               Integer sinceSeconds,
+                                                               String specificPodName,
+                                                               String specificContainerName,
+                                                               boolean follow) {
         return new ReadLogTask(
             getApi(cluster),
             this.taskConfig,
@@ -433,7 +447,8 @@ public class KubernetesController {
             tailLines,
             sinceSeconds,
             specificPodName,
-            specificContainerName
+            specificContainerName,
+            follow
         ).call();
     }
 

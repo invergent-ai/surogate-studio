@@ -20,6 +20,7 @@ public class ReadLogTask extends BaseTask<InputStream> {
     private final Integer sinceSeconds;
     private final String specificPodName;
     private final String specificContainerName;
+    private final boolean follow;
 
     public ReadLogTask(ApiStub apiStub,
                        TaskConfig taskConfig,
@@ -28,13 +29,15 @@ public class ReadLogTask extends BaseTask<InputStream> {
                        Integer tailLines,
                        Integer sinceSeconds,
                        String specificPodName,
-                       String specificContainerName) {
+                       String specificContainerName,
+                       boolean follow) {
         super(apiStub, taskConfig, namespace);
         this.outputStream = outputStream;
         this.tailLines = tailLines;
         this.sinceSeconds = sinceSeconds;
         this.specificPodName = specificPodName;
         this.specificContainerName = specificContainerName;
+        this.follow = follow;
     }
 
     @Override
@@ -49,7 +52,7 @@ public class ReadLogTask extends BaseTask<InputStream> {
                     specificContainerName,
                     sinceSeconds,
                     tailLines,
-                    Boolean.TRUE
+                    this.follow
                 );
 
             if (outputStream == null) {
