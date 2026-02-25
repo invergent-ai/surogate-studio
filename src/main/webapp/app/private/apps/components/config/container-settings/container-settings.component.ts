@@ -1,14 +1,4 @@
-import {
-  Component,
-  EventEmitter,
-  Input,
-  OnChanges,
-  OnDestroy,
-  OnInit,
-  Output,
-  SimpleChanges,
-  ViewChild
-} from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges, ViewChild } from '@angular/core';
 import { FormArray, FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule, NgOptimizedImage } from '@angular/common';
 import { MessageService, SharedModule } from 'primeng/api';
@@ -20,6 +10,7 @@ import { AutoCompleteModule } from 'primeng/autocomplete';
 import { InputSwitchModule } from 'primeng/inputswitch';
 import { ButtonModule } from 'primeng/button';
 import { DockerHubSearchComponent } from './registry-search/docker-search/docker-hub-search.component';
+import { GhcrSearchComponent } from './registry-search/ghcr-search/ghcr-search.component';
 import { PortSettingsComponent } from './port-settings/port-settings.component';
 import { takeUntil } from 'rxjs/operators';
 import { DockerHubImage, DockerHubTag, SelectedDockerImage } from '../../../../../shared/model/docker/docker-hub.model';
@@ -34,6 +25,7 @@ import { Account } from '../../../../../shared/model/account.model';
 import { AccountService } from '../../../../../shared/service/account.service';
 import { ApplicationMode } from '../../../../../shared/model/enum/application-mode.model';
 import { CardModule } from 'primeng/card';
+import { GhcrService } from '../../../../../shared/service/ghcr/ghcr.service';
 
 @Component({
   selector: 'sm-container-settings',
@@ -52,14 +44,15 @@ import { CardModule } from 'primeng/card';
     FormsModule,
     ButtonModule,
     DockerHubSearchComponent,
+    GhcrSearchComponent,
     PortSettingsComponent,
     VolumeComponent,
     AdvancedSettingsComponent,
     RegistrySettingsComponent,
     AccordionModule,
     NgOptimizedImage,
-    CardModule
-  ]
+    CardModule,
+  ],
 })
 export class ContainerSettingsComponent implements OnInit, OnChanges, OnDestroy {
   @Input() containerForm!: FormGroup;
@@ -76,12 +69,8 @@ export class ContainerSettingsComponent implements OnInit, OnChanges, OnDestroy 
   @ViewChild(VolumeComponent) volumeComponent?: VolumeComponent;
 
   private destroy$ = new Subject<void>();
-  registries: any[] = [
-    {label: 'Docker Hub', value: 'docker'}
-  ];
-  availableTags: {label: string, value: string}[] = [
-    {label: 'empty', value: 'empty'}
-  ];
+  registries: any[] = [{ label: 'Docker Hub', value: 'docker' }];
+  availableTags: { label: string; value: string }[] = [{ label: 'empty', value: 'empty' }];
   selectedRegistry: any = this.registries[0];
   selectedTag: string = 'latest';
   selectedImage: SelectedDockerImage | null = null;
@@ -92,9 +81,13 @@ export class ContainerSettingsComponent implements OnInit, OnChanges, OnDestroy 
   user: Account;
 
   isPrivateRegistry: boolean = false;
+  isGhcrImage: boolean = false;
   isDockerHubImage: boolean = false;
   showRegistrySettings = false;
   showRegistrySearch = false;
+  showGhcrSearch = false;
+
+  ghcrOwner: string | null = null;
 
   protected registryCredentials?: {
     registryUrl: string;
@@ -104,8 +97,9 @@ export class ContainerSettingsComponent implements OnInit, OnChanges, OnDestroy 
 
   constructor(
     private dockerHubService: DockerHubService,
+    private ghcrService: GhcrService,
     private accountService: AccountService,
-    private messageService: MessageService
+    private messageService: MessageService,
   ) {}
 
   async ngOnInit() {
@@ -116,11 +110,13 @@ export class ContainerSettingsComponent implements OnInit, OnChanges, OnDestroy 
   }
 
   toggleRegistrySearch(): void {
+    if (this.showGhcrSearch) return;
+
     if (this.isPrivateRegistry && !this.containerForm.get('registryPassword')?.value) {
       this.messageService.add({
         severity: 'warn',
         summary: 'Warning',
-        detail: 'Please reenter your registry password.'
+        detail: 'Please reenter your registry password.',
       });
       this.showRegistrySettings = true;
       return;
@@ -128,48 +124,66 @@ export class ContainerSettingsComponent implements OnInit, OnChanges, OnDestroy 
 
     this.showRegistrySearch = !this.showRegistrySearch;
     this.showRegistrySettings = false;
+    this.showGhcrSearch = false;
   }
 
   toggleRegistrySettings(): void {
     this.showRegistrySettings = !this.showRegistrySettings;
-    if (this.showRegistrySettings == true) {
-      this.showRegistrySearch = false
+    if (this.showRegistrySettings) {
+      this.showRegistrySearch = false;
+      this.showGhcrSearch = false;
     }
+  }
+
+  toggleGhcrSearch(): void {
+    this.showGhcrSearch = !this.showGhcrSearch;
+    this.showRegistrySearch = false;
+    this.showRegistrySettings = false;
   }
 
   switchToDockerHub(): void {
     this.selectedRegistry = this.registries[0];
     this.isPrivateRegistry = false;
+    this.isGhcrImage = false;
     this.showRegistrySearch = true;
     this.showRegistrySettings = false;
+    this.showGhcrSearch = false;
   }
 
   switchToPrivateRegistry() {
     this.isPrivateRegistry = true;
+    this.isGhcrImage = false;
     const registry = {
       registryUrl: this.containerForm.get('registryUrl')?.value,
       registryUser: this.containerForm.get('registryUsername')?.value,
       applicationId: this.applicationId,
-      imageName: this.containerForm.get('imageName')?.value
+      imageName: this.containerForm.get('imageName')?.value,
     };
-    this.registries = [...this.registries, {
-      label: registry.registryUrl,
-      value: registry
-    }];
+    this.registries = [
+      ...this.registries,
+      {
+        label: registry.registryUrl,
+        value: registry,
+      },
+    ];
     this.selectedRegistry = this.registries[this.registries.length - 1];
   }
 
   onRegistryValidated(registry: any): void {
-    this.registries = [...this.registries, {
-      label: registry.registryUrl,
-      value: registry
-    }];
-    this.containerForm.get("registryUrl").setValue(registry.registryUrl);
-    this.containerForm.get("registryUsername").setValue(registry.registryUser);
-    this.containerForm.get("registryPassword").setValue(registry.registryPassword);
+    this.registries = [
+      ...this.registries,
+      {
+        label: registry.registryUrl,
+        value: registry,
+      },
+    ];
+    this.containerForm.get('registryUrl').setValue(registry.registryUrl);
+    this.containerForm.get('registryUsername').setValue(registry.registryUser);
+    this.containerForm.get('registryPassword').setValue(registry.registryPassword);
 
     this.selectedRegistry = this.registries[this.registries.length - 1];
     this.isPrivateRegistry = true;
+    this.isGhcrImage = false;
     this.registryCredentials = registry;
     this.showRegistrySettings = false;
     this.showRegistrySearch = true;
@@ -183,7 +197,6 @@ export class ContainerSettingsComponent implements OnInit, OnChanges, OnDestroy 
   }
 
   onDockerImageSelected(dockerImage: DockerHubImage): void {
-    // Clear existing ports and volumes
     this.defaultPorts = [];
     this.defaultVolumes = [];
     const portsArray = this.containerForm.get('ports') as FormArray;
@@ -191,9 +204,11 @@ export class ContainerSettingsComponent implements OnInit, OnChanges, OnDestroy 
     portsArray.clear();
     volumeMountsArray.clear();
 
+    this.isGhcrImage = false;
+
     this.selectedImage = {
       ...dockerImage,
-      tag: dockerImage.tags?.[0] || 'latest'
+      tag: dockerImage.tags?.[0] || 'latest',
     };
 
     if (this.selectedRegistry?.value === 'docker') {
@@ -205,61 +220,115 @@ export class ContainerSettingsComponent implements OnInit, OnChanges, OnDestroy 
     this.showRegistrySearch = false;
   }
 
+  onGhcrImageSelected(event: { image: DockerHubImage; owner: string }): void {
+    this.defaultPorts = [];
+    this.defaultVolumes = [];
+    const portsArray = this.containerForm.get('ports') as FormArray;
+    const volumeMountsArray = this.containerForm.get('volumeMounts') as FormArray;
+    portsArray.clear();
+    volumeMountsArray.clear();
+
+    const image = event.image;
+    this.ghcrOwner = event.owner;
+    this.isGhcrImage = true;
+    this.isPrivateRegistry = false;
+
+    const defaultTag = image.tags?.[0] || 'latest';
+
+    // Strip tag from image name if present
+    let cleanName = image.name;
+    if (cleanName.includes(':')) {
+      cleanName = cleanName.substring(0, cleanName.indexOf(':'));
+    }
+
+    this.selectedImage = {
+      ...image,
+      name: cleanName,
+      tag: defaultTag,
+    };
+
+    this.containerForm.patchValue({
+      imageName: `ghcr.io/${cleanName}`,
+      imageTag: defaultTag,
+      registryUrl: null,
+      registryUsername: null,
+      registryPassword: null,
+    });
+
+    this.availableTags = (image.tags || []).map(tag => ({
+      label: tag,
+      value: tag,
+    }));
+    this.selectedTag = defaultTag;
+
+    const nameParts = cleanName.split('/');
+    const owner = nameParts[0] || this.ghcrOwner;
+    const imageName = nameParts.length > 1 ? nameParts.slice(1).join('/') : nameParts[0];
+
+    this.ghcrService.getImageConfig(owner, imageName, defaultTag).subscribe({
+      next: config => {
+        this.defaultPorts = config.ports;
+        this.defaultVolumes = config.volumes;
+        this.volumeComponent?.useDefaultVolumes();
+      },
+      error: () => {
+        this.defaultPorts = [];
+        this.defaultVolumes = [];
+      },
+    });
+
+    this.showGhcrSearch = false;
+  }
+
   private handlePublicDockerImageSelection(image: DockerHubImage): void {
     const defaultTag = image.tags?.[0] || 'latest';
-    const [namespace, imageName] = image.name.includes('/') ?
-      image.name.split('/') :
-      [null, image.name];
+    const [namespace, imageName] = image.name.includes('/') ? image.name.split('/') : [null, image.name];
 
     this.containerForm.patchValue({
       imageName: image.name,
-      imageTag: defaultTag
+      imageTag: defaultTag,
     });
 
-    this.dockerHubService.getImagePortsAndVolumes(namespace, imageName, defaultTag)
-      .subscribe({
-        next: (config) => {
-          this.defaultPorts = config.ports;
-          this.defaultVolumes = config.volumes;
-          this.volumeComponent?.useDefaultVolumes();
-        },
-        error: () => {
-          this.defaultPorts = [];
-          this.defaultVolumes = [];
-        }
-      });
+    this.dockerHubService.getImagePortsAndVolumes(namespace, imageName, defaultTag).subscribe({
+      next: config => {
+        this.defaultPorts = config.ports;
+        this.defaultVolumes = config.volumes;
+        this.volumeComponent?.useDefaultVolumes();
+      },
+      error: () => {
+        this.defaultPorts = [];
+        this.defaultVolumes = [];
+      },
+    });
   }
 
   private handlePrivateDockerImageSelection(image: DockerHubImage): void {
     const defaultTag = image.tags?.[0] || 'latest';
 
-    // If no '/', use image name as both namespace and imageName
-    const [namespace, imageName] = image.name.includes('/') ?
-      image.name.split('/') :
-      [image.name, image.name];
+    const [namespace, imageName] = image.name.includes('/') ? image.name.split('/') : [image.name, image.name];
 
     this.containerForm.patchValue({
       imageName: image.name,
-      imageTag: defaultTag
+      imageTag: defaultTag,
     });
 
     this.availableTags = (image.tags || []).map(tag => ({
-      label: tag, value: tag
+      label: tag,
+      value: tag,
     }));
 
     this.getPrivateRegistryImageConfig(namespace, imageName, defaultTag);
   }
 
-
   onPortsChange(ports: IPort[]): void {
     this.ports = ports.map(port => ({
       ...port,
-      containerIndex: this.containerIndex
+      containerIndex: this.containerIndex,
     }));
 
     this.portsUpdated.emit({
       ports: this.ports,
-      containerIndex: this.containerIndex
+      containerIndex: this.containerIndex,
     });
   }
 
@@ -268,16 +337,16 @@ export class ContainerSettingsComponent implements OnInit, OnChanges, OnDestroy 
       this.containerForm.addControl('imageTag', new FormControl('latest'));
     }
 
-    this.containerForm.get('imageName')?.valueChanges.pipe(
-      debounceTime(300),
-      distinctUntilChanged(),
-      takeUntil(this.destroy$)
-    ).subscribe(value => {
-      if (!value) {
-        this.isDockerHubImage = false;
-        this.selectedImage = null;
-      }
-    });
+    this.containerForm
+      .get('imageName')
+      ?.valueChanges.pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destroy$))
+      .subscribe(value => {
+        if (!value) {
+          this.isDockerHubImage = false;
+          this.isGhcrImage = false;
+          this.selectedImage = null;
+        }
+      });
   }
 
   private setupPortsControl(): void {
@@ -294,16 +363,21 @@ export class ContainerSettingsComponent implements OnInit, OnChanges, OnDestroy 
   private async restoreContainerState(): Promise<void> {
     const imageName = this.containerForm.get('imageName')?.value;
     const imageTag = this.containerForm.get('imageTag')?.value;
+
     if (this.containerForm.get('registryUrl')?.value) {
       this.switchToPrivateRegistry();
+    } else if (imageName?.startsWith('ghcr.io/')) {
+      this.isGhcrImage = true;
+      this.isPrivateRegistry = false;
+      this.showRegistrySearch = false;
+      this.showGhcrSearch = false;
     } else {
       this.switchToDockerHub();
       this.showRegistrySearch = false;
     }
 
     if (imageName) {
-      // Set initial tag state
-      this.availableTags = [{label: imageTag, value: imageTag}];
+      this.availableTags = [{ label: imageTag, value: imageTag }];
       this.selectedTag = imageTag;
 
       this.selectedImage = {
@@ -314,21 +388,25 @@ export class ContainerSettingsComponent implements OnInit, OnChanges, OnDestroy 
         official: false,
         automated: false,
         logo_url: '',
-        tags: [imageTag]
+        tags: [imageTag],
       };
 
-      this.containerForm.get('imageTag')?.setValue(imageTag, {emitEvent: false});
-      this.availableTags = [{label: imageTag, value: imageTag}];  // Initialize with current tag
+      this.containerForm.get('imageTag')?.setValue(imageTag, { emitEvent: false });
+      this.availableTags = [{ label: imageTag, value: imageTag }];
       this.selectedTag = imageTag;
 
-      // Load additional tags if needed
+      if (this.isGhcrImage) {
+        // For ghcr images, tags were already loaded on selection.
+        // On restore we only have the current tag unless user reconnects.
+        return;
+      }
+
       if (this.registryCredentials) {
         await this.loadPrivateRegistryTags(imageName);
       } else {
         if (this.isPrivateRegistry && !this.containerForm.get('registryPassword')?.value) {
           return;
         }
-
         this.loadImageTags(imageName);
       }
     }
@@ -341,25 +419,24 @@ export class ContainerSettingsComponent implements OnInit, OnChanges, OnDestroy 
       const response = await firstValueFrom(
         this.dockerHubService.searchCustomRegistry({
           ...this.registryCredentials,
-          searchTerm: imageName
-        })
+          searchTerm: imageName,
+        }),
       );
 
       const image = response.results.find(img => img.name === imageName);
       if (image) {
         this.availableTags = image.tags?.map(tag => ({
           label: tag,
-          value: tag
-        })) || [{label: 'latest', value: 'latest'}];
+          value: tag,
+        })) || [{ label: 'latest', value: 'latest' }];
       }
     } catch (error) {
       console.error('Failed to load private registry tags:', error);
-      this.availableTags = [{label: 'latest', value: 'latest'}];
+      this.availableTags = [{ label: 'latest', value: 'latest' }];
     }
   }
 
   private getPrivateRegistryImageConfig(namespace: string, imageName: string, tag: string): void {
-
     if (!this.selectedRegistry?.value || !this.registryCredentials) {
       return;
     }
@@ -370,47 +447,41 @@ export class ContainerSettingsComponent implements OnInit, OnChanges, OnDestroy 
       registryPassword: this.registryCredentials.registryPassword,
       namespace,
       imageName,
-      tag
+      tag,
     };
 
-
-    this.dockerHubService.getRegistryImagePortsAndVolumes(params)
-      .subscribe({
-        next: (config: {
-          ports: DockerPortInfoModelPortInfo[];
-          volumes: string[];
-        }) => {
-          this.defaultPorts = config.ports;
-          this.defaultVolumes = config.volumes;
-          this.volumeComponent?.useDefaultVolumes();
-        },
-        error: (err) => {
-          console.error('Error getting registry image config:', err);
-          this.defaultPorts = [];
-          this.defaultVolumes = [];
-        }
-      });
+    this.dockerHubService.getRegistryImagePortsAndVolumes(params).subscribe({
+      next: (config: { ports: DockerPortInfoModelPortInfo[]; volumes: string[] }) => {
+        this.defaultPorts = config.ports;
+        this.defaultVolumes = config.volumes;
+        this.volumeComponent?.useDefaultVolumes();
+      },
+      error: err => {
+        console.error('Error getting registry image config:', err);
+        this.defaultPorts = [];
+        this.defaultVolumes = [];
+      },
+    });
   }
 
   loadImageTags(imageName: string): void {
     const currentTag = this.containerForm.get('imageTag')?.value;
-    const [namespace, imageNameOnly] = imageName.includes('/') ?
-      imageName.split('/') :
-      [null, imageName];
+    const [namespace, imageNameOnly] = imageName.includes('/') ? imageName.split('/') : [null, imageName];
 
-    const service = this.selectedRegistry?.value === 'docker' ?
-      this.dockerHubService.getImageTags(imageName) :
-      this.dockerHubService.getRegistryImageTags(this.selectedRegistry.value, imageName);
+    const service =
+      this.selectedRegistry?.value === 'docker'
+        ? this.dockerHubService.getImageTags(imageName)
+        : this.dockerHubService.getRegistryImageTags(this.selectedRegistry.value, imageName);
 
     service.subscribe({
-      next: (response) => {
+      next: response => {
         const newTags = response.results.map((tag: DockerHubTag) => ({
           label: tag.name,
-          value: tag.name
+          value: tag.name,
         }));
 
         if (currentTag && !newTags.find(t => t.value === currentTag)) {
-          newTags.unshift({label: currentTag, value: currentTag});
+          newTags.unshift({ label: currentTag, value: currentTag });
         }
 
         this.availableTags = newTags;
@@ -418,29 +489,28 @@ export class ContainerSettingsComponent implements OnInit, OnChanges, OnDestroy 
         if (!currentTag) {
           const firstTag = this.availableTags[0]?.value || 'latest';
           this.selectedTag = firstTag;
-          this.containerForm.patchValue({imageTag: firstTag});
+          this.containerForm.patchValue({ imageTag: firstTag });
         } else {
           this.selectedTag = currentTag;
         }
 
-        this.dockerHubService.getImagePortsAndVolumes(namespace, imageNameOnly, this.selectedTag)
-          .subscribe({
-            next: (config) => {
-              this.defaultPorts = config.ports;
-              this.defaultVolumes = config.volumes;
-            },
-            error: () => this.defaultPorts = []
-          });
+        this.dockerHubService.getImagePortsAndVolumes(namespace, imageNameOnly, this.selectedTag).subscribe({
+          next: config => {
+            this.defaultPorts = config.ports;
+            this.defaultVolumes = config.volumes;
+          },
+          error: () => (this.defaultPorts = []),
+        });
       },
       error: () => {
         if (!currentTag) {
-          this.availableTags = [{label: 'latest', value: 'latest'}];
-          this.containerForm.patchValue({imageTag: 'latest'});
+          this.availableTags = [{ label: 'latest', value: 'latest' }];
+          this.containerForm.patchValue({ imageTag: 'latest' });
         } else {
-          this.availableTags = [{label: currentTag, value: currentTag}];
+          this.availableTags = [{ label: currentTag, value: currentTag }];
         }
         this.defaultPorts = [];
-      }
+      },
     });
   }
 

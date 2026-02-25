@@ -1,0 +1,21 @@
+<div class="ghcr-search">
+  <div class="p-3">
+    <p class="text-sm font-medium mb-3">GitHub Container Registry</p>
+
+    <div class="p-inputgroup">
+      <input pInputText class="w-full" #repoInput
+             [formControl]="repoControl"
+             placeholder="owner/image-name (e.g. my-org/my-app)"
+             (keyup.enter)="submit()" />
+      <button pButton type="button" class="p-button-primary"
+              [disabled]="!repoControl.value?.includes('/')"
+              [loading]="isLoading"
+              (click)="submit()">
+        Load
+      </button>
+      <button pButton type="button" class="p-button-outlined" (click)="cancel.emit()">Cancel</button>
+    </div>
+
+    <small class="p-error block mt-2" *ngIf="errorMessage">{{ errorMessage }}</small>
+  </div>
+</div>

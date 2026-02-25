@@ -6,43 +6,54 @@
 
       <div class="field pt-3">
         <div class="selected-image-container">
-          <div class="p-inputgroup flex flex-wrap">
+          @if (!showRegistrySearch && !showGhcrSearch && !showRegistrySettings) {
+            <div class="p-inputgroup flex flex-wrap">
 
-            <span class="p-inputgroup-addon" *ngIf="selectedImage">
-              <span class="registry-pill docker-hub-pill">Docker Hub</span>
-            </span>
+              <span class="p-inputgroup-addon" *ngIf="selectedImage">
+                <span *ngIf="isGhcrImage" class="registry-pill ghcr-pill">GHCR</span>
+                <span *ngIf="!isGhcrImage" class="registry-pill docker-hub-pill">Docker Hub</span>
+              </span>
 
-            <input pInputText
-                   formControlName="imageName"
-                   placeholder="Docker image of your application (eg. nginx)"
-                   (click)="toggleRegistrySearch()"
-                   [readOnly]="true"
-                   [ngClass]="{'with-registry-badge': selectedImage}"/>
-            <button pButton
-                    type="button"
-                    class="p-button-outlined"
-                    (click)="toggleRegistrySearch()">
-              <div class="flex flex-row align-items-center gap-2">
-                <img *ngIf="!isPrivateRegistry" ngSrc="../../../../../assets/layout/images/default-docker.svg"
-                     width="20" height="20" alt="Docker" />
-                <i *ngIf="isPrivateRegistry" class="pi pi-search"></i>
-                <span>{{ isPrivateRegistry ? 'Search Repository' : 'Search DockerHub' }}</span>
-              </div>
-            </button>
-            <button pButton
-                    pTooltip="Use a private container registry"
-                    tooltipPosition="left"
-                    type="button"
-                    class="p-button-outlined"
-                    (click)="toggleRegistrySettings()">
-              <i class="pi pi-lock"></i>&nbsp;Private registry
-            </button>
-          </div>
+              <input pInputText
+                     formControlName="imageName"
+                     placeholder="Docker image of your application (eg. nginx)"
+                     (click)="toggleRegistrySearch()"
+                     [readOnly]="true"
+                     [ngClass]="{'with-registry-badge': selectedImage}"/>
+              <button pButton
+                      type="button"
+                      class="p-button-outlined"
+                      (click)="toggleRegistrySearch()">
+                <div class="flex flex-row align-items-center gap-2">
+                  <img *ngIf="!isPrivateRegistry" ngSrc="../../../../../assets/layout/images/default-docker.svg"
+                       width="20" height="20" alt="Docker" />
+                  <i *ngIf="isPrivateRegistry" class="pi pi-search"></i>
+                  <span>{{ isPrivateRegistry ? 'Search Repository' : 'Search DockerHub' }}</span>
+                </div>
+              </button>
+              <button pButton
+                      pTooltip="Search GitHub Container Registry"
+                      tooltipPosition="left"
+                      type="button"
+                      class="p-button-outlined"
+                      (click)="toggleGhcrSearch()">
+                <i class="pi pi-github"></i>&nbsp;GitHub Registry
+              </button>
+              <button pButton
+                      pTooltip="Use a private container registry"
+                      tooltipPosition="left"
+                      type="button"
+                      class="p-button-outlined"
+                      (click)="toggleRegistrySettings()">
+                <i class="pi pi-lock"></i>&nbsp;Private registry
+              </button>
+            </div>
 
-          <small class="p-error m-0"
-                 *ngIf="containerForm.dirty && containerForm.get('imageName')?.errors?.['required']">
-            Container image is required.
-          </small>
+            <small class="p-error m-0"
+                   *ngIf="containerForm.dirty && containerForm.get('imageName')?.errors?.['required']">
+              Container image is required.
+            </small>
+          }
 
           <sm-registry-settings *ngIf="showRegistrySettings"
                                 [registry]="{
@@ -62,6 +73,12 @@
                                   (imageSelected)="onDockerImageSelected($event)"
                                   (registryChanged)="onCancelPrivateRegistry()">
             </sm-docker-hub-search>
+          </div>
+
+          <div *ngIf="showGhcrSearch" class="registry-search-overlay mt-3">
+            <sm-ghcr-search (imageSelected)="onGhcrImageSelected($event)"
+                            (cancel)="showGhcrSearch = false">
+            </sm-ghcr-search>
           </div>
         </div>
       </div>
