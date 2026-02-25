@@ -1,0 +1,102 @@
+{
+  "id": null,
+  "name": "Surogate Agent",
+  "internalName": null,
+  "monthlyAppCosts": null,
+  "totalAppCosts": null,
+  "alias": null,
+  "firstTx": null,
+  "fromTemplate": null,
+  "description": null,
+  "ingressHostName": null,
+  "deployedNamespace": null,
+  "errorMessageKey": null,
+  "warnMessageKey": null,
+  "type": "UI",
+  "mode": "APPLICATION",
+  "status": "CREATED",
+  "workloadType": "DEPLOYMENT",
+  "yamlConfig": null,
+  "pipelineRunName": null,
+  "replicas": 1,
+  "updateStrategy": "ROLLING",
+  "schedulingRule": "DECENTRALIZED",
+  "extraConfig": null,
+  "serviceAccount": null,
+  "progressDeadline": null,
+  "hostIpc": null,
+  "hostPid": null,
+  "runtimeClass": null,
+  "project": null,
+  "containers": [
+    {
+      "id": null,
+      "displayName": "",
+      "imageName": "ghcr.io/invergent-ai/surogate-agent",
+      "imageTag": "latest",
+      "type": "WORKER",
+      "pullImageMode": "PULL",
+      "registryUrl": "",
+      "registryUsername": "",
+      "cpuRequest": 1,
+      "cpuLimit": 4,
+      "memRequest": "256",
+      "memLimit": "8192",
+      "startCommand": null,
+      "startParameters": null,
+      "envVars": [],
+      "volumeMounts": [
+        {
+          "id": null,
+          "containerPath": "/data",
+          "readOnly": false,
+          "volume": {
+            "id": null,
+            "name": "SurogateAgentData",
+            "path": null,
+            "type": "PERSISTENT",
+            "size": 100,
+            "bucketUrl": null,
+            "accessKey": null,
+            "region": null,
+            "project": null,
+            "accessSecret": null
+          },
+          "applicationId": null,
+          "databaseId": null,
+          "virtualMachineId": null
+        }
+      ],
+      "ports": [
+        {
+          "id": null,
+          "name": "port-01",
+          "containerPort": 8000,
+          "ingressPort": true,
+          "ingressHost": "",
+          "servicePort": 8000,
+          "protocol": {
+            "id": "bb7804cd-8818-4c48-b7a6-4f61ae3cefac",
+            "code": "TCP",
+            "value": "0",
+            "port": 0
+          },
+          "containerIndex": null,
+          "targetPort": null
+        }
+      ],
+      "firewallEntries": [],
+      "probes": [],
+      "gpuLimit": 0,
+      "registryPassword": null,
+      "replicas": null,
+      "extraProperties": {}
+    }
+  ],
+  "annotations": [],
+  "labels": [],
+  "keepVolumes": false,
+  "message": null,
+  "extraProperties": {},
+  "statusValue": "DEPLOYED"
+}
