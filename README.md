@@ -43,7 +43,7 @@ It unifies **deployment**, **fine-tuning**, **evaluation**, **safeguarding**, an
 - Kubernetes-native scaling.
 - Workload/container isolation.
 - GPU & node monitoring.
-- Start from templates or deploy custom apps via an intuitive UI.
+- Start from templates or deploy custom apps via an intuitive UI. Includes **[Surogate Agent](https://github.com/invergent-ai/surogate-agent)**
 - Deterministic configs + predefined recipes.
 
 ---
